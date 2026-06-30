@@ -216,8 +216,17 @@ def _load_review_config() -> dict[str, dict[str, str]]:
 
     raw = yaml.safe_load(REVIEW_CONFIG.read_text(encoding="utf-8")) or {}
     items = raw.get("native_api_review", [])
+    if not isinstance(items, list):
+        raise ValueError(f"{REVIEW_CONFIG}: native_api_review must be a list, got {type(items).__name__}")
     result: dict[str, dict[str, str]] = {}
-    for item in items:
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            raise ValueError(f"{REVIEW_CONFIG}: native_api_review[{index}] must be a mapping, got {item!r}")
+        missing = [field for field in ("manager", "api") if not item.get(field)]
+        if missing:
+            raise ValueError(
+                f"{REVIEW_CONFIG}: native_api_review[{index}] missing {', '.join(missing)} in item {item!r}"
+            )
         key = f"{item['manager']}.{item['api']}"
         result[key] = {str(k): "" if v is None else str(v) for k, v in item.items()}
     return result
@@ -748,10 +757,11 @@ def build_rows() -> list[dict[str, str]]:
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
         review = review_config.get(f"{manager}.{method}", {})
         if review.get("action") == "direct_e2e_case":
+            conclusion = "covered_by_case" if automation_infos else "case_required"
             assessment = {
                 **assessment,
                 "native_test_requirement": "direct_e2e",
-                "coverage_conclusion": "case_required",
+                "coverage_conclusion": conclusion,
                 "coverage_reason_zh": review.get("reason_zh", assessment["coverage_reason_zh"]),
             }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
