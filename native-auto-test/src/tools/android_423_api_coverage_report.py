@@ -243,6 +243,8 @@ def _load_review_config() -> dict[str, dict[str, str]]:
         action = normalized.get("action", "")
         if action and action not in ALLOWED_REVIEW_ACTIONS:
             raise ValueError(f"Unsupported review action: {key} action={action}")
+        if key in result:
+            raise ValueError(f"{REVIEW_CONFIG}: duplicate native_api_review key: {key}")
         result[key] = normalized
     return result
 
@@ -985,6 +987,7 @@ def render_html(rows: list[dict[str, str]], summary: dict[str, Any]) -> str:
             f"<td>{html.escape(row['coverage_conclusion'])}</td>"
             f"<td>{html.escape(row['review_action'] or '-')}</td>"
             f"<td>{html.escape(row['review_priority'] or '-')}</td>"
+            f"<td>{html.escape(row['review_batch'] or '-')}</td>"
             f"<td>{_badge(row['native_android_api_exists'])}</td>"
             f"<td>{_badge(row['android_covered'])}</td>"
             f"<td>{_badge(row['ios_covered'])}</td>"
@@ -1050,7 +1053,7 @@ code{{font-size:12px}} .small{{font-size:12px;color:#4d5a69}} .badge{{display:in
 <select id="auto"><option value="">自动化全部</option><option value="yes">自动化有</option><option value="no">自动化缺</option></select>
 </div>
 <div class="n"><span id="count">{len(rows)}</span> / {len(rows)} 条平台 API 并集</div>
-<div class="table"><table><thead><tr><th>Manager</th><th>API</th><th>行类型</th><th>测试要求</th><th>覆盖结论</th><th>Review Action</th><th>优先级</th><th>原生 Android</th><th>Android wrapper</th><th>iOS</th><th>Web</th><th>自动化</th><th>Wrapper SDK 调用证据</th><th>源码位置</th><th>自动化文件</th><th>目标 Case</th><th>扫描证据</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>
+<div class="table"><table><thead><tr><th>Manager</th><th>API</th><th>行类型</th><th>测试要求</th><th>覆盖结论</th><th>Review Action</th><th>优先级</th><th>Review Batch</th><th>原生 Android</th><th>Android wrapper</th><th>iOS</th><th>Web</th><th>自动化</th><th>Wrapper SDK 调用证据</th><th>源码位置</th><th>自动化文件</th><th>目标 Case</th><th>扫描证据</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>
 </main><script>
 const rows=[...document.querySelectorAll('tbody tr')]; const count=document.getElementById('count');
 function f(){{const q=document.getElementById('q').value.toLowerCase().trim(),kind=document.getElementById('kind').value,m=document.getElementById('m').value,a=document.getElementById('android').value,ios=document.getElementById('ios').value,web=document.getElementById('web').value,auto=document.getElementById('auto').value;let n=0;for(const r of rows){{let ok=(!q||r.dataset.search.includes(q))&&(!kind||r.dataset.kind===kind)&&(!m||r.dataset.manager===m)&&(!a||r.dataset.android===a)&&(!ios||r.dataset.ios===ios)&&(!web||r.dataset.web===web)&&(!auto||r.dataset.auto===auto);r.classList.toggle('hidden',!ok);if(ok)n++;}}count.textContent=n;}}
