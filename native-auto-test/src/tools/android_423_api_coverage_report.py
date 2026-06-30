@@ -782,7 +782,7 @@ def build_rows() -> list[dict[str, str]]:
                 raise ValueError(f"Unsupported review action: {review_key} action={action}")
             if review.get("reason_zh"):
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
-        if review.get("action") == "direct_e2e_case":
+        if review.get("action") == "direct_e2e_case" and wrappers:
             conclusion = "covered_by_case" if automation_infos else "case_required"
             assessment = {
                 **assessment,

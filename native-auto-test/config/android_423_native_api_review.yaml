@@ -8,10 +8,10 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: addReaction
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: asyncFetchHistoryMessage
@@ -43,17 +43,17 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: downloadBigImage
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: fetchGroupReadAcks
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_ack_read_strict.py
   - manager: ChatManager
     api: getAllConversations
@@ -71,38 +71,38 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
   - manager: ChatManager
     api: getReactionDetail
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: getReactionList
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: loadAllConversations
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: removeReaction
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: reportMessage
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: saveMessage
@@ -302,17 +302,17 @@ native_api_review:
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: fetchChatRoomMembers
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chatroom_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天室业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_member_basics.py
   - manager: ChatRoomManager
     api: fetchPublicChatRoomsFromServer
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chatroom_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该聊天室业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: Client
     api: asyncGetRTCTokenInfoWithChannelName
@@ -715,10 +715,10 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_roles.py
   - manager: GroupManager
     api: createGroup
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: declineApplication
@@ -743,10 +743,10 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: GroupManager
     api: destroyGroup
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: downloadGroupSharedFile
@@ -757,38 +757,38 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: GroupManager
     api: fetchGroupAnnouncement
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_announcement.py
   - manager: GroupManager
     api: fetchGroupBlackList
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: fetchGroupMembers
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_member_list.py
   - manager: GroupManager
     api: fetchGroupMuteList
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: fetchGroupSharedFileList
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_file_list.py
   - manager: GroupManager
     api: getBlockedUsers
@@ -799,24 +799,24 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: getGroupNamecard
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_member_info.py
   - manager: GroupManager
     api: getJoinedGroupsFromServer
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_joined_groups.py
   - manager: GroupManager
     api: getPublicGroupsFromServer
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_public_groups_count.py
   - manager: GroupManager
     api: inviteUser
@@ -827,17 +827,17 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_inviter.py
   - manager: GroupManager
     api: leaveGroup
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: loadAllGroups
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
     target_case: native-auto-test/tests/group/test_group_remaining_api_coverage.py
   - manager: GroupManager
     api: muteGroupMembers
