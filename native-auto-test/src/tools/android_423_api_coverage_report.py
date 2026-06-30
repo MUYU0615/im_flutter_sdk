@@ -42,6 +42,17 @@ WEB_METHOD_KEYS = WEB_DIR / "method_keys.dart"
 REVIEW_CONFIG = ROOT / "config/android_423_native_api_review.yaml"
 ANDROID_SDK_VERSION = "4.23.0"
 
+ALLOWED_REVIEW_ACTIONS = {
+    "expose_wrapper",
+    "direct_e2e_case",
+    "indirect_e2e_only",
+    "model_property_covered",
+    "listener_registration_internal",
+    "manager_getter_internal",
+    "platform_native_missing",
+    "not_applicable",
+}
+
 NATIVE_ANDROID_CLASSES = {
     "Client": "com.hyphenate.chat.EMClient",
     "ChatManager": "com.hyphenate.chat.EMChatManager",
@@ -228,7 +239,11 @@ def _load_review_config() -> dict[str, dict[str, str]]:
                 f"{REVIEW_CONFIG}: native_api_review[{index}] missing {', '.join(missing)} in item {item!r}"
             )
         key = f"{item['manager']}.{item['api']}"
-        result[key] = {str(k): "" if v is None else str(v) for k, v in item.items()}
+        normalized = {str(k): "" if v is None else str(v) for k, v in item.items()}
+        action = normalized.get("action", "")
+        if action and action not in ALLOWED_REVIEW_ACTIONS:
+            raise ValueError(f"Unsupported review action: {key} action={action}")
+        result[key] = normalized
     return result
 
 
@@ -717,6 +732,10 @@ def build_rows() -> list[dict[str, str]]:
                 "coverage_semantics_group": "",
                 "coverage_conclusion": "",
                 "coverage_reason_zh": "",
+                "review_action": "",
+                "review_priority": "",
+                "review_batch": "",
+                "target_case": "",
                 "covered_by_wrapper_api": f"{manager}.{api}" if android_info else "",
                 "native_android_api_exists": "yes" if (manager, api) in native_android else "no",
                 "native_android_class": native_android.get((manager, api), {}).get("native_android_class", ""),
@@ -755,14 +774,20 @@ def build_rows() -> list[dict[str, str]]:
             if (item["manager"], item["api"]) in automation
         ]
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
-        review = review_config.get(f"{manager}.{method}", {})
+        review_key = f"{manager}.{method}"
+        review = review_config.get(review_key, {})
+        if review:
+            action = review.get("action", "")
+            if action not in ALLOWED_REVIEW_ACTIONS:
+                raise ValueError(f"Unsupported review action: {review_key} action={action}")
+            if review.get("reason_zh"):
+                assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
         if review.get("action") == "direct_e2e_case":
             conclusion = "covered_by_case" if automation_infos else "case_required"
             assessment = {
                 **assessment,
                 "native_test_requirement": "direct_e2e",
                 "coverage_conclusion": conclusion,
-                "coverage_reason_zh": review.get("reason_zh", assessment["coverage_reason_zh"]),
             }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})
@@ -774,6 +799,10 @@ def build_rows() -> list[dict[str, str]]:
                 "api": method,
                 "row_kind": "native_android_api",
                 **assessment,
+                "review_action": review.get("action", ""),
+                "review_priority": review.get("priority", ""),
+                "review_batch": review.get("batch", ""),
+                "target_case": review.get("target_case", ""),
                 "covered_by_wrapper_api": "; ".join(wrapper_apis),
                 **native_android[(manager, method)],
                 "android_covered": "yes" if wrappers else "no",
@@ -817,6 +846,7 @@ def summarize(rows: list[dict[str, str]]) -> dict[str, Any]:
         "native_android_api_requirement": dict(Counter(row["native_test_requirement"] for row in native_rows)),
         "native_android_api_conclusion": dict(Counter(row["coverage_conclusion"] for row in native_rows)),
         "native_android_api_semantics_group": dict(Counter(row["coverage_semantics_group"] for row in native_rows)),
+        "native_android_api_review_action": dict(Counter(row["review_action"] or "unclassified" for row in native_rows)),
         "total_platform_union_api": len(wrapper_rows),
         "total_android_api": len(android_keys),
         "android_wrapper_sdk_call_evidence": dict(
@@ -856,6 +886,10 @@ FIELDS = [
     "coverage_semantics_group",
     "coverage_conclusion",
     "coverage_reason_zh",
+    "review_action",
+    "review_priority",
+    "review_batch",
+    "target_case",
     "covered_by_wrapper_api",
     "native_android_api_exists",
     "native_android_class",
@@ -909,6 +943,10 @@ def _write_wrapper_missing_backlog(rows: list[dict[str, str]], out_dir: Path) ->
         "native_android_signature",
         "coverage_semantics_group",
         "native_test_requirement",
+        "review_action",
+        "review_priority",
+        "review_batch",
+        "target_case",
         "coverage_reason_zh",
     ]
     path = out_dir / "android-4.23-wrapper-missing-backlog.csv"
@@ -945,6 +983,8 @@ def render_html(rows: list[dict[str, str]], summary: dict[str, Any]) -> str:
             f"<td>{html.escape(row['row_kind'])}</td>"
             f"<td>{html.escape(row['native_test_requirement'])}</td>"
             f"<td>{html.escape(row['coverage_conclusion'])}</td>"
+            f"<td>{html.escape(row['review_action'] or '-')}</td>"
+            f"<td>{html.escape(row['review_priority'] or '-')}</td>"
             f"<td>{_badge(row['native_android_api_exists'])}</td>"
             f"<td>{_badge(row['android_covered'])}</td>"
             f"<td>{_badge(row['ios_covered'])}</td>"
@@ -958,6 +998,7 @@ def render_html(rows: list[dict[str, str]], summary: dict[str, Any]) -> str:
             f"Web: {html.escape(row['web_file'])}:{html.escape(row['web_line'])}"
             "</td>"
             f"<td class=\"small\">{html.escape(row['automation_files'] or '-')}</td>"
+            f"<td class=\"small\">{html.escape(row['target_case'] or '-')}</td>"
             "<td class=\"small\">"
             f"Android: {html.escape(row['android_evidence'])}<br>"
             f"iOS: {html.escape(row['ios_evidence'])}<br>"
@@ -1009,7 +1050,7 @@ code{{font-size:12px}} .small{{font-size:12px;color:#4d5a69}} .badge{{display:in
 <select id="auto"><option value="">自动化全部</option><option value="yes">自动化有</option><option value="no">自动化缺</option></select>
 </div>
 <div class="n"><span id="count">{len(rows)}</span> / {len(rows)} 条平台 API 并集</div>
-<div class="table"><table><thead><tr><th>Manager</th><th>API</th><th>行类型</th><th>测试要求</th><th>覆盖结论</th><th>原生 Android</th><th>Android wrapper</th><th>iOS</th><th>Web</th><th>自动化</th><th>Wrapper SDK 调用证据</th><th>源码位置</th><th>自动化文件</th><th>扫描证据</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>
+<div class="table"><table><thead><tr><th>Manager</th><th>API</th><th>行类型</th><th>测试要求</th><th>覆盖结论</th><th>Review Action</th><th>优先级</th><th>原生 Android</th><th>Android wrapper</th><th>iOS</th><th>Web</th><th>自动化</th><th>Wrapper SDK 调用证据</th><th>源码位置</th><th>自动化文件</th><th>目标 Case</th><th>扫描证据</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>
 </main><script>
 const rows=[...document.querySelectorAll('tbody tr')]; const count=document.getElementById('count');
 function f(){{const q=document.getElementById('q').value.toLowerCase().trim(),kind=document.getElementById('kind').value,m=document.getElementById('m').value,a=document.getElementById('android').value,ios=document.getElementById('ios').value,web=document.getElementById('web').value,auto=document.getElementById('auto').value;let n=0;for(const r of rows){{let ok=(!q||r.dataset.search.includes(q))&&(!kind||r.dataset.kind===kind)&&(!m||r.dataset.manager===m)&&(!a||r.dataset.android===a)&&(!ios||r.dataset.ios===ios)&&(!web||r.dataset.web===web)&&(!auto||r.dataset.auto===auto);r.classList.toggle('hidden',!ok);if(ok)n++;}}count.textContent=n;}}

@@ -6,3 +6,1130 @@ native_api_review:
     batch: message_p0
     reason_zh: "Android 原生消息对象存在 pinnedInfo 能力，wrapper 已映射为 getPinInfo，当前只缺自动化 case。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: ChatManager
+    api: addReaction
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
+  - manager: ChatManager
+    api: asyncFetchHistoryMessage
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s2_server_ops.py
+  - manager: ChatManager
+    api: asyncFilterConversationsFromDB
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
+  - manager: ChatManager
+    api: asyncRecallMessage
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
+  - manager: ChatManager
+    api: cleanConversationsMemoryCache
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+  - manager: ChatManager
+    api: downloadBigImage
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: ChatManager
+    api: fetchGroupReadAcks
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_ack_read_strict.py
+  - manager: ChatManager
+    api: getAllConversations
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+  - manager: ChatManager
+    api: getConversationsByType
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
+  - manager: ChatManager
+    api: getReactionDetail
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
+  - manager: ChatManager
+    api: getReactionList
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
+  - manager: ChatManager
+    api: loadAllConversations
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+  - manager: ChatManager
+    api: removeReaction
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
+  - manager: ChatManager
+    api: reportMessage
+    action: direct_e2e_case
+    priority: P1
+    batch: chat_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
+  - manager: ChatManager
+    api: saveMessage
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_crud.py
+  - manager: ChatManager
+    api: setVoiceMessageListened
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: ChatManager
+    api: updateParticipant
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: ChatManager
+    api: voiceFileToText
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: ChatManager
+    api: voiceMessageToText
+    action: expose_wrapper
+    priority: P1
+    batch: chat_p1
+    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: ChatRoomManager
+    api: asyncAddChatRoomAdmin
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncBlockChatroomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncChangeChatRoomSubject
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: ChatRoomManager
+    api: asyncChangeChatroomDescription
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: ChatRoomManager
+    api: asyncChangeOwner
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncCreateChatRoom
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: ChatRoomManager
+    api: asyncDestroyChatRoom
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomAllAttributesFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomAnnouncement
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_member_basics.py
+  - manager: ChatRoomManager
+    api: asyncFetchChatRoomMuteList
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncMuteChatRoomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncRemoveChatRoomAdmin
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncRemoveChatRoomAttributeFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncRemoveChatRoomAttributeFromServerForced
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncRemoveChatRoomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncSetChatroomAttribute
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncSetChatroomAttributeForced
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: asyncUnBlockChatRoomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncUnMuteChatRoomMembers
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
+  - manager: ChatRoomManager
+    api: asyncUpdateChatRoomAnnouncement
+    action: expose_wrapper
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+  - manager: ChatRoomManager
+    api: fetchChatRoomMembers
+    action: direct_e2e_case
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_member_basics.py
+  - manager: ChatRoomManager
+    api: fetchPublicChatRoomsFromServer
+    action: direct_e2e_case
+    priority: P1
+    batch: chatroom_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+  - manager: Client
+    api: asyncGetRTCTokenInfoWithChannelName
+    action: platform_native_missing
+    priority: P2
+    batch: client_rtc_platform_gap
+    reason_zh: "Android 原生 SDK 暴露 RTC token/uid 相关能力，但 iOS/Web 当前缺少同等原生能力，需要作为 Android 可暴露能力记录平台差异。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: asyncGetUserIdsWithRTCUids
+    action: platform_native_missing
+    priority: P2
+    batch: client_rtc_platform_gap
+    reason_zh: "Android 原生 SDK 暴露 RTC token/uid 相关能力，但 iOS/Web 当前缺少同等原生能力，需要作为 Android 可暴露能力记录平台差异。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: chatManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: chatThreadManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: chatroomManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: check
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: contactManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: getChatConfigPrivate
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: getInstance
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: getUserTokenFromServer
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: groupManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: isFCMAvailable
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: isSdkInited
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: notifyTokenExpired
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: presenceManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: pushManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: sendFCMTokenToServer
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: sendHonorPushTokenToServer
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: statisticsManager
+    action: not_applicable
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "该 Android 原生 public API 属于内部配置、诊断、推送 token 上报或 SDK 状态实现细节，不应作为 Flutter App 开发者业务 wrapper 暴露。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: userInfoManager
+    action: manager_getter_internal
+    priority: P3
+    batch: client_internal_review
+    reason_zh: "Android 原生 SDK 通过 EMClient 暴露 manager getter；Flutter SDK 已按独立 manager 属性/单例组织调用入口，不需要把该 getter 作为业务 wrapper API。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: ContactManager
+    api: asyncAcceptInvitation
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncAddContact
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncAddUserToBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncDeclineInvitation
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncDeleteContact
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncGetAllContactsFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncGetBlackListFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncGetSelfIdsOnOtherPlatform
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
+  - manager: ContactManager
+    api: asyncRemoveUserFromBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact.py
+  - manager: ContactManager
+    api: asyncSaveBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
+  - manager: ContactManager
+    api: saveBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
+  - manager: ContactManager
+    api: setContactListener
+    action: listener_registration_internal
+    priority: P2
+    batch: contact_p1
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 start callback 后接收事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/contact/test_contact_event_helpers.py
+  - manager: ConversationManager
+    api: clear
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: conversationId
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: insertMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 Android 原生会话对象方法已由现有会话消息插入/搜索类 wrapper 流程间接覆盖，统计应绑定到对应 E2E。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: marks
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: msgType2ConversationType
+    action: not_applicable
+    priority: P3
+    batch: conversation_android_internal
+    reason_zh: "该 Android 原生 public API 是消息类型到会话类型的静态转换工具，Flutter 侧已有枚举映射，不应作为用户可调用 wrapper API 暴露。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: searchCustomMsgFromDB
+    action: indirect_e2e_only
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 Android 原生会话对象方法已由现有会话消息插入/搜索类 wrapper 流程间接覆盖，统计应绑定到对应 E2E。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: GroupManager
+    api: acceptApplication
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
+  - manager: GroupManager
+    api: acceptInvitation
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
+  - manager: GroupManager
+    api: addGroupAdmin
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_roles.py
+  - manager: GroupManager
+    api: applyJoinToGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
+  - manager: GroupManager
+    api: asyncAddUsersToGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_members.py
+  - manager: GroupManager
+    api: asyncBlockUser
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: asyncFetchGroupBlackList
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_server_state_lists.py
+  - manager: GroupManager
+    api: asyncGetGroupFromServer
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_metadata.py
+  - manager: GroupManager
+    api: asyncJoinGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+  - manager: GroupManager
+    api: asyncRemoveUserFromGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_members.py
+  - manager: GroupManager
+    api: asyncUnblockUser
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: asyncUpdateGroupNamecard
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_member_info.py
+  - manager: GroupManager
+    api: blockGroupMessage
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: blockUser
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: blockUsers
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: changeGroupAvatar
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_metadata.py
+  - manager: GroupManager
+    api: changeGroupDescription
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_metadata.py
+  - manager: GroupManager
+    api: changeGroupName
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_metadata.py
+  - manager: GroupManager
+    api: changeOwner
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_roles.py
+  - manager: GroupManager
+    api: createGroup
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+  - manager: GroupManager
+    api: declineApplication
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
+  - manager: GroupManager
+    api: declineInvitation
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
+  - manager: GroupManager
+    api: deleteGroupSharedFile
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_shared_files.py
+  - manager: GroupManager
+    api: destroyGroup
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+  - manager: GroupManager
+    api: downloadGroupSharedFile
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_shared_files.py
+  - manager: GroupManager
+    api: fetchGroupAnnouncement
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_announcement.py
+  - manager: GroupManager
+    api: fetchGroupBlackList
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_server_state_lists.py
+  - manager: GroupManager
+    api: fetchGroupMembers
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_member_list.py
+  - manager: GroupManager
+    api: fetchGroupMuteList
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_server_state_lists.py
+  - manager: GroupManager
+    api: fetchGroupSharedFileList
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_file_list.py
+  - manager: GroupManager
+    api: getBlockedUsers
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_server_state_lists.py
+  - manager: GroupManager
+    api: getGroupNamecard
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_member_info.py
+  - manager: GroupManager
+    api: getJoinedGroupsFromServer
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_joined_groups.py
+  - manager: GroupManager
+    api: getPublicGroupsFromServer
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_public_groups_count.py
+  - manager: GroupManager
+    api: inviteUser
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_inviter.py
+  - manager: GroupManager
+    api: leaveGroup
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+  - manager: GroupManager
+    api: loadAllGroups
+    action: direct_e2e_case
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "该能力在 Flutter wrapper 中已有等价入口或语义等价命令，当前统计主要缺少原生 API 到现有 E2E case 的绑定。"
+    target_case: native-auto-test/tests/group/test_group_remaining_api_coverage.py
+  - manager: GroupManager
+    api: muteGroupMembers
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
+  - manager: GroupManager
+    api: removeGroupAdmin
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_roles.py
+  - manager: GroupManager
+    api: removeUserFromGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_members.py
+  - manager: GroupManager
+    api: removeUsersFromGroup
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_members.py
+  - manager: GroupManager
+    api: unMuteGroupMembers
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
+  - manager: GroupManager
+    api: unblockGroupMessage
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: unblockUser
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: unblockUsers
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_blocking.py
+  - manager: GroupManager
+    api: updateGroupAnnouncement
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_announcement.py
+  - manager: GroupManager
+    api: uploadGroupSharedFile
+    action: expose_wrapper
+    priority: P1
+    batch: group_membership_p1
+    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_shared_files.py
+  - manager: MessageManager
+    api: addBody
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: clone
+    action: not_applicable
+    priority: P3
+    batch: message_android_internal
+    reason_zh: "该 Android 原生 public API 属于 Android 对象克隆或 Parcelable 实现细节，不应作为 Flutter App 开发者 wrapper API 暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: conversationId
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: createCombinedSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createFileSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createGifImageMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createImageSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createLocationSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createReceiveMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createTextSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createTxtSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createVideoSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: createVoiceSendMessage
+    action: indirect_e2e_only
+    priority: P2
+    batch: message_factory_review
+    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+  - manager: MessageManager
+    api: deliverOnlineOnly
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: describeContents
+    action: not_applicable
+    priority: P3
+    batch: message_android_internal
+    reason_zh: "该 Android 原生 public API 属于 Android 对象克隆或 Parcelable 实现细节，不应作为 Flutter App 开发者 wrapper API 暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: direct
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: ext
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: localTime
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: progress
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: receiverList
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: status
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: writeToParcel
+    action: not_applicable
+    priority: P3
+    batch: message_android_internal
+    reason_zh: "该 Android 原生 public API 属于 Android 对象克隆或 Parcelable 实现细节，不应作为 Flutter App 开发者 wrapper API 暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: PresenceManager
+    api: clearListeners
+    action: listener_registration_internal
+    priority: P2
+    batch: presence_callback_review
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 start callback 后接收事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/presence/test_presence.py
+  - manager: PushManager
+    api: reportPushAction
+    action: expose_wrapper
+    priority: P1
+    batch: push_p1
+    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
+  - manager: PushManager
+    api: updatePushDisplayStyle
+    action: expose_wrapper
+    priority: P1
+    batch: push_p1
+    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
+  - manager: PushManager
+    api: updatePushNickname
+    action: expose_wrapper
+    priority: P1
+    batch: push_p1
+    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
+  - manager: UserInfoManager
+    api: fetchSubscribedUsers
+    action: expose_wrapper
+    priority: P1
+    batch: user_info_p1
+    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/user_info/test_user_info.py
+  - manager: UserInfoManager
+    api: getUserInfoWithUserId
+    action: expose_wrapper
+    priority: P1
+    batch: user_info_p1
+    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/user_info/test_user_info.py
+  - manager: UserInfoManager
+    api: getUserInfoWithUserIds
+    action: expose_wrapper
+    priority: P1
+    batch: user_info_p1
+    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/user_info/test_user_info.py
+  - manager: UserInfoManager
+    api: subscribeUsersInfo
+    action: expose_wrapper
+    priority: P1
+    batch: user_info_p1
+    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/user_info/test_user_info.py
+  - manager: UserInfoManager
+    api: unsubscribeUsersInfo
+    action: expose_wrapper
+    priority: P1
+    batch: user_info_p1
+    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    target_case: native-auto-test/tests/user_info/test_user_info.py
