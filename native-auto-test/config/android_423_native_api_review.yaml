@@ -8,17 +8,17 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: addReaction
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 addReaction 已由 Flutter ChatManager.addReaction 等价暴露，Android wrapper 调用 asyncAddReaction，自动化覆盖 reaction 添加与事件。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: asyncFetchHistoryMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchHistoryMessage 已由 Flutter ChatManager.fetchHistoryMessages 等价覆盖，自动化覆盖发送后拉取历史消息与非法参数。"
     target_case: native-auto-test/tests/chat/test_chat_s2_server_ops.py
   - manager: ChatManager
     api: asyncFilterConversationsFromDB
@@ -29,17 +29,17 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
   - manager: ChatManager
     api: asyncRecallMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRecallMessage 已由 Flutter ChatManager.recallMessage 等价覆盖，自动化覆盖撤回响应与接收方撤回事件。"
     target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: cleanConversationsMemoryCache
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 cleanConversationsMemoryCache 已由 Flutter ChatManager.cleanConversationsMemoryCache 同名暴露，自动化覆盖清理内存缓存后重新加载本地会话。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: downloadBigImage
@@ -50,52 +50,52 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: fetchGroupReadAcks
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 fetchGroupReadAcks 已由 Flutter ChatManager.asyncFetchGroupAcks 等价覆盖，自动化覆盖群消息回执分页查询链路。"
     target_case: native-auto-test/tests/chat/test_chat_ack_read_strict.py
   - manager: ChatManager
     api: getAllConversations
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 getAllConversations 已由 Flutter ChatManager.loadAllConversations 等价覆盖，自动化覆盖发送消息后的本地会话列表。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: getConversationsByType
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 getConversationsByType 已由 Flutter ChatManager.getConversationsByType 同名暴露，自动化覆盖发送消息后按会话类型查询与非法 type 参数。"
     target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
   - manager: ChatManager
     api: getReactionDetail
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 getReactionDetail 已由 Flutter ChatManager.fetchReactionDetail 等价覆盖，自动化覆盖 reaction 明细分页与参数边界。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: getReactionList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 getReactionList 已由 Flutter ChatManager.fetchReactionList 等价覆盖，自动化覆盖 reaction 列表查询与参数边界。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: loadAllConversations
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 loadAllConversations 已由 Flutter ChatManager.loadAllConversations 等价覆盖，自动化覆盖本地会话加载和排序。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: removeReaction
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 removeReaction 已由 Flutter ChatManager.removeReaction 等价暴露，Android wrapper 调用 asyncRemoveReaction，自动化覆盖 reaction 删除。"
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: reportMessage

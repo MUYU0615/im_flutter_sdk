@@ -80,6 +80,8 @@ public class MethodKey {
     static final String downloadMessageThumbnailInCombine = "downloadMessageThumbnailInCombine";
     static final String importMessages = "importMessages";
     static final String loadAllConversations = "loadAllConversations";
+    static final String getConversationsByType = "getConversationsByType";
+    static final String cleanConversationsMemoryCache = "cleanConversationsMemoryCache";
     static final String getConversationsFromServer = "getConversationsFromServer";
     static final String deleteConversation = "deleteConversation";
     static final String fetchHistoryMessages = "fetchHistoryMessages";
@@ -271,7 +273,7 @@ public class MethodKey {
     static final String setPushTemplate = "setPushTemplate";
     static final String getPushTemplate = "getPushTemplate";
 
-    /// EMUserInfoManager 
+    /// EMUserInfoManager
     static final String updateOwnUserInfo = "updateOwnUserInfo";
     static final String updateOwnUserInfoWithType = "updateOwnUserInfoWithType";
     static final String fetchUserInfoById = "fetchUserInfoById";

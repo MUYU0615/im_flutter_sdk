@@ -215,6 +215,72 @@ INDIRECT_COVERAGE_RULES = {
     ),
 }
 
+NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("ChatManager", "addReaction"): [
+        {
+            "manager": "ChatManager",
+            "api": "addReaction",
+            "reason_zh": "Flutter wrapper 使用同名命令调用 Android asyncAddReaction；覆盖 Android 4.23 同步 addReaction 的用户可见能力。",
+        }
+    ],
+    ("ChatManager", "asyncFetchHistoryMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "fetchHistoryMessages",
+            "reason_zh": "Flutter wrapper 的 fetchHistoryMessages 暴露同一分页拉取历史消息能力；Android 实现调用 fetchHistoryMessages，4.23 还提供 asyncFetchHistoryMessage 等价异步形态。",
+        }
+    ],
+    ("ChatManager", "asyncRecallMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "recallMessage",
+            "reason_zh": "Flutter wrapper 的 recallMessage 在后台线程调用真实 SDK recallMessage 并返回异步结果；等价覆盖 Android asyncRecallMessage 的撤回能力。",
+        }
+    ],
+    ("ChatManager", "fetchGroupReadAcks"): [
+        {
+            "manager": "ChatManager",
+            "api": "asyncFetchGroupAcks",
+            "reason_zh": "Flutter wrapper 的 asyncFetchGroupAcks 调用 Android asyncFetchGroupReadAcks；覆盖 fetchGroupReadAcks 的群消息已读回执分页能力。",
+        }
+    ],
+    ("ChatManager", "getAllConversations"): [
+        {
+            "manager": "ChatManager",
+            "api": "loadAllConversations",
+            "reason_zh": "Flutter wrapper 的 loadAllConversations 返回本地全部会话列表；Android 当前通过 getAllConversationsBySort 暴露排序后的全部会话，等价覆盖 App 侧获取全部会话列表需求。",
+        }
+    ],
+    ("ChatManager", "getReactionDetail"): [
+        {
+            "manager": "ChatManager",
+            "api": "fetchReactionDetail",
+            "reason_zh": "Flutter wrapper 的 fetchReactionDetail 调用 Android asyncGetReactionDetail；等价覆盖 getReactionDetail 的 reaction 明细分页能力。",
+        }
+    ],
+    ("ChatManager", "getReactionList"): [
+        {
+            "manager": "ChatManager",
+            "api": "fetchReactionList",
+            "reason_zh": "Flutter wrapper 的 fetchReactionList 调用 Android asyncGetReactionList；等价覆盖 getReactionList 的批量 reaction 列表能力。",
+        }
+    ],
+    ("ChatManager", "loadAllConversations"): [
+        {
+            "manager": "ChatManager",
+            "api": "loadAllConversations",
+            "reason_zh": "Flutter wrapper 使用 loadAllConversations 命令暴露本地会话加载与列表返回能力；Android 实现返回 getAllConversationsBySort 的会话结果。",
+        }
+    ],
+    ("ChatManager", "removeReaction"): [
+        {
+            "manager": "ChatManager",
+            "api": "removeReaction",
+            "reason_zh": "Flutter wrapper 使用同名命令调用 Android asyncRemoveReaction；覆盖 Android 4.23 同步 removeReaction 的用户可见能力。",
+        }
+    ],
+}
+
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
@@ -717,6 +783,21 @@ def build_rows() -> list[dict[str, str]]:
                     "android_line": android_info.get("android_line", ""),
                 }
             )
+    for native_key, aliases in NATIVE_ANDROID_EQUIVALENT_WRAPPERS.items():
+        for alias in aliases:
+            wrapper_key = (alias["manager"], alias["api"])
+            android_info = android.get(wrapper_key)
+            if not android_info:
+                continue
+            native_call_to_wrappers[native_key].append(
+                {
+                    "manager": wrapper_key[0],
+                    "api": wrapper_key[1],
+                    "android_file": android_info.get("android_file", ""),
+                    "android_line": android_info.get("android_line", ""),
+                    "equivalent_reason_zh": alias.get("reason_zh", ""),
+                }
+            )
 
     all_keys = sorted(set(android) | set(ios) | set(web))
     rows: list[dict[str, str]] = []
@@ -776,13 +857,23 @@ def build_rows() -> list[dict[str, str]]:
             if (item["manager"], item["api"]) in automation
         ]
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
+        equivalent_reasons = [
+            item.get("equivalent_reason_zh", "")
+            for item in wrappers
+            if item.get("equivalent_reason_zh")
+        ]
+        if equivalent_reasons:
+            assessment = {
+                **assessment,
+                "coverage_reason_zh": "；".join(equivalent_reasons),
+            }
         review_key = f"{manager}.{method}"
         review = review_config.get(review_key, {})
         if review:
             action = review.get("action", "")
             if action not in ALLOWED_REVIEW_ACTIONS:
                 raise ValueError(f"Unsupported review action: {review_key} action={action}")
-            if review.get("reason_zh"):
+            if review.get("reason_zh") and not equivalent_reasons:
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
         if review.get("action") == "direct_e2e_case" and wrappers:
             conclusion = "covered_by_case" if automation_infos else "case_required"

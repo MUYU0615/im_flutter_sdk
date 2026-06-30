@@ -663,3 +663,38 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
     finally:
         if group_id:
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
+
+
+def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_api):
+    """asyncFetchGroupAcks 缺失 msgId 与非法 pageSize 均应由 wrapper 返回稳定参数错误。"""
+    resp_missing_msg = device_a.call(
+        "ChatManager",
+        Cmd.asyncFetchGroupAcks.value,
+        info={"group_id": "__invalid_group_id__", "pageSize": 20, "ack_id": None},
+    )
+    assert_api.assert_response_matches(
+        resp_missing_msg,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.asyncFetchGroupAcks.value,
+            "device": "deviceA",
+            "result": {"code": 110, "description": "'msgId' can not be null"},
+        },
+        ignore_keys={"sequence"},
+    )
+
+    resp_invalid_page = device_a.call(
+        "ChatManager",
+        Cmd.asyncFetchGroupAcks.value,
+        info={"msgId": "__invalid_group_msg_id__", "group_id": "__invalid_group_id__", "pageSize": 0, "ack_id": None},
+    )
+    assert_api.assert_response_matches(
+        resp_invalid_page,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.asyncFetchGroupAcks.value,
+            "device": "deviceA",
+            "result": {"code": 110, "description": "'pageSize' must be greater than 0"},
+        },
+        ignore_keys={"sequence"},
+    )

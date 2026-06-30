@@ -41,6 +41,7 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     private final MethodChannel messageChannel;
     private EMMessageListener messageListener;
     private EMConversationListener conversationListener;
+    private static final int INVALID_PARAM = 110;
 
 
     ChatManagerWrapper(FlutterPlugin.FlutterPluginBinding flutterPluginBinding, String channelName) {
@@ -90,6 +91,10 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 importMessages(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
                 loadAllConversations(params, call.method, result);
+            } else if (MethodKey.getConversationsByType.equals(call.method)) {
+                getConversationsByType(params, call.method, result);
+            } else if (MethodKey.cleanConversationsMemoryCache.equals(call.method)) {
+                cleanConversationsMemoryCache(params, call.method, result);
             } else if (MethodKey.getConversationsFromServer.equals(call.method)) {
                 getConversationsFromServer(params, call.method, result);
             } else if (MethodKey.deleteConversation.equals(call.method)) {
@@ -322,7 +327,10 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void recallMessage(JSONObject params, String channelName, Result result) throws JSONException {
-        String msgId = params.getString("msgId");
+        String msgId = requiredString(params, "msgId", result);
+        if (msgId == null) {
+            return;
+        }
         String ext;
         if (params.has("ext")) {
             ext = params.getString("ext");
@@ -481,7 +489,7 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
             onSuccess(result, channelName, MessageHelper.toJson(dbMsg));
         });
     }
-    
+
     private void importMessages(JSONObject params, String channelName, Result result) throws JSONException {
         JSONArray ary = params.getJSONArray("messages");
         List<EMMessage> messages = new ArrayList<>();
@@ -729,6 +737,32 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         });
     }
 
+    private void getConversationsByType(JSONObject params, String channelName, Result result) throws JSONException {
+        if (!params.has("type") || params.isNull("type")) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'type' can not be null"));
+            return;
+        }
+        int typeIndex = params.getInt("type");
+        if (typeIndex < 0 || typeIndex >= EMConversationType.values().length) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'type' is invalid"));
+            return;
+        }
+        EMConversationType type = EnumTools.conversationTypeFromInt(typeIndex);
+        asyncHeavyWorkRunnable(()->{
+            List<EMConversation> list = EMClient.getInstance().chatManager().getConversationsByType(type);
+            List<Map> conversations = new ArrayList<>();
+            for (EMConversation conversation : list) {
+                conversations.add(ConversationHelper.toJson(conversation));
+            }
+            onSuccess(result, channelName, conversations);
+        });
+    }
+
+    private void cleanConversationsMemoryCache(JSONObject params, String channelName, Result result) throws JSONException {
+        EMClient.getInstance().chatManager().cleanConversationsMemoryCache();
+        onSuccess(result, channelName, true);
+    }
+
     private void getConversationsFromServer(JSONObject params, String channelName, Result result) throws JSONException {
         asyncRunnable(() -> {
             try {
@@ -770,9 +804,15 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void fetchHistoryMessages(JSONObject params, String channelName, Result result) throws JSONException {
-        String conId = params.getString("convId");
+        String conId = requiredString(params, "convId", result);
+        if (conId == null) {
+            return;
+        }
         EMConversationType type = EnumTools.conversationTypeFromInt(params.getInt("type"));
         int pageSize = params.getInt("pageSize");
+        if (!validatePageSize(pageSize, result)) {
+            return;
+        }
         String startMsgId = params.getString("startMsgId");
         EMSearchDirection direction = EnumTools.searchDirectionFromInt(params.optInt("direction"));
         asyncRunnable(() -> {
@@ -787,9 +827,15 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void fetchHistoryMessagesByOptions(JSONObject params, String channelName, Result result) throws JSONException {
-        String conId = params.getString("convId");
+        String conId = requiredString(params, "convId", result);
+        if (conId == null) {
+            return;
+        }
         EMConversationType type = EnumTools.conversationTypeFromInt(params.getInt("type"));
         int pageSize = params.getInt("pageSize");
+        if (!validatePageSize(pageSize, result)) {
+            return;
+        }
         String cursor = null;
         if (params.has("cursor")) {
              cursor = params.getString("cursor");
@@ -841,12 +887,18 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
 
 
     private void asyncFetchGroupMessageAckFromServer(JSONObject params, String channelName, Result result) throws JSONException {
-        String msgId = params.getString("msgId");
+        String msgId = requiredString(params, "msgId", result);
+        if (msgId == null) {
+            return;
+        }
         String ackId = null;
         if (params.has("ack_id")){
             ackId = params.getString("ack_id");
         }
         int pageSize = params.getInt("pageSize");
+        if (!validatePageSize(pageSize, result)) {
+            return;
+        }
 
         EMValueWrapperCallBack<EMCursorResult<EMGroupReadAck>> callBack = new EMValueWrapperCallBack<EMCursorResult<EMGroupReadAck>>(result,
                 channelName) {
@@ -905,22 +957,43 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void addReaction(JSONObject params, String channelName, Result result) throws JSONException {
-        String reaction = params.getString("reaction");
-        String msgId = params.getString("msgId");
+        String reaction = requiredString(params, "reaction", result);
+        if (reaction == null) {
+            return;
+        }
+        String msgId = requiredString(params, "msgId", result);
+        if (msgId == null) {
+            return;
+        }
         EMClient.getInstance().chatManager().asyncAddReaction(msgId, reaction, new EMWrapperCallBack(result, channelName, null));
     }
 
     private void removeReaction(JSONObject params, String channelName, Result result) throws JSONException {
-        String reaction = params.getString("reaction");
-        String msgId = params.getString("msgId");
+        String reaction = requiredString(params, "reaction", result);
+        if (reaction == null) {
+            return;
+        }
+        String msgId = requiredString(params, "msgId", result);
+        if (msgId == null) {
+            return;
+        }
         EMClient.getInstance().chatManager().asyncRemoveReaction(msgId, reaction, new EMWrapperCallBack(result, channelName, null));
     }
 
     private void fetchReactionList(JSONObject params, String channelName, Result result) throws JSONException {
         List<String> msgIds = new ArrayList<>();
         JSONArray ja = params.getJSONArray("msgIds");
+        if (ja.length() == 0) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'messageIdList' can not be null"));
+            return;
+        }
         for (int i = 0; i < ja.length(); i++) {
-            msgIds.add(ja.getString(i));
+            String msgId = ja.getString(i);
+            if (msgId == null || msgId.length() == 0) {
+                onError(result, new HyphenateException(INVALID_PARAM, "'messageIdList' can not be null"));
+                return;
+            }
+            msgIds.add(msgId);
         }
         String groupId = null;
         if (params.has("groupId")) {
@@ -955,13 +1028,22 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void fetchReactionDetail(JSONObject params, String channelName, Result result) throws JSONException {
-        String msgId = params.getString("msgId");
-        String reaction = params.getString("reaction");
+        String msgId = requiredString(params, "msgId", result);
+        if (msgId == null) {
+            return;
+        }
+        String reaction = requiredString(params, "reaction", result);
+        if (reaction == null) {
+            return;
+        }
         String cursor = null;
         if (params.has("cursor")) {
             cursor = params.getString("cursor");
         }
         int pageSize = params.getInt("pageSize");
+        if (!validatePageSize(pageSize, result)) {
+            return;
+        }
         EMClient.getInstance().chatManager().asyncGetReactionDetail(msgId, reaction, cursor, pageSize, new EMValueWrapperCallBack<EMCursorResult<EMMessageReaction>>(result, channelName) {
             @Override
             public void onSuccess(EMCursorResult<EMMessageReaction> object) {
@@ -1337,10 +1419,10 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         EMConversation.EMMessageSearchScope scope = EMConversation.EMMessageSearchScope.values()[params.getInt("scope")];
 
         EMClient.getInstance().chatManager().asyncLoadConversationMessagesWithKeyword(
-            keyword, 
-            timestamp, 
-            sender, 
-            direction, 
+            keyword,
+            timestamp,
+            sender,
+            direction,
             scope,
             new EMValueWrapperCallBack<Map<String, List<String>>>(result, channelName) {
                 @Override
@@ -1373,6 +1455,27 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 updateObject(messages);
             }
         });
+    }
+
+    private String requiredString(JSONObject params, String key, Result result) throws JSONException {
+        if (!params.has(key) || params.isNull(key)) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'" + key + "' can not be null"));
+            return null;
+        }
+        String value = params.getString(key);
+        if (value == null || value.length() == 0) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'" + key + "' can not be null"));
+            return null;
+        }
+        return value;
+    }
+
+    private boolean validatePageSize(int pageSize, Result result) {
+        if (pageSize <= 0) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'pageSize' must be greater than 0"));
+            return false;
+        }
+        return true;
     }
 
 }

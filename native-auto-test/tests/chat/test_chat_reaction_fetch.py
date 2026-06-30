@@ -149,7 +149,7 @@ def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
 
 
 def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert_api, user_a, user_b):
-    """fetchReactionDetail 非法 pageSize（-1）；应返回参数错误。"""
+    """fetchReactionDetail 非法 pageSize（-1）；应返回 wrapper 本地参数错误。"""
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -173,7 +173,7 @@ def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionDetail.value,
             "device": "deviceA",
-            "result": {"code": 303, "description": "Unknown server error"},
+            "result": {"code": 110, "description": "'pageSize' must be greater than 0"},
         },
         ignore_keys={"sequence"},
     )
@@ -313,8 +313,8 @@ def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api
 
 
 def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
-    """removeReaction 使用无效 msgId；按不存在语义冻结。"""
-    resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
+    """removeReaction 使用不存在 msgId；按不存在语义冻结。"""
+    resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "ok", "msgId": "__invalid_msg_id__"})
     assert_api.assert_response_matches(
         resp,
         expected={
@@ -322,6 +322,36 @@ def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
             "cmd": Cmd.removeReaction.value,
             "device": "deviceA",
             "result": None,
+        },
+        ignore_keys={"sequence"},
+    )
+
+
+def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, assert_api):
+    """addReaction 缺失 msgId；wrapper 应先返回本地参数错误，不发起 SDK 调用。"""
+    resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "ok"})
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.addReaction.value,
+            "device": "deviceA",
+            "result": {"code": 110, "description": "'msgId' can not be null"},
+        },
+        ignore_keys={"sequence"},
+    )
+
+
+def test_chat_remove_reaction_empty_reaction_returns_validation_error(device_a, assert_api):
+    """removeReaction 空 reaction；wrapper 应先返回本地参数错误，不发起 SDK 调用。"""
+    resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "", "msgId": "__invalid_msg_id__"})
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.removeReaction.value,
+            "device": "deviceA",
+            "result": {"code": 110, "description": "'reaction' can not be null"},
         },
         ignore_keys={"sequence"},
     )

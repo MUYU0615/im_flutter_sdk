@@ -322,6 +322,117 @@ def test_chat_load_all_conversations_contains_then_not_contains(device_a, device
     )
 
 
+def test_chat_get_conversations_by_type_after_sending(device_a, device_b, assert_api, user_a, user_b):
+    """getConversationsByType：发送单聊消息后按 Chat 类型查询本地会话列表。"""
+    _ = device_a.call(
+        "ChatManager",
+        Cmd.deleteConversation.value,
+        info={"convId": user_b, "deleteMessages": True},
+    )
+    _ = _send_text_and_get_real_id(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        f"s1-conv-type-{uuid.uuid4().hex[:6]}",
+    )
+    time.sleep(2)
+
+    resp = device_a.call("ChatManager", Cmd.getConversationsByType.value, info={"type": 0})
+    result = resp.get("result")
+    projected = [
+        {"convId": item.get("convId"), "type": item.get("type")}
+        for item in (result if isinstance(result, list) else [])
+        if isinstance(item, dict) and str(item.get("convId")) == str(user_b)
+    ]
+    assert_api.assert_response_matches(
+        {
+            "manager": "ChatManager",
+            "cmd": Cmd.getConversationsByType.value,
+            "device": "deviceA",
+            "result": projected,
+        },
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.getConversationsByType.value,
+            "device": "deviceA",
+            "result": [{"convId": "{{convId}}", "type": 0}],
+        },
+        context={"convId": user_b},
+        ignore_keys={"sequence"},
+    )
+
+
+def test_chat_get_conversations_by_type_invalid_type(device_a, assert_api):
+    """getConversationsByType 非法 type；wrapper 返回本地参数错误。"""
+    resp = device_a.call("ChatManager", Cmd.getConversationsByType.value, info={"type": -1})
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.getConversationsByType.value,
+            "device": "deviceA",
+            "result": {"code": 110, "description": "'type' is invalid"},
+        },
+        ignore_keys={"sequence"},
+    )
+
+
+def test_chat_clean_conversations_memory_cache_keeps_local_conversations(device_a, device_b, assert_api, user_a, user_b):
+    """cleanConversationsMemoryCache：清理内存缓存后，本地会话仍可重新加载。"""
+    _ = device_a.call(
+        "ChatManager",
+        Cmd.deleteConversation.value,
+        info={"convId": user_b, "deleteMessages": True},
+    )
+    _ = _send_text_and_get_real_id(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        f"s1-clean-cache-{uuid.uuid4().hex[:6]}",
+    )
+    time.sleep(2)
+
+    resp_clean = device_a.call("ChatManager", Cmd.cleanConversationsMemoryCache.value, info={})
+    assert_api.assert_response_matches(
+        resp_clean,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.cleanConversationsMemoryCache.value,
+            "device": "deviceA",
+            "result": True,
+        },
+        ignore_keys={"sequence"},
+    )
+
+    resp_load = device_a.call("ChatManager", Cmd.loadAllConversations.value, info={})
+    result = resp_load.get("result")
+    projected = [
+        {"convId": item.get("convId"), "type": item.get("type")}
+        for item in (result if isinstance(result, list) else [])
+        if isinstance(item, dict) and str(item.get("convId")) == str(user_b)
+    ]
+    assert_api.assert_response_matches(
+        {
+            "manager": "ChatManager",
+            "cmd": Cmd.loadAllConversations.value,
+            "device": "deviceA",
+            "result": projected,
+        },
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.loadAllConversations.value,
+            "device": "deviceA",
+            "result": [{"convId": "{{convId}}", "type": 0}],
+        },
+        context={"convId": user_b},
+        ignore_keys={"sequence"},
+    )
+
+
 def test_chat_delete_conversation_existing_then_not_found(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s1-del-conv-{uuid.uuid4().hex[:6]}")
 
