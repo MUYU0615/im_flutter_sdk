@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 from src.tools.android_423_api_coverage_report import build_rows, summarize
 from tests.conftest import _all_items_marked_no_global_login
@@ -212,6 +213,19 @@ def test_task6_chatroom_target_cases_point_to_direct_case_files():
     for key, target_case in TASK6_CHATROOM_TARGET_CASES.items():
         row = rows[(key[0], key[1], "native_android_api")]
         assert row["target_case"] == target_case
+
+
+def test_task6_chatroom_attribute_cases_cover_non_forced_branches():
+    text = Path("tests/chatroom/test_chatroom_management_basics.py").read_text(encoding="utf-8")
+
+    set_start = text.index("def test_chatroom_set_attributes_non_forced_success")
+    remove_start = text.index("def test_chatroom_remove_attributes_non_forced_success")
+    set_block = text[set_start:remove_start]
+    remove_block = text[remove_start:]
+    assert "Cmd.setChatRoomAttributes.value" in set_block
+    assert '"forced": False' in set_block
+    assert "Cmd.removeChatRoomAttributes.value" in remove_block
+    assert '"forced": False' in remove_block
 
 
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():

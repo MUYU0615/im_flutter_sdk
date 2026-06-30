@@ -489,6 +489,47 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
         safe_delete_chatroom(room_id)
 
 
+def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a):
+    room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_nf", desc_prefix="attrs_nf")
+    attr_key = f"room_attr_nf_{uuid.uuid4().hex[:8]}"
+    attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
+    try:
+        set_resp = device_a.call(
+            "ChatRoomManager",
+            Cmd.setChatRoomAttributes.value,
+            info={
+                "roomId": room_id,
+                "attributes": {attr_key: attr_value},
+                "autoDelete": False,
+                "forced": False,
+            },
+        )
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        failures = set_resp.get("result")
+        assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {set_resp}"
+        assert attr_key not in failures, f"非强制设置聊天室属性失败: key={attr_key}, failures={failures}"
+
+        fetch_resp = device_a.call(
+            "ChatRoomManager",
+            Cmd.fetchChatRoomAttributes.value,
+            info={"roomId": room_id, "keys": [attr_key]},
+        )
+        assert_api.assert_response_matches(
+            fetch_resp,
+            expected={
+                "manager": "ChatRoomManager",
+                "cmd": Cmd.fetchChatRoomAttributes.value,
+                "device": "deviceA",
+                "result": {
+                    attr_key: attr_value,
+                },
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        safe_delete_chatroom(room_id)
+
+
 def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_all", desc_prefix="attrs_all")
     attr_key_1 = f"room_attr_all_1_{uuid.uuid4().hex[:8]}"
@@ -703,6 +744,52 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
         failures = remove_resp.get("result")
         assert isinstance(failures, dict), f"removeChatRoomAttributes result 应为失败 key map: {remove_resp}"
         assert attr_key not in failures, f"删除聊天室属性失败: key={attr_key}, failures={failures}"
+
+        fetch_resp = device_a.call(
+            "ChatRoomManager",
+            Cmd.fetchChatRoomAttributes.value,
+            info={"roomId": room_id, "keys": [attr_key]},
+        )
+        assert_api.assert_response_matches(
+            fetch_resp,
+            expected={
+                "manager": "ChatRoomManager",
+                "cmd": Cmd.fetchChatRoomAttributes.value,
+                "device": "deviceA",
+                "result": {},
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        safe_delete_chatroom(room_id)
+
+
+def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, user_a):
+    room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="remove_attrs_nf", desc_prefix="remove_attrs_nf")
+    attr_key = f"room_attr_remove_nf_{uuid.uuid4().hex[:8]}"
+    attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
+    try:
+        set_resp = device_a.call(
+            "ChatRoomManager",
+            Cmd.setChatRoomAttributes.value,
+            info={
+                "roomId": room_id,
+                "attributes": {attr_key: attr_value},
+                "autoDelete": False,
+                "forced": True,
+            },
+        )
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+
+        remove_resp = device_a.call(
+            "ChatRoomManager",
+            Cmd.removeChatRoomAttributes.value,
+            info={"roomId": room_id, "keys": [attr_key], "forced": False},
+        )
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device="deviceA")
+        failures = remove_resp.get("result")
+        assert isinstance(failures, dict), f"removeChatRoomAttributes result 应为失败 key map: {remove_resp}"
+        assert attr_key not in failures, f"非强制删除聊天室属性失败: key={attr_key}, failures={failures}"
 
         fetch_resp = device_a.call(
             "ChatRoomManager",
