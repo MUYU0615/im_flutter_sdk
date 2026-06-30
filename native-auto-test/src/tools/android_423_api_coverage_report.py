@@ -39,6 +39,7 @@ CMD_KEYS = ROOT / "src/sdk_api/cmd_keys.py"
 ANDROID_METHOD_KEYS = ANDROID_DIR / "MethodKey.java"
 IOS_METHOD_KEYS = IOS_DIR / "MethodKeys.h"
 WEB_METHOD_KEYS = WEB_DIR / "method_keys.dart"
+REVIEW_CONFIG = ROOT / "config/android_423_native_api_review.yaml"
 ANDROID_SDK_VERSION = "4.23.0"
 
 NATIVE_ANDROID_CLASSES = {
@@ -206,6 +207,20 @@ INDIRECT_COVERAGE_RULES = {
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def _load_review_config() -> dict[str, dict[str, str]]:
+    if not REVIEW_CONFIG.exists():
+        return {}
+    import yaml
+
+    raw = yaml.safe_load(REVIEW_CONFIG.read_text(encoding="utf-8")) or {}
+    items = raw.get("native_api_review", [])
+    result: dict[str, dict[str, str]] = {}
+    for item in items:
+        key = f"{item['manager']}.{item['api']}"
+        result[key] = {str(k): "" if v is None else str(v) for k, v in item.items()}
+    return result
 
 
 def _line_no(text: str, pos: int) -> int:
@@ -656,6 +671,7 @@ def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
 
 
 def build_rows() -> list[dict[str, str]]:
+    review_config = _load_review_config()
     native_android = _native_android_methods()
     android = scan_android()
     ios = scan_ios()
@@ -730,6 +746,14 @@ def build_rows() -> list[dict[str, str]]:
             if (item["manager"], item["api"]) in automation
         ]
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
+        review = review_config.get(f"{manager}.{method}", {})
+        if review.get("action") == "direct_e2e_case":
+            assessment = {
+                **assessment,
+                "native_test_requirement": "direct_e2e",
+                "coverage_conclusion": "case_required",
+                "coverage_reason_zh": review.get("reason_zh", assessment["coverage_reason_zh"]),
+            }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})
         indirect_files = _indirect_coverage_files(manager, assessment["coverage_semantics_group"])
@@ -763,7 +787,7 @@ def build_rows() -> list[dict[str, str]]:
                 "web_evidence": "原生 Android API 行不直接判断 Web；请看对应 wrapper_api 行做三端对齐。",
                 "automation_covered": "yes" if is_automation_covered else "no",
                 "automation_refs": str(automation_refs),
-                "automation_files": "; ".join(automation_files[:12]) or indirect_files,
+                "automation_files": "; ".join(automation_files[:12]) or review.get("target_case", "") or indirect_files,
             }
         )
     return rows
@@ -859,6 +883,30 @@ def render_csv(rows: list[dict[str, str]]) -> str:
     writer.writeheader()
     writer.writerows(rows)
     return output.getvalue()
+
+
+def _write_wrapper_missing_backlog(rows: list[dict[str, str]], out_dir: Path) -> None:
+    backlog = [
+        row
+        for row in rows
+        if row.get("row_kind") == "native_android_api" and row.get("coverage_conclusion") == "wrapper_missing"
+    ]
+    fields = [
+        "manager",
+        "api",
+        "native_android_class",
+        "native_android_method",
+        "native_android_signature",
+        "coverage_semantics_group",
+        "native_test_requirement",
+        "coverage_reason_zh",
+    ]
+    path = out_dir / "android-4.23-wrapper-missing-backlog.csv"
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        for row in sorted(backlog, key=lambda r: (r["manager"], r["api"])):
+            writer.writerow({field: row.get(field, "") for field in fields})
 
 
 def _badge(value: str, positive: str = "yes") -> str:
@@ -972,11 +1020,13 @@ def main() -> int:
     args.output.write_text(render_html(rows, summary), encoding="utf-8")
     args.csv_output.parent.mkdir(parents=True, exist_ok=True)
     args.csv_output.write_text(render_csv(rows), encoding="utf-8")
+    _write_wrapper_missing_backlog(rows, args.csv_output.parent)
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
     print(f"html: {args.output}")
     print(f"csv: {args.csv_output}")
+    print(f"backlog: {args.csv_output.parent / 'android-4.23-wrapper-missing-backlog.csv'}")
     print(f"json: {args.json_output}")
     return 0
 

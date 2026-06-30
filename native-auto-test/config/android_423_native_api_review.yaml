@@ -1,0 +1,8 @@
+native_api_review:
+  - manager: MessageManager
+    api: pinnedInfo
+    action: direct_e2e_case
+    priority: P0
+    batch: message_p0
+    reason_zh: "Android 原生消息对象存在 pinnedInfo 能力，wrapper 已映射为 getPinInfo，当前只缺自动化 case。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
