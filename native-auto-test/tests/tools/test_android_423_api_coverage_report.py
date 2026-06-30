@@ -63,6 +63,30 @@ TASK6_CHATROOM_EQUIVALENT_APIS = {
     ("ChatRoomManager", "fetchPublicChatRoomsFromServer"): "ChatRoomManager.fetchPublicChatRoomsFromServer",
 }
 
+TASK6_CHATROOM_TARGET_CASES = {
+    ("ChatRoomManager", "asyncChangeChatRoomSubject"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncChangeChatroomDescription"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    (
+        "ChatRoomManager",
+        "asyncFetchChatRoomAllAttributesFromServer",
+    ): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncFetchChatRoomAnnouncement"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncFetchChatRoomBlackList"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncFetchChatRoomMuteList"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    (
+        "ChatRoomManager",
+        "asyncRemoveChatRoomAttributeFromServer",
+    ): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    (
+        "ChatRoomManager",
+        "asyncRemoveChatRoomAttributeFromServerForced",
+    ): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncSetChatroomAttribute"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncSetChatroomAttributeForced"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "asyncUpdateChatRoomAnnouncement"): "native-auto-test/tests/chatroom/test_chatroom_management_basics.py",
+    ("ChatRoomManager", "fetchPublicChatRoomsFromServer"): "native-auto-test/tests/chatroom/test_chatroom_server_state.py",
+}
+
 
 class _FakeItem:
     def __init__(self, marked: bool):
@@ -175,6 +199,19 @@ def test_task6_chatroom_equivalent_native_apis_are_not_wrapper_missing():
         assert row["android_covered"] == "yes"
         assert row["automation_covered"] == "yes"
         assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_task6_chatroom_target_cases_point_to_direct_case_files():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "ChatRoomManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, target_case in TASK6_CHATROOM_TARGET_CASES.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["target_case"] == target_case
 
 
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():

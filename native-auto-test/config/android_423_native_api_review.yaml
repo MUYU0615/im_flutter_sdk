@@ -159,14 +159,14 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncChangeChatRoomSubject 已由 Flutter ChatRoomManager.changeChatRoomSubject 等价覆盖；Android wrapper 在后台线程调用 changeChatRoomSubject。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncChangeChatroomDescription
     action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncChangeChatroomDescription 已由 Flutter ChatRoomManager.changeChatRoomDescription 等价覆盖；Android wrapper 调用 changeChatroomDescription。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncChangeOwner
     action: direct_e2e_case
@@ -194,21 +194,21 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncFetchChatRoomAllAttributesFromServer 已由 Flutter ChatRoomManager.fetchChatRoomAttributes 等价覆盖；不传 keys 时拉取全量属性。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomAnnouncement
     action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncFetchChatRoomAnnouncement 已由 Flutter ChatRoomManager.fetchChatRoomAnnouncement 等价覆盖；Android wrapper 在后台线程调用 fetchChatRoomAnnouncement。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomBlackList
     action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncFetchChatRoomBlackList 已由 Flutter ChatRoomManager.fetchChatRoomBlockList 等价覆盖；Android wrapper 调用 fetchChatRoomBlackList。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomFromServer
     action: direct_e2e_case
@@ -229,7 +229,7 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncFetchChatRoomMuteList 已由 Flutter ChatRoomManager.fetchChatRoomMuteList 等价覆盖；Android wrapper 在后台线程调用 fetchChatRoomMuteList。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncMuteChatRoomMembers
     action: direct_e2e_case
@@ -250,14 +250,14 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncRemoveChatRoomAttributeFromServer 已由 Flutter ChatRoomManager.removeChatRoomAttributes 等价覆盖；单元素 keys 覆盖单属性移除。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomAttributeFromServerForced
     action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncRemoveChatRoomAttributeFromServerForced 已由 Flutter ChatRoomManager.removeChatRoomAttributes 等价覆盖；forced=true 时调用强制移除批量 API，单元素 keys 覆盖单属性强制移除。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomMembers
     action: direct_e2e_case
@@ -271,14 +271,14 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncSetChatroomAttribute 已由 Flutter ChatRoomManager.setChatRoomAttributes 等价覆盖；单键 attributes 覆盖单属性设置。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncSetChatroomAttributeForced
     action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncSetChatroomAttributeForced 已由 Flutter ChatRoomManager.setChatRoomAttributes 等价覆盖；forced=true 时调用强制设置批量 API，单键 attributes 覆盖单属性强制设置。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncUnBlockChatRoomMembers
     action: direct_e2e_case
@@ -299,7 +299,7 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 asyncUpdateChatRoomAnnouncement 已由 Flutter ChatRoomManager.updateChatRoomAnnouncement 等价覆盖；Android wrapper 在后台线程调用 updateChatRoomAnnouncement。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: fetchChatRoomMembers
     action: direct_e2e_case
@@ -313,7 +313,7 @@ native_api_review:
     priority: P1
     batch: chatroom_p1
     reason_zh: "Android 原生 fetchPublicChatRoomsFromServer 已由 Flutter ChatRoomManager.fetchPublicChatRoomsFromServer 等价覆盖；Android wrapper 调用 asyncFetchPublicChatRoomsFromServer 返回同一分页能力。"
-    target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
+    target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: Client
     api: asyncGetRTCTokenInfoWithChannelName
     action: platform_native_missing
