@@ -165,6 +165,33 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
     )
 
 
+def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, user_a, user_b):
+    """getPinInfo：发送消息后置顶，再通过 MessageManager 查询置顶操作者与时间。"""
+    content = f"message-pin-info-{uuid.uuid4().hex[:8]}"
+    msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
+
+    resp_pin = device_a.call("ChatManager", Cmd.pinMessage.value, info={"msgId": msg_id})
+    assert_api.assert_response_matches(
+        resp_pin,
+        expected={"manager": "ChatManager", "cmd": Cmd.pinMessage.value, "device": "deviceA", "result": None},
+        ignore_keys={"sequence"},
+    )
+
+    resp = device_a.call("MessageManager", Cmd.getPinInfo.value, info={"msgId": msg_id})
+    result = resp.get("result") or {}
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "MessageManager",
+            "cmd": Cmd.getPinInfo.value,
+            "device": "deviceA",
+            "result": {"operatorId": user_a},
+        },
+        ignore_keys={"sequence", "pinTime"},
+    )
+    assert result.get("pinTime"), f"pinTime 应存在: {result}"
+
+
 def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, device_b, assert_api, user_a, user_b):
     """recallMessage：发送方撤回已送达单聊消息，接收方收到 onMessagesRecalledInfo 事件并携带撤回消息 ID。"""
     content = f"chat-recall-event-{uuid.uuid4().hex[:8]}"
