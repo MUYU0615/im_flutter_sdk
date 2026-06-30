@@ -491,10 +491,7 @@ def global_login_logout(request):
     - setup：用 created_test_users 的两人在 device_a/device_b 上登录并清空回调。
     - teardown：登出两设备。用户删除由 created_test_users 的 teardown 负责。
     """
-    if bool(request.config.getoption("--skip-global-login")) or any(
-        item.get_closest_marker("no_global_login")
-        for item in request.session.items
-    ):
+    if bool(request.config.getoption("--skip-global-login")) or _all_items_marked_no_global_login(request.session.items):
         yield
         return
     device_a = request.getfixturevalue("primary_device")
@@ -513,6 +510,11 @@ def global_login_logout(request):
     )
     yield
     _session_logout(device_a, device_b)
+
+
+def _all_items_marked_no_global_login(items) -> bool:
+    items = list(items)
+    return bool(items) and all(item.get_closest_marker("no_global_login") for item in items)
 
 
 def _reset_web_devices(primary, secondary) -> None:
