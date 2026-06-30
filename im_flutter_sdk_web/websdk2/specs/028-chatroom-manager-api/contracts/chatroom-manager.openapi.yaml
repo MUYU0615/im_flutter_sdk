@@ -1,0 +1,1014 @@
+openapi: 3.0.3
+info:
+  title: IM SDK ChatRoomManager Contract
+  version: 0.1.0
+  description: |
+    028 ChatRoomManager 逻辑契约。
+    既描述 SDK 对外的 ChatRoomManager / ChatRoom 方法语义，也标注旧工程 upstream endpoint 与已确认样例来源，供 fixture 与契约测试复用。
+    真实样例来源：docs/reference/chatroom-api.md。
+    与 027 群组域同构的聊天室接口，沿用相同业务结构与字段命名。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/chatroom-manager/chatrooms:
+    get:
+      summary: 获取公开聊天室分页列表
+      operationId: getChatRoomList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getchatroomlist
+      responses:
+        '200':
+          description: 返回标准化后的聊天室分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomListResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}:
+    get:
+      summary: 获取单个聊天室详情
+      operationId: getChatRoomInfo
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}
+        responseShape: same-as-group-info
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回标准化后的聊天室详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomDetail'
+    put:
+      summary: 更新聊天室信息
+      operationId: updateChatRoomInfo
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/chatrooms/{chatRoomId}
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#updatechatroominfo
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChatRoomInfoRequest'
+      responses:
+        '200':
+          description: 返回标准化后的更新结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomUpdateResult'
+    delete:
+      summary: 销毁聊天室
+      operationId: destroy
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#destroychatroom
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '204':
+          description: 销毁成功，SDK 返回 void
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/join:
+    post:
+      summary: 当前用户加入聊天室
+      operationId: joinChatRoom
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/users/{userId}
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinChatRoomRequest'
+      responses:
+        '204':
+          description: 加入成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/leave:
+    delete:
+      summary: 当前用户退出聊天室
+      operationId: leaveChatRoom
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/users/{userId}
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '204':
+          description: 退出成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/members:
+    get:
+      summary: 获取聊天室成员列表
+      operationId: getMemberList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/users
+        responseShape: same-as-group-members
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回对象化成员列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberListResult'
+    post:
+      summary: 批量添加聊天室成员
+      operationId: addMembers
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#addmembersremovemembers
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoomUserBatchRequest'
+      responses:
+        '200':
+          description: 返回标准化后的成员操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+    delete:
+      summary: 批量移除聊天室成员
+      operationId: removeMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/users/{csvUserIds}
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#addmembersremovemembers
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoomUserBatchRequest'
+      responses:
+        '200':
+          description: 返回标准化后的成员操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/admins:
+    get:
+      summary: 获取聊天室管理员列表
+      operationId: getAdminList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/admin
+        responseShape: same-as-group-admins
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回对象化管理员列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+    post:
+      summary: 设置聊天室管理员
+      operationId: setAdmin
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/admin
+        responseShape: same-as-group-set-admin
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoomAdminRequest'
+      responses:
+        '204':
+          description: 设置成功
+    delete:
+      summary: 移除聊天室管理员
+      operationId: removeAdmin
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/admin/{userId}
+        responseShape: same-as-group-remove-admin
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: 移除成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/blocks:
+    get:
+      summary: 获取聊天室黑名单
+      operationId: getBlocklist
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/blocks/users
+        responseShape: same-as-group-blocklist
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回对象化黑名单条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatRoomBlocklistEntry'
+    post:
+      summary: 批量加入聊天室黑名单
+      operationId: blockMembers
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/blocks/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#blockmembers--unblockmembers
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoomUserBatchRequest'
+      responses:
+        '200':
+          description: 返回标准化后的黑名单操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+    delete:
+      summary: 批量移出聊天室黑名单
+      operationId: unblockMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/blocks/users/{csvUserIds}
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#blockmembers--unblockmembers
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回标准化后的黑名单操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/allowlist:
+    get:
+      summary: 获取聊天室 allowlist
+      operationId: getAllowlist
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/white/users
+        responseShape: same-as-group-allowlist
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回对象化 allowlist 条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatRoomAllowlistEntry'
+    post:
+      summary: 批量添加聊天室 allowlist
+      operationId: addUsersToAllowlist
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/white/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#adduserstoallowlist--removeusersfromallowlist
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRoomUserBatchRequest'
+      responses:
+        '200':
+          description: 返回标准化后的 allowlist 操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+    delete:
+      summary: 批量移除聊天室 allowlist
+      operationId: removeUsersFromAllowlist
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/white/users/{csvUserIds}
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#adduserstoallowlist--removeusersfromallowlist
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回标准化后的 allowlist 操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomMemberActionListResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/allowlist/me:
+    get:
+      summary: 查询当前用户是否在聊天室 allowlist 中
+      operationId: checkIfInAllowList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/white/users/{currentUser}?version=v3
+        responseShape: same-as-group-is-in-allowlist
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回 allowlist 状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BooleanStatusResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/mute:
+    get:
+      summary: 获取聊天室禁言列表
+      operationId: getMuteList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/mute
+        responseShape: same-as-group-mute-list
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回对象化禁言条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatRoomMuteEntry'
+    post:
+      summary: 批量禁言聊天室成员
+      operationId: muteMembers
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/mute
+        responseShape: same-as-group-mute-members
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MuteChatRoomMembersRequest'
+      responses:
+        '204':
+          description: 禁言成功
+    delete:
+      summary: 批量解除聊天室成员禁言
+      operationId: unmuteMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/mute/{csvUserIds}
+        responseShape: same-as-group-unmute-members
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '204':
+          description: 解除禁言成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/mute/all:
+    post:
+      summary: 开启全员禁言
+      operationId: muteAllMembers
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/ban
+        responseShape: same-as-group-mute-all
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '204':
+          description: 开启成功
+    delete:
+      summary: 关闭全员禁言
+      operationId: unmuteAllMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/ban
+        responseShape: same-as-group-unmute-all
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '204':
+          description: 关闭成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/mute/me:
+    get:
+      summary: 查询当前用户是否被禁言
+      operationId: isCurrentUserMuted
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/mute/{userId}
+        responseShape: same-as-group-is-muted
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回当前用户禁言状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MuteStatusResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/announcement:
+    get:
+      summary: 获取聊天室公告
+      operationId: getAnnouncement
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/announcement
+        responseShape: same-as-group-announcement
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回聊天室公告
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAnnouncement'
+    put:
+      summary: 更新聊天室公告
+      operationId: updateAnnouncement
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatrooms/{chatRoomId}/announcement
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#updateannouncement
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAnnouncementRequest'
+      responses:
+        '204':
+          description: 更新成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/shared-files:
+    get:
+      summary: 获取聊天室共享文件列表
+      operationId: getSharedFileList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatrooms/{chatRoomId}/share_files
+        responseShape: same-as-group-shared-files
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      responses:
+        '200':
+          description: 返回共享文件列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatRoomSharedFile'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/shared-files/{fileId}:
+    delete:
+      summary: 删除聊天室共享文件
+      operationId: deleteSharedFile
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatrooms/{chatRoomId}/share_files/{fileId}
+        responseShape: same-as-group-delete-shared-file
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '204':
+          description: 删除成功
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/attributes:
+    get:
+      summary: 获取聊天室属性
+      operationId: getAttributes
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/metadata/chatroom
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getattributes--setattributes--setattribute--removeattributes--removeattribute
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+        - $ref: '#/components/parameters/AttributeKeys'
+      responses:
+        '200':
+          description: 返回聊天室属性快照
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAttributesSnapshot'
+    put:
+      summary: 设置聊天室属性
+      operationId: setAttributes
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/metadata/chatroom
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getattributes--setattributes--setattribute--removeattributes--removeattribute
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetChatRoomAttributesRequest'
+      responses:
+        '200':
+          description: 返回标准化后的属性变更结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAttributeMutationResult'
+    delete:
+      summary: 删除聊天室属性
+      operationId: removeAttributes
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/metadata/chatroom
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getattributes--setattributes--setattribute--removeattributes--removeattribute
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveChatRoomAttributesRequest'
+      responses:
+        '200':
+          description: 返回标准化后的属性删除结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAttributeMutationResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/attributes/item:
+    put:
+      summary: 设置单个聊天室属性
+      operationId: setAttribute
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/metadata/chatroom
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getattributes--setattributes--setattribute--removeattributes--removeattribute
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetChatRoomAttributeRequest'
+      responses:
+        '200':
+          description: 返回标准化后的单键属性变更结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAttributeMutationResult'
+
+  /sdk/chatroom-manager/chatrooms/{chatRoomId}/attributes/{key}:
+    delete:
+      summary: 删除单个聊天室属性
+      operationId: removeAttribute
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/metadata/chatroom
+        responseSampleRequired: false
+        sampleRef: docs/reference/chatroom-api.md#getattributes--setattributes--setattribute--removeattributes--removeattribute
+      parameters:
+        - $ref: '#/components/parameters/ChatRoomId'
+        - $ref: '#/components/parameters/AttributeKey'
+      responses:
+        '200':
+          description: 返回标准化后的单键属性删除结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoomAttributeMutationResult'
+components:
+  parameters:
+    ChatRoomId:
+      name: chatRoomId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    FileId:
+      name: fileId
+      in: path
+      required: true
+      schema:
+        type: string
+    AttributeKeys:
+      name: keys
+      in: query
+      required: false
+      description: 可选属性 key 列表；不传表示获取全部属性
+      style: form
+      explode: false
+      schema:
+        type: array
+        items:
+          type: string
+    AttributeKey:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    UserInfo:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          type: string
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+    ChatRoomSummary:
+      type: object
+      required:
+        - chatRoomId
+        - name
+      properties:
+        chatRoomId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          $ref: '#/components/schemas/UserInfo'
+        memberCount:
+          type: integer
+        disabled:
+          type: boolean
+    ChatRoomListResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatRoomSummary'
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        hasMore:
+          type: boolean
+    ChatRoomCurrentUserStatus:
+      type: object
+      properties:
+        inAllowlist:
+          type: boolean
+        muted:
+          type: boolean
+        muteExpireAt:
+          type: integer
+          format: int64
+        permissionType:
+          type: string
+          enum: [owner, admin, member, none]
+    ChatRoomDetail:
+      allOf:
+        - $ref: '#/components/schemas/ChatRoomSummary'
+        - type: object
+          properties:
+            ext:
+              type: string
+            maxMembers:
+              type: integer
+            createdAt:
+              type: integer
+              format: int64
+            announcement:
+              type: string
+            permissionType:
+              type: string
+              enum: [owner, admin, member, none]
+            currentUserStatus:
+              $ref: '#/components/schemas/ChatRoomCurrentUserStatus'
+    UpdateChatRoomInfoRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        maxMembers:
+          type: integer
+    ChatRoomUpdateResult:
+      type: object
+      properties:
+        nameUpdated:
+          type: boolean
+        descriptionUpdated:
+          type: boolean
+        maxMembersUpdated:
+          type: boolean
+    JoinChatRoomRequest:
+      type: object
+      properties:
+        ext:
+          type: string
+        leaveOtherRooms:
+          type: boolean
+    ChatRoomUserBatchRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+    ChatRoomAdminRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+    MuteChatRoomMembersRequest:
+      allOf:
+        - $ref: '#/components/schemas/ChatRoomUserBatchRequest'
+        - type: object
+          required:
+            - muteDuration
+          properties:
+            muteDuration:
+              type: integer
+    ChatRoomMemberEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        role:
+          type: string
+          enum: [owner, admin, member]
+        joinedAt:
+          type: integer
+          format: int64
+    ChatRoomMemberListResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatRoomMemberEntry'
+        cursor:
+          type: string
+        pageSize:
+          type: integer
+    ChatRoomMuteEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        muteExpire:
+          type: integer
+          format: int64
+        muteDuration:
+          type: integer
+    ChatRoomAllowlistEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+    ChatRoomBlocklistEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+    ChatRoomAnnouncement:
+      type: object
+      required:
+        - announcement
+      properties:
+        announcement:
+          type: string
+    UpdateAnnouncementRequest:
+      type: object
+      required:
+        - announcement
+      properties:
+        announcement:
+          type: string
+    ChatRoomSharedFile:
+      type: object
+      required:
+        - fileId
+        - fileName
+      properties:
+        fileId:
+          type: string
+        fileName:
+          type: string
+        fileOwner:
+          $ref: '#/components/schemas/UserInfo'
+        fileSize:
+          type: integer
+        createdAt:
+          type: integer
+          format: int64
+    ChatRoomAttributesSnapshot:
+      type: object
+      required:
+        - chatRoomId
+        - attributes
+      properties:
+        chatRoomId:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+    SetChatRoomAttributesRequest:
+      type: object
+      required:
+        - attributes
+      properties:
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        forced:
+          type: boolean
+    SetChatRoomAttributeRequest:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        forced:
+          type: boolean
+    RemoveChatRoomAttributesRequest:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+        forced:
+          type: boolean
+    ChatRoomAttributeMutationResult:
+      type: object
+      required:
+        - chatRoomId
+        - appliedKeys
+        - failedKeys
+      properties:
+        chatRoomId:
+          type: string
+        appliedKeys:
+          type: array
+          items:
+            type: string
+        failedKeys:
+          type: object
+          additionalProperties:
+            type: string
+    ChatRoomMemberActionResult:
+      type: object
+      required:
+        - chatRoomId
+        - user
+        - action
+      properties:
+        chatRoomId:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        action:
+          type: string
+        reason:
+          type: string
+    ChatRoomMemberActionListResult:
+      type: object
+      required:
+        - succeeded
+        - failed
+      properties:
+        succeeded:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatRoomMemberActionResult'
+        failed:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatRoomMemberActionResult'
+    BooleanStatusResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: boolean
+    MuteStatusResult:
+      type: object
+      required:
+        - muted
+      properties:
+        muted:
+          type: boolean
+        muteExpireAt:
+          type: integer
+          format: int64

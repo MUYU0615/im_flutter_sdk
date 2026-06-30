@@ -1,0 +1,71 @@
+// IM SDK Web - Protobuf 消息定义
+// 使用 protobufjs-lite 版本
+
+syntax = "proto3";
+
+package imsdk;
+
+// 消息类型
+enum MessageType {
+  TEXT = 0;
+  IMAGE = 1;
+  FILE = 2;
+  AUDIO = 3;
+  VIDEO = 4;
+  LOCATION = 5;
+  CUSTOM = 6;
+}
+
+// 消息状态
+enum MessageStatus {
+  SENDING = 0;
+  SENT = 1;
+  FAILED = 2;
+  DELIVERED = 3;
+  READ = 4;
+}
+
+// 发送者信息
+message Sender {
+  string userId = 1;
+  optional string nickname = 2;
+  optional string avatarUrl = 3;
+}
+
+// 文本消息体
+message TextMessageBody {
+  string content = 1;
+}
+
+// 图片消息体
+message ImageMessageBody {
+  string url = 1;
+  string filename = 2;
+  string filetype = 3;
+  int32 width = 4;
+  int32 height = 5;
+  bool isGif = 6;
+  optional string thumbnailUrl = 7;
+}
+
+// 消息体（oneof）
+message MessageBody {
+  oneof body {
+    TextMessageBody text = 1;
+    ImageMessageBody image = 2;
+  }
+}
+
+// 消息对象
+message Message {
+  string msgServerId = 1;
+  string msgLocalId = 2;
+  Sender sender = 3;
+  string conversationId = 4;
+  MessageType type = 5;
+  MessageStatus status = 6;
+  map<string, string> ext = 7;
+  int64 timestamp = 8;
+  MessageBody body = 9;
+  string conversationType = 10;
+}

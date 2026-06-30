@@ -1,781 +1,682 @@
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
-import 'im_websocket_bridge.dart';
+/// Event forwarding entry point for the JSON bridge test app.
+///
+/// The Web MVP forwards deterministic events triggered by JSON bridge commands
+/// so automation can verify the app -> WebSocket event path before broader SDK
+/// callback parity is added.
+typedef BridgeEventSender = void Function(
+  String eventType,
+  Map<String, dynamic> data,
+);
 
-/// Event bridge handler that forwards SDK events to WebSocket server
 class EventBridgeHandler {
-  static final EventBridgeHandler instance = EventBridgeHandler._();
-
   EventBridgeHandler._();
 
-  /// Register all event handlers to forward events to WebSocket
-  void registerAllHandlers() {
-    _registerConnectionHandlers();
-    _registerMultiDeviceHandlers();
-    _registerChatHandlers();
-    _registerChatRoomHandlers();
-    _registerChatThreadHandlers();
-    _registerContactHandlers();
-    _registerGroupHandlers();
-    _registerPresenceHandlers();
-    _registerMessageHandlers();
+  static final EventBridgeHandler instance = EventBridgeHandler._();
+
+  bool _registered = false;
+  BridgeEventSender? _sendEvent;
+
+  void registerAllHandlers({
+    String? deviceName,
+    required BridgeEventSender sendEvent,
+    bool emitConnectedOnRegister = true,
+  }) {
+    _registered = true;
+    _sendEvent = sendEvent;
+    if (emitConnectedOnRegister) {
+      emitConnected(deviceName: deviceName);
+    }
   }
 
-  /// Unregister all event handlers
+  void emitConnected({String? deviceName}) {
+    if (!_registered) return;
+    _sendEvent?.call('onConnected', {
+      'device': deviceName,
+      'connected': true,
+    });
+  }
+
+  void emitTestEvent({
+    required String eventType,
+    required Map<String, dynamic> data,
+    String? deviceName,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(eventType, {
+      ...data,
+      if (deviceName != null) 'device': deviceName,
+    });
+  }
+
+  void emitDisconnected({String? deviceName}) {
+    if (!_registered) return;
+    _sendEvent?.call('onDisconnected', {
+      'device': deviceName,
+      'connected': false,
+    });
+  }
+
+  void emitChatRoomSpecificationChanged({
+    required Map<String, dynamic> room,
+    String operation = 'update',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomSpecificationChanged', {
+      'roomId': room['roomId'],
+      'name': room['name'],
+      'owner': room['owner'],
+      'operation': operation,
+    });
+  }
+
+  void emitChatRoomDestroyed({
+    required Map<String, dynamic> room,
+    String operation = 'destroy',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomDestroyed', {
+      'roomId': room['roomId'],
+      'name': room['name'],
+      'owner': room['owner'],
+      'operation': operation,
+    });
+  }
+
+  void emitChatRoomAnnouncementChanged({
+    required String roomId,
+    required String announcement,
+    String operation = 'announcement',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomAnnouncementChanged', {
+      'roomId': roomId,
+      'announcement': announcement,
+      'operation': operation,
+    });
+  }
+
+  void emitChatRoomAdminChanged({
+    required String roomId,
+    required String admin,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(added ? 'onRoomAdminAdded' : 'onRoomAdminRemoved', {
+      'roomId': roomId,
+      'admin': admin,
+      'operation': added ? 'admin_added' : 'admin_removed',
+    });
+  }
+
+  void emitChatRoomMuteChanged({
+    required String roomId,
+    required List<String> members,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(added ? 'onRoomMuteListAdded' : 'onRoomMuteListRemoved', {
+      'roomId': roomId,
+      'members': members,
+      'operation': added ? 'mute_added' : 'mute_removed',
+    });
+  }
+
+  void emitChatRoomWhiteListChanged({
+    required String roomId,
+    required List<String> members,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(
+      added ? 'onRoomWhiteListAdded' : 'onRoomWhiteListRemoved',
+      {
+        'roomId': roomId,
+        'members': members,
+        'operation': added ? 'white_list_added' : 'white_list_removed',
+      },
+    );
+  }
+
+  void emitChatRoomOwnerChanged({
+    required String roomId,
+    required String newOwner,
+    required String oldOwner,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomOwnerChanged', {
+      'roomId': roomId,
+      'newOwner': newOwner,
+      'oldOwner': oldOwner,
+      'operation': 'owner_changed',
+    });
+  }
+
+  void emitChatRoomAllMemberMuteChanged({
+    required String roomId,
+    required bool isAllMuted,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomAllMemberMuteStateChanged', {
+      'roomId': roomId,
+      'isAllMuted': isAllMuted,
+      'operation': 'all_member_mute_changed',
+    });
+  }
+
+  void emitChatRoomAttributesUpdated({
+    required String roomId,
+    required Map<String, dynamic> attributes,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomAttributesDidUpdated', {
+      'roomId': roomId,
+      'attributes': attributes,
+      'operation': 'attributes_updated',
+    });
+  }
+
+  void emitChatRoomAttributesRemoved({
+    required String roomId,
+    required List<String> keys,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomAttributesDidRemoved', {
+      'roomId': roomId,
+      'keys': keys,
+      'operation': 'attributes_removed',
+    });
+  }
+
+  void emitChatRoomMemberChanged({
+    required String roomId,
+    required String participant,
+    required bool joined,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(joined ? 'onRoomMemberJoined' : 'onRoomMemberExited', {
+      'roomId': roomId,
+      'participant': participant,
+      'operation': joined ? 'member_joined' : 'member_exited',
+    });
+  }
+
+  void emitChatRoomRemoved({
+    required String roomId,
+    required List<String> participants,
+    required String operator,
+    required String reason,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onRoomRemoved', {
+      'roomId': roomId,
+      'participants': participants,
+      'operator': operator,
+      'reason': reason,
+      'operation': 'member_removed',
+    });
+  }
+
+  void emitGroupSpecificationChanged({
+    required Map<String, dynamic> group,
+    String operation = 'update',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupSpecificationDidUpdate', {
+      'groupId': group['groupId'],
+      'name': group['name'],
+      'owner': group['owner'],
+      'operation': operation,
+    });
+  }
+
+  void emitGroupAnnouncementChanged({
+    required String groupId,
+    required String announcement,
+    String operation = 'announcement',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupAnnouncementChanged', {
+      'groupId': groupId,
+      'announcement': announcement,
+      'operation': operation,
+    });
+  }
+
+  void emitGroupAdminChanged({
+    required String groupId,
+    required String admin,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(added ? 'onGroupAdminAdded' : 'onGroupAdminRemoved', {
+      'groupId': groupId,
+      'admin': admin,
+      'operation': added ? 'admin_added' : 'admin_removed',
+    });
+  }
+
+  void emitGroupMuteChanged({
+    required String groupId,
+    required List<String> members,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent
+        ?.call(added ? 'onGroupMuteListAdded' : 'onGroupMuteListRemoved', {
+      'groupId': groupId,
+      'members': members,
+      'operation': added ? 'mute_added' : 'mute_removed',
+    });
+  }
+
+  void emitGroupWhiteListChanged({
+    required String groupId,
+    required List<String> members,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(
+      added ? 'onGroupWhiteListAdded' : 'onGroupWhiteListRemoved',
+      {
+        'groupId': groupId,
+        'members': members,
+        'operation': added ? 'white_list_added' : 'white_list_removed',
+      },
+    );
+  }
+
+  void emitGroupMemberChanged({
+    required String groupId,
+    required List<String> members,
+    required bool joined,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call(joined ? 'onGroupMemberJoined' : 'onGroupMemberExited', {
+      'groupId': groupId,
+      'members': members,
+      'operation': joined ? 'member_joined' : 'member_exited',
+    });
+  }
+
+  void emitGroupUserRemoved({
+    required String groupId,
+    required List<String> members,
+    required String operator,
+    required String reason,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupUserRemoved', {
+      'groupId': groupId,
+      'members': members,
+      'operator': operator,
+      'reason': reason,
+      'operation': 'user_removed',
+    });
+  }
+
+  void emitGroupOwnerChanged({
+    required String groupId,
+    required String newOwner,
+    required String oldOwner,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupOwnerChanged', {
+      'groupId': groupId,
+      'newOwner': newOwner,
+      'oldOwner': oldOwner,
+      'operation': 'owner_changed',
+    });
+  }
+
+  void emitGroupStateChanged({
+    required String groupId,
+    required bool messageBlocked,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupStateChanged', {
+      'groupId': groupId,
+      'messageBlocked': messageBlocked,
+      'operation': 'state_changed',
+    });
+  }
+
+  void emitGroupAllMemberMuteChanged({
+    required String groupId,
+    required bool isAllMuted,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupAllMemberMuteStateChanged', {
+      'groupId': groupId,
+      'isAllMuted': isAllMuted,
+      'operation': 'all_member_mute_changed',
+    });
+  }
+
+  void emitGroupMemberAttributesChanged({
+    required String groupId,
+    required String userId,
+    Map<String, dynamic>? attributes,
+    List<String>? keys,
+    required bool removed,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupAttributesChangedOfMember', {
+      'groupId': groupId,
+      'userId': userId,
+      if (attributes != null) 'attributes': attributes,
+      if (keys != null) 'keys': keys,
+      'operation':
+          removed ? 'member_attributes_removed' : 'member_attributes_updated',
+    });
+  }
+
+  void emitGroupDestroyed({
+    required Map<String, dynamic> group,
+    String operation = 'destroy',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupDestroyed', {
+      'groupId': group['groupId'],
+      'name': group['name'],
+      'owner': group['owner'],
+      'operation': operation,
+    });
+  }
+
+  void emitContactAdded({
+    required String userId,
+    String operation = 'add',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onContactAdded', {
+      'userId': userId,
+      'operation': operation,
+    });
+  }
+
+  void emitContactDeleted({
+    required String userId,
+    String operation = 'delete',
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onContactDeleted', {
+      'userId': userId,
+      'operation': operation,
+    });
+  }
+
+  void emitMessagesReceived({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagesReceived', {
+      'messages': messages,
+      'operation': 'messages_received',
+    });
+  }
+
+  void emitStreamMessagesReceived({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onStreamMessagesReceived', {
+      'messages': messages,
+      'operation': 'stream_messages_received',
+    });
+  }
+
+  void emitCmdMessagesReceived({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onCmdMessagesReceived', {
+      'messages': messages,
+      'operation': 'cmd_messages_received',
+    });
+  }
+
+  void emitMessagesRecalled({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagesRecalled', {
+      'messages': messages,
+      'operation': 'messages_recalled',
+    });
+  }
+
+  void emitMessagesRecalledInfo({
+    required List<Map<String, dynamic>> infos,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagesRecalledInfo', {
+      'infos': infos,
+      'operation': 'messages_recalled_info',
+    });
+  }
+
+  void emitMessagesDelivered({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagesDelivered', {
+      'messages': messages,
+      'operation': 'messages_delivered',
+    });
+  }
+
+  void emitMessageSuccess({
+    required Map<String, dynamic> message,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageSuccess', {
+      'msg': message,
+      'operation': 'message_success',
+    });
+  }
+
+  void emitMessageProgress({
+    required String localId,
+    required int progress,
+  }) {
+    if (!_registered) return;
+    final payload = {
+      'localId': localId,
+      'progress': progress,
+    };
+    _sendEvent?.call('onMessageProgress', {
+      ...payload,
+      'operation': 'message_progress',
+    });
+    _sendEvent?.call('onMessageProgressUpdate', {
+      ...payload,
+      'operation': 'message_progress_update',
+    });
+  }
+
+  void emitMessageError({
+    required String localId,
+    required Map<String, dynamic> message,
+    required String description,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageError', {
+      'localId': localId,
+      'msg': message,
+      'error': {
+        'code': -1,
+        'description': description,
+      },
+      'operation': 'message_error',
+    });
+  }
+
+  void emitMessageDeliveryAck({
+    required Map<String, dynamic> message,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageDeliveryAck', {
+      'msg': message,
+      'operation': 'message_delivery_ack',
+    });
+  }
+
+  void emitMessagesRead({
+    required List<Map<String, dynamic>> messages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagesRead', {
+      'messages': messages,
+      'operation': 'messages_read',
+    });
+  }
+
+  void emitMessageReadAck({
+    required Map<String, dynamic> message,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageReadAck', {
+      'msg': message,
+      'operation': 'message_read_ack',
+    });
+  }
+
+  void emitReadAckForGroupMessageUpdated({
+    required String msgId,
+    required String groupId,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onReadAckForGroupMessageUpdated', {
+      'msgId': msgId,
+      'groupId': groupId,
+      'operation': 'group_message_read_ack_updated',
+    });
+  }
+
+  void emitGroupMessageRead({
+    required List<Map<String, dynamic>> acks,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onGroupMessageRead', {
+      'acks': acks,
+      'operation': 'group_message_read',
+    });
+  }
+
+  void emitPresenceStatusChanged({
+    required List<Map<String, dynamic>> presences,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onPresenceStatusChanged', {
+      'presences': presences,
+      'operation': 'presence_status_changed',
+    });
+  }
+
+  void emitConversationUpdate({
+    required String convId,
+    required String operation,
+    bool? isPinned,
+    bool? deleteMessages,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onConversationUpdate', {
+      'convId': convId,
+      if (isPinned != null) 'isPinned': isPinned,
+      if (deleteMessages != null) 'deleteMessages': deleteMessages,
+      'operation': operation,
+    });
+  }
+
+  void emitConversationHasRead({
+    required String convId,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onConversationHasRead', {
+      'convId': convId,
+      'operation': 'conversation_has_read',
+    });
+  }
+
+  void emitMessageContentChanged({
+    required Map<String, dynamic> message,
+    required String operatorId,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageContentChanged', {
+      'message': message,
+      'operatorId': operatorId,
+      'operation': 'message_content_changed',
+    });
+  }
+
+  void emitMessageChanged({
+    required Map<String, dynamic> message,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessageChanged', {
+      'msg': message,
+      'operation': 'message_changed',
+    });
+  }
+
+  void emitMessageReactionChanged({
+    required String msgId,
+    required String reaction,
+    required String userId,
+    required bool added,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('messageReactionDidChange', {
+      'msgId': msgId,
+      'reaction': reaction,
+      'userId': userId,
+      'operation': added ? 'reaction_added' : 'reaction_removed',
+    });
+  }
+
+  void emitMessagePinChanged({
+    required String msgId,
+    required String convId,
+    required String operatorId,
+    required bool pinned,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onMessagePinChanged', {
+      'msgId': msgId,
+      'convId': convId,
+      'operatorId': operatorId,
+      'operation': pinned ? 'message_pinned' : 'message_unpinned',
+    });
+  }
+
+  void emitChatThreadCreated({
+    required Map<String, dynamic> thread,
+    String operation = 'create',
+    String? userId,
+  }) {
+    if (!_registered) return;
+    final eventType = switch (operation) {
+      'update' => 'onChatThreadUpdate',
+      'destroy' => 'onChatThreadDestroy',
+      'user_kicked' => 'onUserKickOutOfChatThread',
+      _ => 'onChatThreadCreate',
+    };
+    _sendEvent?.call(
+      eventType,
+      {
+        'threadId': thread['threadId'],
+        'threadName': thread['threadName'],
+        'parentId': thread['parentId'],
+        'owner': thread['owner'],
+        if (userId != null) 'userId': userId,
+        'operation': operation,
+      },
+    );
+  }
+
   void unregisterAllHandlers() {
-    EMClient.getInstance.removeConnectionEventHandler('eventBridgeHandler');
-    EMClient.getInstance.removeMultiDeviceEventHandler('eventBridgeHandler');
-    EMClient.getInstance.chatManager.removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.chatRoomManager
-        .removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.chatThreadManager
-        .removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.contactManager
-        .removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.groupManager.removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.presenceManager
-        .removeEventHandler('eventBridgeHandler');
-    EMClient.getInstance.chatManager.removeMessageEvent('eventBridgeHandler');
-  }
-
-  /// Register connection event handler
-  void _registerConnectionHandlers() {
-    EMClient.getInstance.addConnectionEventHandler(
-      'eventBridgeHandler',
-      EMConnectionEventHandler(
-        onConnected: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onConnected',
-            {},
-          );
-        },
-        onDisconnected: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onDisconnected',
-            {},
-          );
-        },
-        onUserDidLoginFromOtherDevice: (info) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserDidLoginFromOtherDevice',
-            {'info': info.toJson()},
-          );
-        },
-        onUserDidRemoveFromServer: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserDidRemoveFromServer',
-            {},
-          );
-        },
-        onUserDidForbidByServer: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserDidForbidByServer',
-            {},
-          );
-        },
-        onUserDidChangePassword: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserDidChangePassword',
-            {},
-          );
-        },
-        onUserDidLoginTooManyDevice: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserDidLoginTooManyDevice',
-            {},
-          );
-        },
-        onUserKickedByOtherDevice: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserKickedByOtherDevice',
-            {},
-          );
-        },
-        onUserAuthenticationFailed: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserAuthenticationFailed',
-            {},
-          );
-        },
-        onTokenWillExpire: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onTokenWillExpire',
-            {},
-          );
-        },
-        onTokenDidExpire: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onTokenDidExpire',
-            {},
-          );
-        },
-        onAppActiveNumberReachLimit: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAppActiveNumberReachLimit',
-            {},
-          );
-        },
-        onOfflineMessageSyncStart: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onOfflineMessageSyncStart',
-            {},
-          );
-        },
-        onOfflineMessageSyncFinish: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onOfflineMessageSyncFinish',
-            {},
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register multi-device event handler
-  void _registerMultiDeviceHandlers() {
-    EMClient.getInstance.addMultiDeviceEventHandler(
-      'eventBridgeHandler',
-      EMMultiDeviceEventHandler(
-        onContactEvent: (event, userId, ext) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onContactEvent',
-            {
-              'event': event.toString(),
-              'userId': userId,
-              'ext': ext,
-            },
-          );
-        },
-        onGroupEvent: (event, groupId, userIds) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onGroupEvent',
-            {
-              'event': event.toString(),
-              'groupId': groupId,
-              'userIds': userIds,
-            },
-          );
-        },
-        onChatThreadEvent: (event, chatThreadId, userIds) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onChatThreadEvent',
-            {
-              'event': event.toString(),
-              'chatThreadId': chatThreadId,
-              'userIds': userIds,
-            },
-          );
-        },
-        onRemoteMessagesRemoved: (conversationId, deviceId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onRemoteMessagesRemoved',
-            {
-              'conversationId': conversationId,
-              'deviceId': deviceId,
-            },
-          );
-        },
-        onConversationEvent: (event, conversationId, type) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onConversationEvent',
-            {
-              'event': event.toString(),
-              'conversationId': conversationId,
-              'type': type.toString(),
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register chat event handler
-  void _registerChatHandlers() {
-    EMClient.getInstance.chatManager.addEventHandler(
-      'eventBridgeHandler',
-      EMChatEventHandler(
-        onMessagesReceived: (messages) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagesReceived',
-            {'messages': messages.map((m) => m.toJson()).toList()},
-          );
-        },
-        onCmdMessagesReceived: (messages) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onCmdMessagesReceived',
-            {'messages': messages.map((m) => m.toJson()).toList()},
-          );
-        },
-        onMessagesRead: (messages) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagesRead',
-            {'messages': messages.map((m) => m.toJson()).toList()},
-          );
-        },
-        onGroupMessageRead: (groupMessageAcks) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onGroupMessageRead',
-            {
-              'groupMessageAcks':
-                  groupMessageAcks.map((a) => a.toJson()).toList()
-            },
-          );
-        },
-        onReadAckForGroupMessageUpdated: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onReadAckForGroupMessageUpdated',
-            {},
-          );
-        },
-        onMessagesDelivered: (messages) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagesDelivered',
-            {'messages': messages.map((m) => m.toJson()).toList()},
-          );
-        },
-        onMessagesRecalled: (messages) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagesRecalled',
-            {'messages': messages.map((m) => m.toJson()).toList()},
-          );
-        },
-        onMessagesRecalledInfo: (infos) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagesRecalledInfo',
-            {'infos': infos.map((i) => i.toJson()).toList()},
-          );
-        },
-        onConversationsUpdate: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onConversationsUpdate',
-            {},
-          );
-        },
-        onConversationRead: (from, to) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onConversationRead',
-            {'from': from, 'to': to},
-          );
-        },
-        onMessageReactionDidChange: (events) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessageReactionDidChange',
-            {'events': events.map((e) => e.toJson()).toList()},
-          );
-        },
-        onMessageContentChanged: (message, operatorId, operationTime) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessageContentChanged',
-            {
-              'message': message.toJson(),
-              'operatorId': operatorId,
-              'operationTime': operationTime,
-            },
-          );
-        },
-        onMessagePinChanged:
-            (messageId, conversationId, pinOperation, pinInfo) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessagePinChanged',
-            {
-              'messageId': messageId,
-              'conversationId': conversationId,
-              'pinOperation': pinOperation.toString(),
-              'pinInfo': pinInfo.toJson(),
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register chat room event handler
-  void _registerChatRoomHandlers() {
-    EMClient.getInstance.chatRoomManager.addEventHandler(
-      'eventBridgeHandler',
-      EMChatRoomEventHandler(
-        onAdminAddedFromChatRoom: (roomId, admin) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAdminAddedFromChatRoom',
-            {'roomId': roomId, 'admin': admin},
-          );
-        },
-        onAdminRemovedFromChatRoom: (roomId, admin) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAdminRemovedFromChatRoom',
-            {'roomId': roomId, 'admin': admin},
-          );
-        },
-        onAllChatRoomMemberMuteStateChanged: (roomId, isAllMuted) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllChatRoomMemberMuteStateChanged',
-            {'roomId': roomId, 'isAllMuted': isAllMuted},
-          );
-        },
-        onAllowListAddedFromChatRoom: (roomId, members) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllowListAddedFromChatRoom',
-            {'roomId': roomId, 'members': members},
-          );
-        },
-        onAllowListRemovedFromChatRoom: (roomId, members) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllowListRemovedFromChatRoom',
-            {'roomId': roomId, 'members': members},
-          );
-        },
-        onAnnouncementChangedFromChatRoom: (roomId, announcement) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAnnouncementChangedFromChatRoom',
-            {'roomId': roomId, 'announcement': announcement},
-          );
-        },
-        onChatRoomDestroyed: (roomId, roomName) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onChatRoomDestroyed',
-            {'roomId': roomId, 'roomName': roomName},
-          );
-        },
-        onMemberExitedFromChatRoom: (roomId, roomName, participant) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMemberExitedFromChatRoom',
-            {
-              'roomId': roomId,
-              'roomName': roomName,
-              'participant': participant,
-            },
-          );
-        },
-        onMemberJoinedFromChatRoom: (roomId, participant, ext) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMemberJoinedFromChatRoom',
-            {
-              'roomId': roomId,
-              'participant': participant,
-              'ext': ext,
-            },
-          );
-        },
-        onMuteListAddedFromChatRoom: (roomId, mutes) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMuteListAddedFromChatRoom',
-            {'roomId': roomId, 'mutes': mutes},
-          );
-        },
-        onMuteListRemovedFromChatRoom: (roomId, mutes) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMuteListRemovedFromChatRoom',
-            {'roomId': roomId, 'mutes': mutes},
-          );
-        },
-        onOwnerChangedFromChatRoom: (roomId, newOwner, oldOwner) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onOwnerChangedFromChatRoom',
-            {
-              'roomId': roomId,
-              'newOwner': newOwner,
-              'oldOwner': oldOwner,
-            },
-          );
-        },
-        onRemovedFromChatRoom: (roomId, roomName, participant, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onRemovedFromChatRoom',
-            {
-              'roomId': roomId,
-              'roomName': roomName,
-              'participant': participant,
-              'reason': reason?.toString(),
-            },
-          );
-        },
-        onSpecificationChanged: (room) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onSpecificationChanged',
-            {'room': room.toJson()},
-          );
-        },
-        onAttributesUpdated: (roomId, attributes, from) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAttributesUpdated',
-            {
-              'roomId': roomId,
-              'attributes': attributes,
-              'from': from,
-            },
-          );
-        },
-        onAttributesRemoved: (roomId, removedKeys, from) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAttributesRemoved',
-            {
-              'roomId': roomId,
-              'removedKeys': removedKeys,
-              'from': from,
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register chat thread event handler
-  void _registerChatThreadHandlers() {
-    EMClient.getInstance.chatThreadManager.addEventHandler(
-      'eventBridgeHandler',
-      EMChatThreadEventHandler(
-        onChatThreadCreate: (event) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onChatThreadCreate',
-            {'event': event.toJson()},
-          );
-        },
-        onChatThreadDestroy: (event) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onChatThreadDestroy',
-            {'event': event.toJson()},
-          );
-        },
-        onChatThreadUpdate: (event) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onChatThreadUpdate',
-            {'event': event.toJson()},
-          );
-        },
-        onUserKickOutOfChatThread: (event) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserKickOutOfChatThread',
-            {'event': event.toJson()},
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register contact event handler
-  void _registerContactHandlers() {
-    EMClient.getInstance.contactManager.addEventHandler(
-      'eventBridgeHandler',
-      EMContactEventHandler(
-        onContactAdded: (userId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onContactAdded',
-            {'userId': userId},
-          );
-        },
-        onContactDeleted: (userId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onContactDeleted',
-            {'userId': userId},
-          );
-        },
-        onContactInvited: (userId, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onContactInvited',
-            {'userId': userId, 'reason': reason},
-          );
-        },
-        onFriendRequestAccepted: (userId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onFriendRequestAccepted',
-            {'userId': userId},
-          );
-        },
-        onFriendRequestDeclined: (userId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onFriendRequestDeclined',
-            {'userId': userId},
-          );
-        },
-        onFriendStartSync: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onFriendStartSync',
-            {},
-          );
-        },
-        onFriendSyncFinished: () {
-          IMWebSocketBridge.instance.sendEvent(
-            'onFriendSyncFinished',
-            {},
-          );
-        },
-        onFriendUserInfoDidUpdated: (users) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onFriendUserInfoDidUpdated',
-            {'users': users.map((u) => u.toJson()).toList()},
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register group event handler
-  void _registerGroupHandlers() {
-    EMClient.getInstance.groupManager.addEventHandler(
-      'eventBridgeHandler',
-      EMGroupEventHandler(
-        onAdminAddedFromGroup: (groupId, admin) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAdminAddedFromGroup',
-            {'groupId': groupId, 'admin': admin},
-          );
-        },
-        onAdminRemovedFromGroup: (groupId, admin) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAdminRemovedFromGroup',
-            {'groupId': groupId, 'admin': admin},
-          );
-        },
-        onAllGroupMemberMuteStateChanged: (groupId, isAllMuted) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllGroupMemberMuteStateChanged',
-            {'groupId': groupId, 'isAllMuted': isAllMuted},
-          );
-        },
-        onAllowListAddedFromGroup: (groupId, members) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllowListAddedFromGroup',
-            {'groupId': groupId, 'members': members},
-          );
-        },
-        onAllowListRemovedFromGroup: (groupId, members) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAllowListRemovedFromGroup',
-            {'groupId': groupId, 'members': members},
-          );
-        },
-        onAnnouncementChangedFromGroup: (groupId, announcement) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAnnouncementChangedFromGroup',
-            {'groupId': groupId, 'announcement': announcement},
-          );
-        },
-        onAutoAcceptInvitationFromGroup: (groupId, inviter, inviteMessage) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAutoAcceptInvitationFromGroup',
-            {
-              'groupId': groupId,
-              'inviter': inviter,
-              'inviteMessage': inviteMessage,
-            },
-          );
-        },
-        onGroupDestroyed: (groupId, groupName) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onGroupDestroyed',
-            {'groupId': groupId, 'groupName': groupName},
-          );
-        },
-        onInvitationAcceptedFromGroup: (groupId, invitee, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onInvitationAcceptedFromGroup',
-            {
-              'groupId': groupId,
-              'invitee': invitee,
-              'reason': reason,
-            },
-          );
-        },
-        onInvitationDeclinedFromGroup: (groupId, invitee, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onInvitationDeclinedFromGroup',
-            {
-              'groupId': groupId,
-              'invitee': invitee,
-              'reason': reason,
-            },
-          );
-        },
-        onInvitationReceivedFromGroup: (groupId, groupName, inviter, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onInvitationReceivedFromGroup',
-            {
-              'groupId': groupId,
-              'groupName': groupName,
-              'inviter': inviter,
-              'reason': reason,
-            },
-          );
-        },
-        onMemberExitedFromGroup: (groupId, member) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMemberExitedFromGroup',
-            {'groupId': groupId, 'member': member},
-          );
-        },
-        onMemberJoinedFromGroup: (groupId, member) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMemberJoinedFromGroup',
-            {'groupId': groupId, 'member': member},
-          );
-        },
-        onMuteListAddedFromGroup: (groupId, mutes, muteExpire) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMuteListAddedFromGroup',
-            {
-              'groupId': groupId,
-              'mutes': mutes,
-              'muteExpire': muteExpire,
-            },
-          );
-        },
-        onMuteListRemovedFromGroup: (groupId, mutes) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMuteListRemovedFromGroup',
-            {'groupId': groupId, 'mutes': mutes},
-          );
-        },
-        onOwnerChangedFromGroup: (groupId, newOwner, oldOwner) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onOwnerChangedFromGroup',
-            {
-              'groupId': groupId,
-              'newOwner': newOwner,
-              'oldOwner': oldOwner,
-            },
-          );
-        },
-        onRequestToJoinAcceptedFromGroup: (groupId, groupName, accepter) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onRequestToJoinAcceptedFromGroup',
-            {
-              'groupId': groupId,
-              'groupName': groupName,
-              'accepter': accepter,
-            },
-          );
-        },
-        onRequestToJoinDeclinedFromGroup:
-            (groupId, groupName, decliner, reason, applicant) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onRequestToJoinDeclinedFromGroup',
-            {
-              'groupId': groupId,
-              'groupName': groupName,
-              'decliner': decliner,
-              'reason': reason,
-              'applicant': applicant,
-            },
-          );
-        },
-        onRequestToJoinReceivedFromGroup:
-            (groupId, groupName, applicant, reason) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onRequestToJoinReceivedFromGroup',
-            {
-              'groupId': groupId,
-              'groupName': groupName,
-              'applicant': applicant,
-              'reason': reason,
-            },
-          );
-        },
-        onSharedFileAddedFromGroup: (groupId, sharedFile) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onSharedFileAddedFromGroup',
-            {
-              'groupId': groupId,
-              'sharedFile': sharedFile.toJson(),
-            },
-          );
-        },
-        onSpecificationDidUpdate: (group) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onSpecificationDidUpdate',
-            {'group': group.toJson()},
-          );
-        },
-        onDisableChanged: (groupId, isDisable) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onDisableChanged',
-            {'groupId': groupId, 'isDisable': isDisable},
-          );
-        },
-        onSharedFileDeletedFromGroup: (groupId, fileId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onSharedFileDeletedFromGroup',
-            {'groupId': groupId, 'fileId': fileId},
-          );
-        },
-        onUserRemovedFromGroup: (groupId, groupName) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onUserRemovedFromGroup',
-            {'groupId': groupId, 'groupName': groupName},
-          );
-        },
-        onAttributesChangedOfGroupMember:
-            (groupId, userId, attributes, operatorId) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onAttributesChangedOfGroupMember',
-            {
-              'groupId': groupId,
-              'userId': userId,
-              'attributes': attributes,
-              'operatorId': operatorId,
-            },
-          );
-        },
-        onMembersJoinedFromGroup: (groupId, userIds) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMembersJoinedFromGroup',
-            {'groupId': groupId, 'userIds': userIds},
-          );
-        },
-        onMembersExitedFromGroup: (groupId, userIds) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMembersExitedFromGroup',
-            {'groupId': groupId, 'userIds': userIds},
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register presence event handler
-  void _registerPresenceHandlers() {
-    EMClient.getInstance.presenceManager.addEventHandler(
-      'eventBridgeHandler',
-      EMPresenceEventHandler(
-        onPresenceStatusChanged: (list) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onPresenceStatusChanged',
-            {'list': list.map((p) => p.toJson()).toList()},
-          );
-        },
-      ),
-    );
-  }
-
-  /// Register message event handler
-  void _registerMessageHandlers() {
-    EMClient.getInstance.chatManager.addMessageEvent(
-      'eventBridgeHandler',
-      ChatMessageEvent(
-        onSuccess: (msgId, msg) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessageSuccess',
-            {'msgId': msgId, 'msg': msg.toJson()},
-          );
-        },
-        onError: (msgId, msg, error) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessageError',
-            {
-              'msgId': msgId,
-              'msg': msg.toJson(),
-              'error': {
-                'code': error.code,
-                'description': error.description,
-              },
-            },
-          );
-        },
-        onProgress: (msgId, progress) {
-          IMWebSocketBridge.instance.sendEvent(
-            'onMessageProgress',
-            {'msgId': msgId, 'progress': progress},
-          );
-        },
-      ),
-    );
+    _registered = false;
+    _sendEvent = null;
   }
 }

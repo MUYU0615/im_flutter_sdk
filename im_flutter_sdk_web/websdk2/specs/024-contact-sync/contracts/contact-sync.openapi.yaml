@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Contact Sync Contract
+  version: 0.1.0
+  description: |
+    024 联系人自动同步逻辑契约。
+    包含 metadata version 查询、SDK 对外联系人同步事件，以及联系人同步 websocket 的分页语义约束。
+servers:
+  - url: https://sdk.local
+paths:
+  /rest/roster/metadata/version:
+    get:
+      summary: 查询联系人版本元数据
+      operationId: getRosterMetadataVersion
+      parameters:
+        - in: query
+          name: username
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: 返回当前联系人版本与是否需要同步的判定依据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RosterMetadataVersionResponse'
+
+  /sdk/events/contact-sync-start:
+    post:
+      summary: SDK 派发联系人同步开始事件（逻辑契约）
+      operationId: onContactSyncStart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSyncEvent'
+      responses:
+        200:
+          description: 业务侧消费成功
+
+  /sdk/events/contact-sync-finish:
+    post:
+      summary: SDK 派发联系人同步完成事件（逻辑契约）
+      operationId: onContactSyncFinish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSyncEvent'
+      responses:
+        200:
+          description: 业务侧消费成功
+
+  /gateway/roster-sync:
+    post:
+      summary: 联系人同步 websocket 分页逻辑契约
+      description: |
+        逻辑上表示一次 `GetRosterRequest -> stream GetRosterResponse` 会话。
+        当响应中仍带有 `cursor` 时，SDK 继续请求后续页；直到 `cursor = 0` 或不存在下一页。
+      operationId: syncRoster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RosterSyncRequest'
+      responses:
+        200:
+          description: 返回一页联系人同步结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RosterSyncPage'
+
+components:
+  schemas:
+    RosterMetadataVersionResponse:
+      type: object
+      required:
+        - version
+        - requiresSync
+      properties:
+        version:
+          type: string
+        requiresSync:
+          type: boolean
+        checkedAt:
+          type: integer
+          format: int64
+
+    ContactSyncEvent:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ContactSyncError'
+
+    ContactSyncError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - CONTACT_SYNC_METADATA_FAILED
+            - CONTACT_SYNC_SOCKET_FAILED
+            - CONTACT_SYNC_CURSOR_INVALID
+            - CONTACT_SYNC_PROTO_DECODE_FAILED
+            - CONTACT_SYNC_CANCELLED
+        message:
+          type: string
+        retryable:
+          type: boolean
+
+    RosterSyncRequest:
+      type: object
+      required:
+        - username
+        - org
+        - app
+        - version
+        - cursor
+      properties:
+        resource:
+          type: string
+        requestId:
+          type: string
+        protocolVersion:
+          type: integer
+        org:
+          type: string
+        app:
+          type: string
+        username:
+          type: string
+        version:
+          type: string
+        cursor:
+          type: integer
+          format: int64
+
+    RosterSyncPage:
+      type: object
+      required:
+        - responseType
+        - version
+        - data
+      properties:
+        responseType:
+          type: string
+          enum: [incremental, full]
+        version:
+          type: string
+        cursor:
+          type: integer
+          format: int64
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RosterItem'
+
+    RosterItem:
+      type: object
+      required:
+        - contact
+        - createdAt
+        - updatedAt
+        - metadataUpdatedAt
+      properties:
+        contact:
+          type: string
+        remark:
+          type: string
+        metadata:
+          type: string
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        metadataUpdatedAt:
+          type: integer
+          format: int64

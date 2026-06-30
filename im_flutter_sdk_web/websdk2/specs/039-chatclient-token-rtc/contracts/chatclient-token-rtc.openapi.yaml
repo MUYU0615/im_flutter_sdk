@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: ChatClient Token Renewal and RTC Token Contracts
+  version: 0.14.17
+  description: REST contracts consumed by ChatClient token renewal and RTC helper APIs.
+servers:
+  - url: https://{host}/{orgName}/{appName}
+    variables:
+      host:
+        default: api.example.com
+      orgName:
+        default: org
+      appName:
+        default: app
+security:
+  - bearerAuth: []
+paths:
+  /sdk/users/{userId}/token/expires:
+    get:
+      operationId: getTokenExpireTimestamp
+      summary: Resolve the expiration timestamp for a new IM token.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token expiration timestamp resolved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - expire_timestamp
+                properties:
+                  expire_timestamp:
+                    type: integer
+                    format: int64
+                    description: Token expiration timestamp in milliseconds.
+        '401':
+          description: Token invalid or expired.
+  /users/{userId}/token/rtc:
+    get:
+      operationId: getRtcTokenInfo
+      summary: Get RTC token information for the current user and channel.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: channelName
+          in: query
+          required: false
+          schema:
+            type: string
+            default: '*'
+      responses:
+        '200':
+          description: RTC token information.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app_id:
+                    type: string
+                  rtc_token:
+                    type: string
+                  channel_name:
+                    type: string
+                  rtcUid:
+                    type: integer
+                  expires_in:
+                    type: integer
+                    format: int64
+              examples:
+                success:
+                  value:
+                    app_id: rtc-app-id
+                    rtc_token: rtc-token
+                    channel_name: '*'
+                    rtcUid: 123456
+                    expires_in: 1715600000000
+        '401':
+          description: IM token invalid or expired.
+  /rtc_mapper/batch/get:
+    post:
+      operationId: getUserIdsWithRtcUids
+      summary: Batch map RTC UIDs to IM user IDs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: integer
+                    minimum: 0
+            examples:
+              request:
+                value:
+                  data:
+                    - 123456
+                    - 789012
+      responses:
+        '200':
+          description: RTC UID to userId mapping.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+              examples:
+                partial:
+                  value:
+                    '123456': user-a
+        '400':
+          description: Invalid RTC UID list.
+        '401':
+          description: IM token invalid or expired.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

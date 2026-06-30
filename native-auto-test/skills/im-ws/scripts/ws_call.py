@@ -35,7 +35,7 @@ def main() -> int:
     ap.add_argument('--cmd', required=True, help='Command name, e.g., addContact')
     ap.add_argument('--info-json', help='Inline JSON for info')
     ap.add_argument('--info-file', help='Path to a JSON file for info')
-    ap.add_argument('--device', help='Device key from config.yaml topics.*')
+    ap.add_argument('--device', help='Device name resolved to a dynamic or configured topic')
     ap.add_argument('--topic', help='Override topic (rare); prefer --device')
     ap.add_argument('--id', dest='request_id', help='Request id')
     ap.add_argument('--sequence', type=int, help='Request sequence')

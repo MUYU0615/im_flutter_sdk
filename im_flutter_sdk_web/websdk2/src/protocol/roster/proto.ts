@@ -1,0 +1,207 @@
+/**
+ * 由 scripts/generate-roster-proto.js 自动生成，请勿手动修改。
+ */
+
+const proto = {
+  "nested": {
+    "easemob": {
+      "nested": {
+        "imfusion": {
+          "nested": {
+            "gateway": {
+              "nested": {
+                "v1": {
+                  "nested": {
+                    "MessageType": {
+                      "values": {
+                        "MESSAGE_TYPE_UNSPECIFIED": 0,
+                        "MESSAGE_TYPE_PING": 1,
+                        "MESSAGE_TYPE_PONG": 2,
+                        "MESSAGE_TYPE_ROSTER_REQUEST": 3,
+                        "MESSAGE_TYPE_ROSTER_RESPONSE": 4,
+                        "MESSAGE_TYPE_ERROR": 5
+                      }
+                    },
+                    "ServerStatus": {
+                      "values": {
+                        "SERVER_STATUS_OK": 0,
+                        "SERVER_STATUS_BUSY": 1
+                      }
+                    },
+                    "RosterResponseType": {
+                      "values": {
+                        "ROSTER_RESPONSE_TYPE_UNSPECIFIED": 0,
+                        "ROSTER_RESPONSE_TYPE_INCREMENTAL": 1,
+                        "ROSTER_RESPONSE_TYPE_FULL": 2
+                      }
+                    },
+                    "BaseMessage": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        }
+                      }
+                    },
+                    "GatewayHeader": {
+                      "fields": {
+                        "resource": {
+                          "type": "string",
+                          "id": 1
+                        },
+                        "timestamp": {
+                          "type": "int64",
+                          "id": 2
+                        },
+                        "requestId": {
+                          "type": "string",
+                          "id": 3
+                        },
+                        "protocolVersion": {
+                          "type": "int32",
+                          "id": 4
+                        }
+                      }
+                    },
+                    "PingRequest": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        }
+                      }
+                    },
+                    "PongResponse": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        },
+                        "status": {
+                          "type": "ServerStatus",
+                          "id": 2
+                        }
+                      }
+                    },
+                    "ErrorDetail": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        },
+                        "code": {
+                          "type": "string",
+                          "id": 2
+                        },
+                        "message": {
+                          "type": "string",
+                          "id": 3
+                        },
+                        "header": {
+                          "type": "GatewayHeader",
+                          "id": 4
+                        }
+                      }
+                    },
+                    "GetRosterRequest": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        },
+                        "header": {
+                          "type": "GatewayHeader",
+                          "id": 2
+                        },
+                        "org": {
+                          "type": "string",
+                          "id": 3
+                        },
+                        "app": {
+                          "type": "string",
+                          "id": 4
+                        },
+                        "username": {
+                          "type": "string",
+                          "id": 5
+                        },
+                        "version": {
+                          "type": "string",
+                          "id": 6
+                        },
+                        "cursor": {
+                          "type": "uint64",
+                          "id": 7
+                        }
+                      }
+                    },
+                    "RosterItem": {
+                      "fields": {
+                        "contact": {
+                          "type": "string",
+                          "id": 1
+                        },
+                        "remark": {
+                          "type": "string",
+                          "id": 2
+                        },
+                        "metadata": {
+                          "type": "string",
+                          "id": 3
+                        },
+                        "createdAt": {
+                          "type": "int64",
+                          "id": 4
+                        },
+                        "updatedAt": {
+                          "type": "int64",
+                          "id": 5
+                        },
+                        "metadataUpdatedAt": {
+                          "type": "int64",
+                          "id": 6
+                        }
+                      }
+                    },
+                    "GetRosterResponse": {
+                      "fields": {
+                        "type": {
+                          "type": "MessageType",
+                          "id": 1
+                        },
+                        "header": {
+                          "type": "GatewayHeader",
+                          "id": 2
+                        },
+                        "data": {
+                          "rule": "repeated",
+                          "type": "RosterItem",
+                          "id": 3
+                        },
+                        "cursor": {
+                          "type": "uint64",
+                          "id": 4
+                        },
+                        "version": {
+                          "type": "string",
+                          "id": 5
+                        },
+                        "responseType": {
+                          "type": "RosterResponseType",
+                          "id": 6
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export default proto;
+export { proto };

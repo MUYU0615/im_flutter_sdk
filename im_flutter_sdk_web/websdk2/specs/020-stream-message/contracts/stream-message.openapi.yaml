@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Stream Message Contract
+  version: 0.1.0
+  description: |
+    020 流式消息接收契约草案。
+    定义流式分片回调事件结构，以及流式发送不支持的错误语义。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/events/stream-message:
+    post:
+      summary: SDK 对外回调流式分片事件（逻辑契约）
+      operationId: onStreamMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/StreamDispatchEvent
+      responses:
+        200:
+          description: 业务侧消费成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ack:
+                    type: boolean
+                    example: true
+
+  /sdk/messages/stream/send:
+    post:
+      summary: 发送流式消息（不支持）
+      operationId: sendStreamMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/UnsupportedStreamSendRequest
+      responses:
+        501:
+          description: 当前版本不支持流式消息发送
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/StreamError
+
+components:
+  schemas:
+    StreamDispatchEvent:
+      type: object
+      required:
+        - id
+        - type
+        - stream
+        - time
+      properties:
+        id:
+          type: string
+          description: 流缓存键（msgId）
+        type:
+          type: string
+          enum: [txt]
+        from:
+          type: string
+        to:
+          type: string
+        chatType:
+          type: string
+          enum: [singleChat, groupChat, chatRoom]
+        msg:
+          type: string
+          description: 当前累计全文（fullText）
+        time:
+          type: integer
+          format: int64
+        stream:
+          $ref: #/components/schemas/StreamChunkView
+
+    StreamChunkView:
+      type: object
+      required:
+        - status
+        - deltaText
+        - fullText
+      properties:
+        seq:
+          type: integer
+          minimum: 0
+          description: 可选；若不对外暴露则可省略
+        status:
+          type: string
+          enum: [STREAM_START, STREAM_IN_PROGRESS, STREAM_COMPLETED, STREAM_FULL, STREAM_ERROR]
+        deltaText:
+          type: string
+          description: 当前分片增量文本
+        fullText:
+          type: string
+          description: 当前累计全文
+        errorType:
+          type: integer
+          description: 服务端错误码映射值（如超时 512）
+        finishReason:
+          type: integer
+
+    UnsupportedStreamSendRequest:
+      type: object
+      required:
+        - to
+        - chatType
+        - chunks
+      properties:
+        to:
+          type: string
+        chatType:
+          type: string
+          enum: [singleChat, groupChat, chatRoom]
+        chunks:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    StreamError:
+      type: object
+      required:
+        - code
+        - message
+        - retryable
+      properties:
+        code:
+          type: string
+          enum:
+            - STREAM_SEND_NOT_SUPPORTED
+            - STREAM_CHUNK_INVALID
+            - STREAM_TIMEOUT_BY_SERVER
+            - STREAM_STATE_CONFLICT
+        message:
+          type: string
+        retryable:
+          type: boolean

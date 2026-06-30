@@ -1,0 +1,239 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Image Attachment Upload Contract
+  version: 0.1.0
+  description: |
+    029 图片发送压缩、原图开关与附件预检秒传契约草案。
+    定义图片消息发送请求、预检协商语义，以及接收侧图片消息视图。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/messages/image:
+    post:
+      summary: 发送图片消息
+      operationId: sendImageMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageMessageSendRequest'
+      responses:
+        200:
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageMessageSendResponse'
+        400:
+          description: 参数非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageUploadError'
+        500:
+          description: 预处理、预检、上传或发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageUploadError'
+
+  /{orgName}/{appName}/chatfiles/exists:
+    get:
+      summary: 发送链路中的附件 MD5 预检协商
+      operationId: precheckAttachment
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: md5
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: imageType
+          in: query
+          required: false
+          description: 图片预检时携带，表示当前尝试发送的图片语义。
+          schema:
+            type: string
+            enum: [origin, large]
+      responses:
+        200:
+          description: 返回资源是否存在以及可选的资源复用信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentPrecheckResponse'
+
+  /{orgName}/{appName}/chatfiles:
+    post:
+      summary: 上传附件文件
+      operationId: uploadAttachment
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: chat-type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: chat-target
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: md5
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: imageType
+          in: query
+          required: false
+          description: 图片上传时必填，普通附件不传。
+          schema:
+            type: string
+            enum: [origin, large]
+        - name: width
+          in: query
+          required: false
+          description: 图片上传时携带的像素宽度。
+          schema:
+            type: integer
+            minimum: 1
+        - name: height
+          in: query
+          required: false
+          description: 图片上传时携带的像素高度。
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        200:
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+components:
+  schemas:
+    ImageMessageSendRequest:
+      type: object
+      required:
+        - channelId
+        - chatType
+        - filename
+        - filetype
+      properties:
+        channelId:
+          type: string
+        chatType:
+          type: string
+          enum: [single, group, room]
+        filename:
+          type: string
+        filetype:
+          type: string
+        isOriginalImage:
+          type: boolean
+          default: false
+        source:
+          type: object
+          description: 本地附件源，Web / 小程序 / 其他平台均映射到统一逻辑输入
+          additionalProperties: true
+
+    ImageMessageSendResponse:
+      type: object
+      required:
+        - messageId
+        - image
+      properties:
+        messageId:
+          type: string
+        image:
+          $ref: '#/components/schemas/ImageMessageView'
+
+    AttachmentPrecheckResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+        exists:
+          type: boolean
+        exists-type:
+          type: string
+          enum: [origin, large]
+          description: 图片资源命中时返回的真实资源语义；large 命中 origin 时，客户端需按 origin 语义回写消息。
+        share-secret:
+          type: string
+          description: 资源存在时可选返回的访问密钥
+
+    ImageMessageView:
+      type: object
+      required:
+        - localUrl
+        - isOriginalImage
+        - originalImageUrl
+      properties:
+        localUrl:
+          type: string
+          description: 本地预览地址；远端消息固定为空字符串
+        isOriginalImage:
+          type: boolean
+        originalImageUrl:
+          type: string
+          description: 协议原始远端路径，对应原图访问语义
+        bigImageUrl:
+          type: string
+          description: 默认模式下固定为 remotePath?size=large；自有上传模式下可缺省
+        thumbnailUrl:
+          type: string
+          description: 默认模式下固定为 remotePath?size=small；自有上传模式下仅在业务或协议显式提供时存在
+        secret:
+          type: string
+        fileLength:
+          type: integer
+          minimum: 1
+
+    ImageUploadError:
+      type: object
+      required:
+        - code
+        - message
+        - stage
+        - retryable
+      properties:
+        code:
+          type: string
+          enum:
+            - IMAGE_POLICY_INVALID
+            - IMAGE_BIG_GENERATE_FAILED
+            - IMAGE_PROCESSOR_MISSING
+            - ATTACHMENT_PRECHECK_FAILED
+            - ATTACHMENT_UPLOAD_FAILED
+            - IMAGE_PROTOCOL_INVALID
+        message:
+          type: string
+        stage:
+          type: string
+          enum: [validate, preprocess, precheck, upload, send, decode]
+        retryable:
+          type: boolean

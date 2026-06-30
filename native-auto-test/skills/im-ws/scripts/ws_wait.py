@@ -19,7 +19,7 @@ def find_repo_root(start: Path) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description='Wait for a first matching WS message on a topic/device')
-    ap.add_argument('--device', help='Device key from config.yaml topics.*')
+    ap.add_argument('--device', help='Device name resolved to a dynamic or configured topic')
     ap.add_argument('--topic', help='Override topic (rare); prefer --device')
     ap.add_argument('--cmd', dest='match_cmd', help='Match messages with this cmd (response)')
     ap.add_argument('--event', dest='match_event_type', help='Match type=event messages with this eventType')

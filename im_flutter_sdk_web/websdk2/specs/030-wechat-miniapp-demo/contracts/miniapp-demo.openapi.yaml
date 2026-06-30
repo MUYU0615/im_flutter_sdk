@@ -1,0 +1,374 @@
+openapi: 3.0.3
+info:
+  title: WeChat Mini Program Demo Contract
+  version: 0.1.0
+  description: |
+    030 微信小程序 Demo 特性的逻辑契约。
+    该契约用于定义 demo 页面需要覆盖的初始化、会话和消息发送行为，
+    便于实现与验收对齐。它描述的是 demo 行为语义，不代表新增真实服务端接口。
+servers:
+  - url: https://demo.local
+paths:
+  /miniapp-demo/runtime/profile:
+    get:
+      summary: 获取 demo 当前运行模式与能力概览
+      operationId: getMiniappDemoRuntimeProfile
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeProfileResponse'
+  /miniapp-demo/init:
+    post:
+      summary: 初始化小程序 demo 的 SDK 会话
+      operationId: initMiniappDemo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitRequest'
+      responses:
+        '200':
+          description: 初始化成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitResponse'
+        '400':
+          description: 初始化失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/session/login:
+    post:
+      summary: 登录 demo 当前会话
+      operationId: loginMiniappDemo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: 登录失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/session/logout:
+    post:
+      summary: 登出 demo 当前会话
+      operationId: logoutMiniappDemo
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+  /miniapp-demo/messages/text:
+    post:
+      summary: 发送文本消息
+      operationId: sendMiniappTextMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextMessageRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/messages/attachment:
+    post:
+      summary: 发送附件类消息
+      operationId: sendMiniappAttachmentMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachmentMessageRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/messages/location:
+    post:
+      summary: 发送位置消息
+      operationId: sendMiniappLocationMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationMessageRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/messages/cmd:
+    post:
+      summary: 发送命令消息
+      operationId: sendMiniappCmdMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmdMessageRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+  /miniapp-demo/messages/custom:
+    post:
+      summary: 发送自定义消息
+      operationId: sendMiniappCustomMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomMessageRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoError'
+components:
+  schemas:
+    RuntimeProfileResponse:
+      type: object
+      required: [sdkMode, supportedMessageTypes, capabilities]
+      properties:
+        sdkMode:
+          type: string
+          enum: [dist]
+        supportedMessageTypes:
+          type: array
+          items:
+            type: string
+            enum: [text, image, voice, video, file, location, cmd, custom]
+        capabilities:
+          $ref: '#/components/schemas/CapabilitySet'
+    CapabilitySet:
+      type: object
+      required: [request, socket, upload, imageProcessor]
+      properties:
+        request:
+          type: boolean
+        socket:
+          type: boolean
+        upload:
+          type: boolean
+        runtime:
+          type: boolean
+        imageProcessor:
+          type: boolean
+    InitRequest:
+      type: object
+      required: [appKey, restApiUrl, wsUrl]
+      properties:
+        appKey:
+          type: string
+        restApiUrl:
+          type: string
+        wsUrl:
+          type: string
+    InitResponse:
+      type: object
+      required: [initialized, connectionState]
+      properties:
+        initialized:
+          type: boolean
+        connectionState:
+          type: string
+          enum: [disconnected, connecting, connected, reconnecting, reconnectFailed]
+    LoginRequest:
+      type: object
+      required: [userId, token]
+      properties:
+        userId:
+          type: string
+        token:
+          type: string
+    SessionResponse:
+      type: object
+      required: [initialized, loggedIn, connectionState]
+      properties:
+        initialized:
+          type: boolean
+        loggedIn:
+          type: boolean
+        currentUserId:
+          type: string
+          nullable: true
+        connectionState:
+          type: string
+          enum: [disconnected, connecting, connected, reconnecting, reconnectFailed]
+    MessageBaseRequest:
+      type: object
+      required: [targetId, channelType]
+      properties:
+        targetId:
+          type: string
+        channelType:
+          type: string
+          enum: [single, group, room]
+    TextMessageRequest:
+      allOf:
+        - $ref: '#/components/schemas/MessageBaseRequest'
+        - type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+    AttachmentMessageRequest:
+      allOf:
+        - $ref: '#/components/schemas/MessageBaseRequest'
+        - type: object
+          required: [attachmentType, source]
+          properties:
+            attachmentType:
+              type: string
+              enum: [image, voice, video, file]
+            source:
+              $ref: '#/components/schemas/MiniAppFileSource'
+            width:
+              type: integer
+            height:
+              type: integer
+            duration:
+              type: integer
+            isGif:
+              type: boolean
+            imageType:
+              type: string
+              enum: [original, large]
+    MiniAppFileSource:
+      type: object
+      required: [path, name, type, size]
+      properties:
+        path:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        size:
+          type: integer
+    LocationMessageRequest:
+      allOf:
+        - $ref: '#/components/schemas/MessageBaseRequest'
+        - type: object
+          required: [latitude, longitude]
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+            address:
+              type: string
+            buildingName:
+              type: string
+    CmdMessageRequest:
+      allOf:
+        - $ref: '#/components/schemas/MessageBaseRequest'
+        - type: object
+          required: [action]
+          properties:
+            action:
+              type: string
+            params:
+              type: object
+              additionalProperties:
+                type: string
+    CustomMessageRequest:
+      allOf:
+        - $ref: '#/components/schemas/MessageBaseRequest'
+        - type: object
+          required: [event]
+          properties:
+            event:
+              type: string
+            params:
+              type: object
+              additionalProperties:
+                type: string
+    SendResponse:
+      type: object
+      required: [msgLocalId, status]
+      properties:
+        msgLocalId:
+          type: string
+        status:
+          type: string
+          enum: [sending, sent, failed]
+        messageType:
+          type: string
+          enum: [text, image, voice, video, file, location, cmd, custom]
+    DemoError:
+      type: object
+      required: [message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

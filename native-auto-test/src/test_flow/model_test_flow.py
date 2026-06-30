@@ -9,9 +9,28 @@
 from __future__ import annotations
 
 from typing import Any
+import time
 
 from .. import Cmd
 from ..sdk_api.event_keys import ContactChangeEvent
+
+
+def receive_contact_changed_event(device: Any, contact_type: str, *, timeout: float = 10.0) -> dict[str, Any] | None:
+    """接收联系人变更事件：外层统一为 onContactChanged，具体类型在 data.type。"""
+    deadline = time.monotonic() + timeout
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        event = device.receive_message(
+            match_event_type=Cmd.onContactChanged.value,
+            timeout=min(1.0, remaining),
+        )
+        if event is None:
+            continue
+        data = event.get("data")
+        if isinstance(data, dict) and data.get("type") == contact_type:
+            return event
 
 
 class ContactTestFlow:
@@ -37,8 +56,9 @@ class ContactTestFlow:
                 info={"userId": user_b, "reason": reason},
             )
         )
-        assert peer.receive_message(
-            match_event_type=ContactChangeEvent.INVITED.value,
+        assert receive_contact_changed_event(
+            peer,
+            ContactChangeEvent.INVITED.value,
             timeout=10.0,
         )
         self._api.assert_success(
@@ -58,8 +78,9 @@ class ContactTestFlow:
                 info={"userId": friend_user_id, "keepConversation": keep_conversation},
             )
         )
-        assert initiator.receive_message(
-            match_event_type=ContactChangeEvent.CONTACT_DELETE.value,
+        assert receive_contact_changed_event(
+            initiator,
+            ContactChangeEvent.CONTACT_DELETE.value,
             timeout=10.0,
         )
 

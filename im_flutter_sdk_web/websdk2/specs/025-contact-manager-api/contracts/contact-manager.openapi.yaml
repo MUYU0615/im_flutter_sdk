@@ -1,0 +1,406 @@
+openapi: 3.0.3
+info:
+  title: IM SDK ContactManager Contract
+  version: 0.1.0
+  description: |
+    025 联系人管理 API 逻辑契约。
+    既描述 SDK 对外的 ContactManager 方法语义，也保留已确认的黑名单服务端 envelope 结构，供 fixture 与契约测试复用。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/contact-manager/contacts:
+    get:
+      summary: 读取当前联系人快照
+      description: |
+        逻辑上对应 `ContactManager.getContacts()`。
+        该操作为 SDK 本地快照读取，不代表远程 REST 请求。
+      operationId: getContacts
+      responses:
+        200:
+          description: 返回当前联系人列表快照
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contact'
+    post:
+      summary: 发起添加联系人申请
+      operationId: addContact
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/contacts/apply?resource={clientResource}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddContactRequest'
+      responses:
+        204:
+          description: 添加申请发起成功，SDK 返回 void
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+  /sdk/contact-manager/contacts/{userId}:
+    delete:
+      summary: 删除联系人
+      operationId: deleteContact
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/users/{userId}/contacts/users/{targetUserId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        204:
+          description: 删除成功，SDK 返回 void
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+    put:
+      summary: 更新联系人备注
+      operationId: setContactRemark
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/users/{userId}/contacts/users/{targetUserId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactRemarkUpdate'
+      responses:
+        204:
+          description: 更新成功，SDK 返回 void
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+  /sdk/contact-manager/contact-invites/{userId}/accept:
+    post:
+      summary: 接受好友申请
+      operationId: acceptContactInvite
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/contacts/accept/users/{targetUserId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        204:
+          description: 接受成功，SDK 返回 void，并触发联系人受控刷新
+
+  /sdk/contact-manager/contact-invites/{userId}/decline:
+    post:
+      summary: 拒绝好友申请
+      operationId: declineContactInvite
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/contacts/decline/users/{targetUserId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        204:
+          description: 拒绝成功，SDK 返回 void
+
+  /sdk/contact-manager/blocklist:
+    get:
+      summary: 获取黑名单
+      operationId: getBlocklist
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/users/{userId}/blocks/users
+      responses:
+        200:
+          description: 返回标准化后的黑名单用户资料数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+    post:
+      summary: 添加用户到黑名单
+      operationId: addUsersToBlocklist
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/sdk/user/{userId}/blocks?resource={clientResource}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlocklistMutationRequest'
+      responses:
+        200:
+          description: 添加成功，返回标准化后的加入结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlocklistAddResult'
+        404:
+          description: 请求中包含不存在用户，整次添加失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+    delete:
+      summary: 从黑名单移除用户
+      operationId: removeUserFromBlocklist
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/sdk/user/{userId}/blocks?resource={clientResource}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlocklistMutationRequest'
+      responses:
+        204:
+          description: 移除成功，SDK 返回 void
+
+components:
+  parameters:
+    UserId:
+      in: path
+      name: userId
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    UserInfo:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        sign:
+          type: string
+        ext:
+          type: string
+
+    Contact:
+      type: object
+      required:
+        - userId
+        - nickname
+        - avatarUrl
+        - sign
+        - remark
+        - addTs
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        sign:
+          type: string
+        remark:
+          type: string
+        addTs:
+          type: integer
+          format: int64
+
+    AddContactRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        message:
+          type: string
+
+    ContactRemarkUpdate:
+      type: object
+      required:
+        - remark
+      properties:
+        remark:
+          type: string
+
+    BlocklistMutationRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    BlocklistAddResult:
+      type: object
+      required:
+        - succeeded
+        - failed
+      properties:
+        succeeded:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+        failed:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+
+    SDKError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    GetBlocklistEnvelope:
+      type: object
+      required:
+        - uri
+        - timestamp
+        - entities
+        - count
+        - action
+        - data
+        - duration
+      properties:
+        uri:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        entities:
+          type: array
+          items: {}
+        count:
+          type: integer
+        action:
+          type: string
+          enum: [get]
+        data:
+          type: array
+          items:
+            type: string
+        duration:
+          type: integer
+
+    AddUsersToBlocklistEnvelope:
+      type: object
+      required:
+        - uri
+        - timestamp
+        - organization
+        - application
+        - entities
+        - action
+        - data
+        - duration
+        - applicationName
+      properties:
+        uri:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        organization:
+          type: string
+        application:
+          type: string
+        entities:
+          type: array
+          items: {}
+        action:
+          type: string
+          enum: [post]
+        data:
+          type: array
+          items:
+            type: string
+        duration:
+          type: integer
+        applicationName:
+          type: string
+
+    RemoveUserFromBlocklistEnvelope:
+      type: object
+      required:
+        - path
+        - uri
+        - timestamp
+        - organization
+        - application
+        - entities
+        - action
+        - duration
+        - applicationName
+      properties:
+        path:
+          type: string
+        uri:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        organization:
+          type: string
+        application:
+          type: string
+        entities:
+          type: array
+          items: {}
+        action:
+          type: string
+          enum: [delete]
+        duration:
+          type: integer
+        applicationName:
+          type: string
+
+    BlocklistAddNotFoundEnvelope:
+      type: object
+      required:
+        - error
+        - exception
+        - timestamp
+        - duration
+        - error_description
+      properties:
+        error:
+          type: string
+          enum: [service_resource_not_found]
+        exception:
+          type: string
+          enum: [UserNotFoundException]
+        timestamp:
+          type: integer
+          format: int64
+        duration:
+          type: integer
+        error_description:
+          type: string

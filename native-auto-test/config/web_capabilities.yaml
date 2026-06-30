@@ -1,0 +1,24 @@
+web:
+  Client:
+    init: supported
+    login: supported
+    logout: supported
+    getCurrentUser: supported
+    isConnected: supported
+    startCallback: supported
+    isLoggedInBefore: supported
+    getToken: supported
+    getCurrentDeviceId: supported
+    renewToken: supported
+    loginWithAgoraToken: supported
+  ChatManager:
+    sendMessage: supported
+  UserInfoManager:
+    updateOwnUserInfo: supported
+    updateOwnUserInfoWithType: supported
+    fetchUserInfoById: supported
+    fetchUserInfoByIdWithType: supported
+  PushManager:
+    bindDeviceToken: unsupported
+    updateHMSPushToken: unsupported
+    updateAPNsPushToken: unsupported

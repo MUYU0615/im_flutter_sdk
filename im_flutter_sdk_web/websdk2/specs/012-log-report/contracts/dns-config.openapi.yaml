@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: DNS Config API
+  version: 1.0.0
+paths:
+  /easemob/server.json:
+    get:
+      summary: 获取 DNS 配置
+      parameters:
+        - in: query
+          name: app_key
+          required: true
+          schema:
+            type: string
+          description: appKey（形如 org#app）
+        - in: query
+          name: _v
+          required: false
+          schema:
+            type: string
+          description: 缓存破坏参数
+      responses:
+        '200':
+          description: DNS 配置响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DnsConfigResponse'
+components:
+  schemas:
+    DnsHost:
+      type: object
+      properties:
+        protocol:
+          type: string
+        domain:
+          type: string
+          nullable: true
+        ip:
+          type: string
+          nullable: true
+        port:
+          oneOf:
+            - type: string
+            - type: number
+      required:
+        - protocol
+    DnsConfigResponse:
+      type: object
+      properties:
+        rest:
+          type: object
+          properties:
+            hosts:
+              type: array
+              items:
+                $ref: '#/components/schemas/DnsHost'
+          required:
+            - hosts
+        msync-wx:
+          type: object
+          properties:
+            hosts:
+              type: array
+              items:
+                $ref: '#/components/schemas/DnsHost'
+          required:
+            - hosts
+        enableReportLogs:
+          type: string
+          enum: ['true', 'false']
+          description: 是否开启日志上报
+      required:
+        - rest
+        - msync-wx

@@ -1,0 +1,389 @@
+openapi: 3.0.3
+info:
+  title: Group Auto Sync Contract
+  version: 0.1.0
+  description: |
+    045 登录后自动同步群组数据的 SDK 逻辑契约。
+    该文件描述 SDK-facing 的公开配置、ChatClient 统一事件、GroupManager 本地读取入口
+    与 joined-groups 第二通道协议映射；实际第二通道传输走 WSS protobuf。
+    localStorage 只持久化最多 100 个 joined group 预览；登录后当前会话可保存本轮同步的最多 3000 个轻量群组。
+
+paths:
+  /sdk/chat-client/init:
+    post:
+      summary: 初始化自动同步配置
+      operationId: initEnableSyncData
+      description: |
+        ChatClient 初始化时通过 enableSyncData 控制登录后自动同步 contact/group。
+        enableAutoSyncContacts 已移除。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatClientInitSyncData'
+      responses:
+        '200':
+          description: 初始化配置有效
+        '400':
+          description: enableSyncData 包含未知类型或旧字段
+
+  /sdk/chat-client/sync-data/events:
+    get:
+      summary: ChatClient 级统一同步事件
+      operationId: syncDataEvents
+      description: |
+        onSyncDataStart / onSyncDataFinished 只能在 ChatClient 级注册监听。
+      responses:
+        '200':
+          description: 事件签名说明
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  onSyncDataStart:
+                    type: string
+                    example: "(payload: SyncDataStartPayload) => void"
+                  onSyncDataFinished:
+                    type: string
+                    example: "(payload: SyncDataFinishedPayload) => void"
+
+  /sdk/group-manager/joined-groups:
+    get:
+      summary: 读取本地已加入群组列表
+      operationId: getJoinedGroupList
+      description: |
+        通过 GroupManager.getJoinedGroupList() 纯读取本地 group-sync 缓存，不触发网络请求。
+        同步完成前可返回最多 100 个 localStorage 预览；同步完成后返回当前会话同步结果。
+        对外只返回 JoinedGroupSummary 数组；preview、limited/incomplete 等诊断信息保留在内部快照与结构化日志中，不通过 onSyncDataFinished payload 返回。
+      responses:
+        '200':
+          description: 当前本地已加入群组列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JoinedGroupSummary'
+
+  /sdk/group-manager/groups/{groupId}:
+    get:
+      summary: 获取绑定已知轻量信息的 Group facade
+      operationId: getGroupWithKnownSummary
+      description: |
+        getGroup(groupId) 使用 localStorage 预览或当前会话同步结果中的轻量群组信息。
+        该调用不触发详情网络请求，也不把轻量信息声明为完整 GroupDetail。
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Group facade 逻辑结构说明
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupFacade'
+
+  /wss/gateway/joined-groups/request:
+    post:
+      summary: joined-groups WSS 请求帧
+      operationId: joinedGroupsRequest
+      description: |
+        对应 GetJoinedGroupsRequest(type=12)。该条目为逻辑契约描述，实际传输走 WSS protobuf。
+        本期每次登录按全量语义请求，lastSyncTime 固定发送 0 或等价全量起点；
+        服务端协议支持增量，但 045 登录自动同步不使用历史 lastSyncFinishedTs 作为下次 lastSyncTime。
+      responses:
+        '200':
+          description: 请求结构说明
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinedGroupsRequestFrame'
+
+  /wss/gateway/joined-groups/response:
+    post:
+      summary: joined-groups WSS 响应帧
+      operationId: joinedGroupsResponse
+      description: |
+        对应 GetJoinedGroupsResponse(type=13)。缺失项不表示删除；服务端单轮最多返回 3000 个群。
+        非最后一批可返回 cursor，用于同一轮断点续传。
+      responses:
+        '200':
+          description: 响应结构说明
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinedGroupsSyncBatch'
+
+components:
+  schemas:
+    ChatClientInitSyncData:
+      type: object
+      properties:
+        enableSyncData:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncDataType'
+          uniqueItems: true
+
+    SyncDataType:
+      type: string
+      enum: [conversation, contact, group]
+
+    SyncDataStartPayload:
+      type: object
+      required: [dataType]
+      properties:
+        dataType:
+          $ref: '#/components/schemas/SyncDataType'
+
+    SyncDataFinishedPayload:
+      type: object
+      required: [dataType, status]
+      properties:
+        dataType:
+          $ref: '#/components/schemas/SyncDataType'
+        status:
+          type: string
+          enum: [success, failed]
+        error:
+          $ref: '#/components/schemas/SyncDataError'
+
+    SyncDataError:
+      type: object
+      required: [dataType, stage, message, retryable]
+      properties:
+        dataType:
+          $ref: '#/components/schemas/SyncDataType'
+        stage:
+          type: string
+          enum:
+            - config
+            - socket_connect
+            - request_send
+            - response_decode
+            - batch_merge
+            - preview_persist
+            - completion_meta
+            - auth
+            - server_limit
+            - cancelled
+        code:
+          type: string
+        message:
+          type: string
+        retryable:
+          type: boolean
+
+    JoinedGroupSnapshot:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/JoinedGroupSummary'
+        meta:
+          $ref: '#/components/schemas/JoinedGroupSnapshotMeta'
+
+    JoinedGroupSnapshotMeta:
+      type: object
+      required: [integrity, limited, storageLimit, serverLimit, source]
+      properties:
+        integrity:
+          type: string
+          enum: [preview, synced, limited, incomplete, unknown]
+        limited:
+          type: boolean
+        storageLimit:
+          type: integer
+          example: 100
+        serverLimit:
+          type: integer
+          example: 3000
+        source:
+          type: string
+          enum: [localPreview, sync]
+        lastSyncFinishedTs:
+          type: integer
+          format: int64
+        lastSuccessfulAt:
+          type: integer
+          format: int64
+        reason:
+          type: string
+
+    JoinedGroupSummary:
+      type: object
+      required: [groupId, name]
+      properties:
+        groupId:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+        memberCount:
+          type: integer
+          minimum: 0
+        description:
+          type: string
+        avatarUrl:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+        disabled:
+          type: boolean
+        muteAllMembers:
+          type: boolean
+        muteExpiration:
+          type: integer
+          format: int64
+        remindType:
+          type: string
+          enum: [DEFAULT, ALL, AT, NONE]
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        joinedAt:
+          type: integer
+          format: int64
+
+    GroupFacade:
+      type: object
+      required: [groupId, knownSummary, detailLoaded]
+      properties:
+        groupId:
+          type: string
+        knownSummary:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/JoinedGroupSummary'
+        detailLoaded:
+          type: boolean
+          description: false 表示 getGroup 只绑定轻量信息，尚未显式获取完整详情。
+        source:
+          type: string
+          enum: [localPreview, sync, unknown]
+
+    JoinedGroupsRequestFrame:
+      type: object
+      required: [type, header, org, app, username, lastSyncTime]
+      properties:
+        type:
+          type: integer
+          enum: [12]
+        header:
+          $ref: '#/components/schemas/GatewayHeader'
+        org:
+          type: string
+        app:
+          type: string
+        username:
+          type: string
+        lastSyncTime:
+          type: integer
+          format: int64
+          description: 本期登录全量同步固定为 0 或等价全量起点，不作为本地增量 checkpoint。
+        cursor:
+          type: string
+          description: 首次请求不传；同一轮断线恢复时传最近一批响应返回的 cursor。
+
+    JoinedGroupsSyncBatch:
+      type: object
+      required: [type, groups, isLastBatch]
+      properties:
+        type:
+          type: integer
+          enum: [13]
+        header:
+          $ref: '#/components/schemas/GatewayHeader'
+        groups:
+          type: array
+          maxItems: 3000
+          items:
+            $ref: '#/components/schemas/GroupItem'
+        isLastBatch:
+          type: boolean
+        lastSyncFinishedTs:
+          type: integer
+          format: int64
+        cursor:
+          type: string
+          description: 非最后一批时返回，用于同一轮断点续传。
+        limited:
+          type: boolean
+
+    GatewayHeader:
+      type: object
+      properties:
+        resource:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        requestId:
+          type: string
+        protocolVersion:
+          type: integer
+
+    GroupItem:
+      type: object
+      properties:
+        group_id:
+          type: string
+        group_name:
+          type: string
+        group_owner:
+          type: string
+        members_count:
+          type: integer
+        mute_all:
+          type: boolean
+        disabled:
+          type: boolean
+        description:
+          type: string
+        group_avatar:
+          type: string
+        role:
+          type: integer
+          enum: [0, 1, 2]
+        mute_expiration:
+          type: integer
+          format: int64
+        remind_type:
+          type: integer
+          enum: [0, 1, 2, 3]
+        create_at:
+          type: integer
+          format: int64
+        update_at:
+          type: integer
+          format: int64
+        joined_timestamp:
+          type: integer
+          format: int64
+
+    JoinedGroupsErrorFrame:
+      type: object
+      required: [type, code, message]
+      properties:
+        type:
+          type: integer
+          enum: [5]
+        code:
+          type: integer
+          enum: [1601, 1602, 1002, 1003]
+        message:
+          type: string
+        retryable:
+          type: boolean

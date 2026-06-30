@@ -1,0 +1,485 @@
+openapi: 3.1.0
+info:
+  title: ChatThread Public API Contract
+  version: 0.1.0
+  description: >
+    Contract for the websdk2 ChatThread public API surface. This file documents
+    REST-backed SDK operations and public SDK events; it is not a direct server
+    OpenAPI contract for all runtime internals.
+servers:
+  - url: https://{restBaseUrl}/{orgName}/{appName}
+    variables:
+      restBaseUrl:
+        default: example.com
+      orgName:
+        default: org
+      appName:
+        default: app
+tags:
+  - name: ChatThread REST
+  - name: ChatThread Events
+paths:
+  /thread:
+    post:
+      tags: [ChatThread REST]
+      operationId: createChatThread
+      summary: Create a chat thread
+      parameters:
+        - $ref: '#/components/parameters/Resource'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, msg_id, group_id, owner]
+              properties:
+                name:
+                  type: string
+                msg_id:
+                  type: string
+                group_id:
+                  type: string
+                owner:
+                  type: string
+      responses:
+        '200':
+          description: Created thread id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      thread_id:
+                        type: string
+        default:
+          $ref: '#/components/responses/SDKError'
+  /threads/chatgroups/{parentId}:
+    get:
+      tags: [ChatThread REST]
+      operationId: getChatThreadList
+      summary: Get chat threads in a group
+      parameters:
+        - $ref: '#/components/parameters/ParentId'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Thread list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadListServerResponse'
+        default:
+          $ref: '#/components/responses/SDKError'
+  /threads/chatgroups/{parentId}/user/{userId}:
+    get:
+      tags: [ChatThread REST]
+      operationId: getJoinedChatThreadListByGroup
+      x-sdk-operation: getJoinedChatThreadList
+      summary: Get joined chat threads in a group
+      parameters:
+        - $ref: '#/components/parameters/ParentId'
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Joined thread list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadListServerResponse'
+        default:
+          $ref: '#/components/responses/SDKError'
+  /threads/user/{userId}:
+    get:
+      tags: [ChatThread REST]
+      operationId: getJoinedChatThreadList
+      summary: Get all joined chat threads for current user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Joined thread list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadListServerResponse'
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/{chatThreadId}:
+    get:
+      tags: [ChatThread REST]
+      operationId: getChatThreadInfo
+      summary: Get chat thread detail
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '200':
+          description: Thread detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ChatThreadServerRecord'
+        default:
+          $ref: '#/components/responses/SDKError'
+    put:
+      tags: [ChatThread REST]
+      operationId: updateChatThreadName
+      summary: Update chat thread name
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/Resource'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+        default:
+          $ref: '#/components/responses/SDKError'
+    delete:
+      tags: [ChatThread REST]
+      operationId: destroyChatThread
+      summary: Destroy chat thread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/Resource'
+      responses:
+        '200':
+          description: Destroyed
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/{chatThreadId}/user/{userId}/join:
+    post:
+      tags: [ChatThread REST]
+      operationId: joinChatThread
+      summary: Join chat thread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Resource'
+      responses:
+        '200':
+          description: Joined
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/{chatThreadId}/user/{userId}/quit:
+    delete:
+      tags: [ChatThread REST]
+      operationId: leaveChatThread
+      summary: Leave chat thread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Resource'
+      responses:
+        '200':
+          description: Left
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/{chatThreadId}/users:
+    get:
+      tags: [ChatThread REST]
+      operationId: getChatThreadMemberList
+      summary: Get chat thread members
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entities:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          properties:
+                            user:
+                              type: string
+                            username:
+                              type: string
+                            memberId:
+                              type: string
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/{chatThreadId}/users/{memberId}:
+    delete:
+      tags: [ChatThread REST]
+      operationId: removeChatThreadMember
+      summary: Remove a chat thread member
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+        - $ref: '#/components/parameters/MemberId'
+        - $ref: '#/components/parameters/Resource'
+      responses:
+        '200':
+          description: Removed
+        default:
+          $ref: '#/components/responses/SDKError'
+  /thread/message:
+    post:
+      tags: [ChatThread REST]
+      operationId: getChatThreadLastMessageList
+      summary: Get last messages for chat threads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [threadIds]
+              properties:
+                threadIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Last message list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        thread_id:
+                          type: string
+                        last_message:
+                          type: object
+        default:
+          $ref: '#/components/responses/SDKError'
+components:
+  parameters:
+    ChatThreadId:
+      name: chatThreadId
+      in: path
+      required: true
+      schema:
+        type: string
+    ParentId:
+      name: parentId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+    Resource:
+      name: resource
+      in: query
+      required: false
+      schema:
+        type: string
+    PageSize:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        default: ''
+  responses:
+    SDKError:
+      description: SDKError mapped from local validation, transport, auth, or server business errors
+  schemas:
+    MessageSnippet:
+      type: object
+      properties:
+        msgId:
+          type: string
+        type:
+          type: string
+        body:
+          type: object
+        timestamp:
+          type: number
+    ChatThreadServerRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        thread_id:
+          type: string
+        name:
+          type: string
+        groupId:
+          type: string
+        group_id:
+          type: string
+        msgId:
+          type: string
+        owner:
+          type: string
+        affiliations_count:
+          type: number
+        message_count:
+          type: number
+        last_message:
+          type: object
+    ThreadListServerResponse:
+      type: object
+      properties:
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatThreadServerRecord'
+        data:
+          type: object
+          properties:
+            cursor:
+              type: string
+    ChatThreadSummary:
+      type: object
+      required: [chatThreadId, parentId, name]
+      properties:
+        chatThreadId:
+          type: string
+        parentId:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+        memberCount:
+          type: number
+        messageCount:
+          type: number
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/MessageSnippet'
+            - type: 'null'
+        createdAt:
+          type: number
+    ChatThreadCreatedEventPayload:
+      type: object
+      required: [chatThreadId, parentId, timestamp]
+      properties:
+        chatThreadId:
+          type: string
+        chatThreadName:
+          type: string
+        parentId:
+          type: string
+        messageId:
+          type: string
+        operatorId:
+          type: string
+        timestamp:
+          type: number
+        thread:
+          $ref: '#/components/schemas/ChatThreadSummary'
+    ChatThreadDestroyedEventPayload:
+      type: object
+      required: [chatThreadId, parentId, timestamp]
+      properties:
+        chatThreadId:
+          type: string
+        parentId:
+          type: string
+        operatorId:
+          type: string
+        timestamp:
+          type: number
+    ChatThreadUpdatedEventPayload:
+      type: object
+      required: [chatThreadId, parentId, timestamp]
+      properties:
+        chatThreadId:
+          type: string
+        chatThreadName:
+          type: string
+        parentId:
+          type: string
+        messageId:
+          type: string
+        messageCount:
+          type: number
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/MessageSnippet'
+            - type: 'null'
+        operatorId:
+          type: string
+        timestamp:
+          type: number
+        thread:
+          $ref: '#/components/schemas/ChatThreadSummary'
+    ChatThreadUserRemovedEventPayload:
+      type: object
+      required: [chatThreadId, parentId, memberId, timestamp]
+      properties:
+        chatThreadId:
+          type: string
+        parentId:
+          type: string
+        memberId:
+          type: string
+        operatorId:
+          type: string
+        timestamp:
+          type: number
+x-sdk-events:
+  onChatThreadCreated:
+    payload: '#/components/schemas/ChatThreadCreatedEventPayload'
+    receivedBy: all members of the parent group
+  onChatThreadDestroyed:
+    payload: '#/components/schemas/ChatThreadDestroyedEventPayload'
+    receivedBy: all members of the parent group
+  onChatThreadUpdated:
+    payload: '#/components/schemas/ChatThreadUpdatedEventPayload'
+    triggers:
+      - chat thread name updated
+      - reply message added
+      - reply message recalled
+    receivedBy: all members of the parent group
+  onChatThreadUserRemoved:
+    payload: '#/components/schemas/ChatThreadUserRemovedEventPayload'
+    receivedBy: current logged-in user removed from the thread

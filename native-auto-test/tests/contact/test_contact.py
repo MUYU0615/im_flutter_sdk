@@ -11,6 +11,7 @@ import pytest
 from src import Cmd, ne
 from src.rest_api.contact_api import get_user_contacts
 from src.test_flow import ContactTestFlow
+from src.test_flow.model_test_flow import receive_contact_changed_event
 from src.sdk_api.event_keys import ContactChangeEvent
 
 
@@ -106,8 +107,9 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
         ignore_keys={"sequence"},
     )
     # 1.1 设备 B 获取好友邀请回调
-    resp_invite = device_b.receive_message(
-        match_event_type=ContactChangeEvent.INVITED.value,
+    resp_invite = receive_contact_changed_event(
+        device_b,
+        ContactChangeEvent.INVITED.value,
         timeout=10.0,
     )
     assert resp_invite is not None, "设备 B 未收到好友邀请回调"
@@ -115,8 +117,8 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
         resp_invite,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.INVITED.value,
-            "data": {"userId": "{{userId}}", "reason": "hello"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "hello"},
         },
         context={"userId": user_a},
         ignore_keys={"timestamp", "sequence"},
@@ -129,31 +131,33 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
     )
     assert_api.assert_success(resp_accept)
     # 2.1 设备 A 会收到 onFriendRequestAccepted 回调
-    resp_accepted = device_a.receive_message(
-        match_event_type=ContactChangeEvent.INVITATION_ACCEPTED.value,
+    resp_accepted = receive_contact_changed_event(
+        device_a,
+        ContactChangeEvent.INVITATION_ACCEPTED.value,
         timeout=10.0,
     )
     assert_api.assert_response_matches(
         resp_accepted,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.INVITATION_ACCEPTED.value,
-            "data": {"userId": "{{userId}}"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.INVITATION_ACCEPTED.value, "userId": "{{userId}}"},
         },
         context={"userId": user_b},
         ignore_keys={"timestamp"},
     )
     # 2.2 设备 A 收到 CONTACT_ADD 回调
-    resp_contact_add_a = device_a.receive_message(
-        match_event_type=ContactChangeEvent.CONTACT_ADD.value,
+    resp_contact_add_a = receive_contact_changed_event(
+        device_a,
+        ContactChangeEvent.CONTACT_ADD.value,
         timeout=10.0,
     )
     assert_api.assert_response_matches(
         resp_contact_add_a,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.CONTACT_ADD.value,
-            "data": {"userId": "{{userId}}"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.CONTACT_ADD.value, "userId": "{{userId}}"},
         },
         context={"userId": user_b},
         ignore_keys={"timestamp"},
@@ -200,16 +204,17 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
     )
     assert_api.assert_success(result)
     # 5.1 设备 A 收到 CONTACT_DELETE 回调
-    resp_contact_delete_a = device_a.receive_message(
-        match_event_type=ContactChangeEvent.CONTACT_DELETE.value,
+    resp_contact_delete_a = receive_contact_changed_event(
+        device_a,
+        ContactChangeEvent.CONTACT_DELETE.value,
         timeout=10.0,
     )
     assert_api.assert_response_matches(
         resp_contact_delete_a,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.CONTACT_DELETE.value,
-            "data": {"userId": "{{userId}}"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.CONTACT_DELETE.value, "userId": "{{userId}}"},
         },
         context={"userId": user_b},
         ignore_keys={"timestamp"},
@@ -240,8 +245,9 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
         ignore_keys={"sequence"},
     )
     # 2. B 收到好友邀请
-    resp_invite = device_b.receive_message(
-        match_event_type=ContactChangeEvent.INVITED.value,
+    resp_invite = receive_contact_changed_event(
+        device_b,
+        ContactChangeEvent.INVITED.value,
         timeout=10.0,
     )
     assert resp_invite is not None, "设备 B 未收到好友邀请回调"
@@ -249,8 +255,8 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
         resp_invite,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.INVITED.value,
-            "data": {"userId": "{{userId}}", "reason": "decline_flow"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "decline_flow"},
         },
         context={"userId": user_a},
         ignore_keys={"timestamp", "sequence"},
@@ -263,8 +269,9 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
     )
     assert_api.assert_success(resp_decline)
     # 4. A 收到好友请求被拒绝回调
-    resp_declined = device_a.receive_message(
-        match_event_type=ContactChangeEvent.INVITATION_DECLINED.value,
+    resp_declined = receive_contact_changed_event(
+        device_a,
+        ContactChangeEvent.INVITATION_DECLINED.value,
         timeout=10.0,
     )
     assert resp_declined is not None, "设备 A 未收到 onFriendRequestDeclined 回调"
@@ -272,8 +279,8 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
         resp_declined,
         expected={
             "type": "event",
-            "eventType": ContactChangeEvent.INVITATION_DECLINED.value,
-            "data": {"userId": "{{userId}}"},
+            "eventType": Cmd.onContactChanged.value,
+            "data": {"type": ContactChangeEvent.INVITATION_DECLINED.value, "userId": "{{userId}}"},
         },
         context={"userId": user_b},
         ignore_keys={"timestamp", "sequence"},

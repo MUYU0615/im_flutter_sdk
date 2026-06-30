@@ -1,0 +1,501 @@
+openapi: 3.0.3
+info:
+  title: IM SDK PushManager Contract
+  version: 0.1.0
+  description: |
+    021 PushManager 逻辑契约草案。
+    覆盖 push token 上传、全局/会话免打扰、批量查询、语言设置与分页查询能力。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/push/token:
+    put:
+      summary: 上传或更新设备 push token
+      operationId: uploadPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPushTokenRequest'
+      responses:
+        204:
+          description: 上传成功（无返回体）
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/silent-mode/global:
+    put:
+      summary: 设置全局免打扰规则
+      operationId: setGlobalSilentMode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SilentModeRuleInput'
+      responses:
+        200:
+          description: 设置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSilentModeResponse'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+    get:
+      summary: 查询全局免打扰规则
+      operationId: getGlobalSilentMode
+      responses:
+        200:
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSilentModeResponse'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/silent-mode/conversations/{conversationId}:
+    put:
+      summary: 设置会话免打扰规则
+      operationId: setConversationSilentMode
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConversationSilentModeRequest'
+      responses:
+        200:
+          description: 设置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSilentModeResponse'
+        400:
+          description: 参数错误（含 chatRoom 不支持）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+    get:
+      summary: 查询单会话免打扰规则
+      operationId: getConversationSilentMode
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/ConversationType'
+      responses:
+        200:
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSilentModeResponse'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/silent-mode/conversations/{conversationId}/remind-type:
+    delete:
+      summary: 清除会话提醒类型
+      operationId: clearConversationRemindType
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/ConversationType'
+      responses:
+        200:
+          description: 清除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSilentModeResponse'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/silent-mode/conversations:batch-query:
+    post:
+      summary: 批量查询会话免打扰规则
+      operationId: getConversationSilentModes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchConversationQueryRequest'
+      responses:
+        200:
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchConversationQueryResponse'
+        400:
+          description: 参数错误（列表为空/超限/会话类型非法）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/language:
+    put:
+      summary: 设置推送翻译语言
+      operationId: setPushLanguage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushLanguageRequest'
+      responses:
+        200:
+          description: 设置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushLanguageResponse'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+    get:
+      summary: 查询推送翻译语言
+      operationId: getPushLanguage
+      responses:
+        200:
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushLanguageResponse'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+  /sdk/push/silent-mode/muted-conversations:
+    get:
+      summary: 分页查询已设置提醒类型的会话
+      operationId: getConversationListByRemindType
+      parameters:
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MutedConversationPageResponse'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+        500:
+          description: 传输或业务错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SdkError'
+
+components:
+  schemas:
+    ConversationType:
+      type: string
+      enum: [singleChat, groupChat]
+
+    TimePoint:
+      type: object
+      required: [hours, minutes]
+      properties:
+        hours:
+          type: integer
+          minimum: 0
+          maximum: 23
+        minutes:
+          type: integer
+          minimum: 0
+          maximum: 59
+
+    SilentModeRuleInput:
+      oneOf:
+        - $ref: '#/components/schemas/RemindTypeRuleInput'
+        - $ref: '#/components/schemas/DurationRuleInput'
+        - $ref: '#/components/schemas/IntervalRuleInput'
+      discriminator:
+        propertyName: mode
+        mapping:
+          REMIND_TYPE: '#/components/schemas/RemindTypeRuleInput'
+          DURATION: '#/components/schemas/DurationRuleInput'
+          INTERVAL: '#/components/schemas/IntervalRuleInput'
+
+    RemindTypeRuleInput:
+      type: object
+      required: [mode, remindType]
+      properties:
+        mode:
+          type: string
+          enum: [REMIND_TYPE]
+        remindType:
+          type: string
+          enum: [ALL, AT, NONE]
+
+    DurationRuleInput:
+      type: object
+      required: [mode, duration]
+      properties:
+        mode:
+          type: string
+          enum: [DURATION]
+        duration:
+          type: integer
+          minimum: 1
+
+    IntervalRuleInput:
+      type: object
+      required: [mode, startTime, endTime]
+      properties:
+        mode:
+          type: string
+          enum: [INTERVAL]
+        startTime:
+          $ref: '#/components/schemas/TimePoint'
+        endTime:
+          $ref: '#/components/schemas/TimePoint'
+
+    UploadPushTokenRequest:
+      type: object
+      required: [deviceId, deviceToken, notifierName]
+      properties:
+        deviceId:
+          type: string
+          minLength: 1
+        deviceToken:
+          type: string
+          minLength: 1
+        notifierName:
+          type: string
+          minLength: 1
+
+    SetConversationSilentModeRequest:
+      type: object
+      required: [type, rule]
+      properties:
+        type:
+          $ref: '#/components/schemas/ConversationType'
+        rule:
+          $ref: '#/components/schemas/SilentModeRuleInput'
+
+    SilentModeRuleView:
+      type: object
+      properties:
+        remindType:
+          type: string
+          enum: [ALL, AT, NONE, DEFAULT]
+        expireTimestamp:
+          type: integer
+          minimum: 1
+        silentModeStartTime:
+          $ref: '#/components/schemas/TimePoint'
+        silentModeEndTime:
+          $ref: '#/components/schemas/TimePoint'
+
+    GlobalSilentModeResponse:
+      type: object
+      required: [scope, rule]
+      properties:
+        scope:
+          type: string
+          enum: [global]
+        rule:
+          $ref: '#/components/schemas/SilentModeRuleView'
+
+    ConversationSilentModeResponse:
+      type: object
+      required: [conversationId, type, rule]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationType'
+        rule:
+          $ref: '#/components/schemas/SilentModeRuleView'
+
+    ConversationIdentifier:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/ConversationType'
+
+    BatchConversationQueryRequest:
+      type: object
+      required: [conversationList]
+      properties:
+        conversationList:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ConversationIdentifier'
+
+    BatchConversationQueryResponse:
+      type: object
+      required: [conversations]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationSilentModeResponse'
+
+    PushLanguageRequest:
+      type: object
+      required: [language]
+      properties:
+        language:
+          type: string
+          minLength: 1
+
+    PushLanguageResponse:
+      type: object
+      required: [language]
+      properties:
+        language:
+          type: string
+
+    MutedConversationItem:
+      type: object
+      required: [conversationId, type, remindType]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationType'
+        remindType:
+          type: string
+          enum: [ALL, AT, NONE]
+
+    MutedConversationPageResponse:
+      type: object
+      required: [conversations]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/MutedConversationItem'
+        cursor:
+          type: string
+
+    SdkError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          description: 统一数字错误码（含 110 与 1500-1502 区间）
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

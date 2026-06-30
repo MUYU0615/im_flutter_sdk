@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: WEBSDK2 Voice To Text Contract
+  version: 0.1.0
+  description: >
+    SDK-facing contract for feature 036. This document records the migrated
+    ChatManager voice-to-text APIs, success payload and legacy-compatible error mapping.
+servers:
+  - url: https://a1-hsb.easemob.com/api/sdk/v1
+paths:
+  /{orgName}/{appName}/speech/transcriptions:
+    post:
+      summary: voiceMessageToText backend request
+      description: >
+        `ChatManager.voiceMessageToText(messageBody, audioParams?)` extracts `fileId`
+        from the legacy-compatible voice message body URL and posts JSON to this endpoint.
+      parameters:
+        - in: path
+          name: orgName
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: appName
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [fileId, username]
+                  properties:
+                    fileId:
+                      type: string
+                    username:
+                      type: string
+                    audio:
+                      $ref: '#/components/schemas/AudioParams'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeechSuccessEnvelope'
+        default:
+          description: Speech service error envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeechErrorEnvelope'
+  /{orgName}/{appName}/speech/recognitions:
+    post:
+      summary: voiceFileToText backend request
+      description: >
+        `ChatManager.voiceFileToText(file, audioParams?)` uploads browser `File`
+        or `MiniAppFile` through the current WEBSDK2 upload adapter to this endpoint.
+      parameters:
+        - in: path
+          name: orgName
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: appName
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [username, file]
+              properties:
+                username:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                format:
+                  type: string
+                sampleRate:
+                  type: string
+                bitsPerSample:
+                  type: string
+                channels:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeechSuccessEnvelope'
+        default:
+          description: Speech service error envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeechErrorEnvelope'
+components:
+  schemas:
+    AudioParams:
+      type: object
+      properties:
+        format:
+          type: string
+        sampleRate:
+          type: number
+        bitsPerSample:
+          type: number
+        channels:
+          type: number
+    VoiceToTextResult:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+    SpeechSuccessEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/VoiceToTextResult'
+        meta:
+          type: object
+          additionalProperties: true
+    SpeechErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              oneOf:
+                - type: integer
+                - type: string
+            message:
+              type: string
+        meta:
+          type: object
+          additionalProperties: true
+    LegacyCompatibleSDKError:
+      type: object
+      description: SDK runtime throws SDKError instead of returning this object directly.
+      properties:
+        code:
+          type: integer
+          enum: [4, 110, 202, 402, 407, 408, 409, 410, 411, 505]
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: IM SDK User Info Subscription Contract
+  version: 0.1.0
+  description: |
+    033 用户资料订阅与变更通知逻辑契约。
+    既描述 SDK 对外的订阅 API 与事件语义，也保留已确认的 upstream path、
+    请求映射、成功 envelope 与已知错误语义，供 fixture 与契约测试复用。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/user-info/subscriptions:
+    post:
+      summary: 添加陌生人资料订阅
+      operationId: subscribeUsersInfo
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/user/{username}/metadata/subscription
+        requestBodyField: usernames
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeUsersInfoRequest'
+      responses:
+        204:
+          description: |
+            订阅成功，SDK 对外返回 void。
+            upstream success 已确认返回标准 envelope，`data` 为成功订阅的用户名数组。
+        400:
+          description: 参数错误、当前登录用户订阅数超限或目标用户被订阅数超限
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SDKError'
+                  - $ref: '#/components/schemas/UserInfoSubscriptionErrorEnvelope'
+        401:
+          description: 鉴权失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+        403:
+          description: 服务未开通或无权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+    delete:
+      summary: 取消陌生人资料订阅
+      operationId: unsubscribeUsersInfo
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/user/{username}/metadata/subscription?usernames=...
+        requestQueryParam: usernames
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnsubscribeUsersInfoRequest'
+      responses:
+        204:
+          description: |
+            取消订阅成功，SDK 对外返回 void。
+            upstream success 已确认返回标准 envelope，`data` 为成功取消订阅的用户名数组。
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SDKError'
+                  - $ref: '#/components/schemas/UserInfoSubscriptionErrorEnvelope'
+        401:
+          description: 鉴权失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+        403:
+          description: 服务未开通或无权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+    get:
+      summary: 查询当前用户已订阅的陌生人资料列表
+      operationId: getSubscribedUsers
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/user/{username}/metadata/subscription
+      responses:
+        200:
+          description: |
+            返回标准化后的已订阅陌生人资料列表。
+            upstream success 已确认返回用户名数组，SDK 需继续 hydrate 为 `UserInfo[]` 后再对外暴露。
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+        401:
+          description: 鉴权失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+        403:
+          description: 服务未开通或无权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+components:
+  schemas:
+    UserInfo:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    Contact:
+      type: object
+      required:
+        - userId
+        - userInfo
+        - remark
+        - addTs
+      properties:
+        userId:
+          type: string
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+        remark:
+          type: string
+        addTs:
+          type: integer
+          format: int64
+
+    SubscribeUsersInfoRequest:
+      type: object
+      description: SDK-facing 输入；upstream body 字段映射为 `usernames`。
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: string
+
+    UnsubscribeUsersInfoRequest:
+      type: object
+      description: SDK-facing 输入；upstream query 参数映射为 `usernames=<csv>`。
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    UserInfoUpdatedEvent:
+      type: array
+      items:
+        $ref: '#/components/schemas/UserInfo'
+
+    ContactInfoUpdatedEvent:
+      type: object
+      required:
+        - userInfo
+      properties:
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    UserInfoNotifyPatch:
+      type: object
+      required:
+        - userId
+        - attributes
+        - lastModified
+        - source
+      properties:
+        userId:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/UserInfoPatch'
+        lastModified:
+          type: integer
+          format: int64
+        source:
+          type: string
+          enum:
+            - subscription
+            - contact
+
+    UserInfoPatch:
+      type: object
+      description: |
+        notify 中本次实际变化的资料补丁。
+        未出现在 patch 中的字段不得被解释为删除。
+      properties:
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    UserInfoRawNotifyEvent:
+      type: object
+      required:
+        - notifyType
+        - userId
+        - metadata
+        - lastModified
+      properties:
+        notifyType:
+          type: string
+          enum:
+            - subscribe_metadata_updated
+            - contact_metadata_updated
+        userId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        lastModified:
+          type: integer
+          format: int64
+
+    MetadataSubscriptionLimitState:
+      type: object
+      required:
+        - subscriptionLimit
+        - subscribedLimit
+      properties:
+        subscriptionLimit:
+          type: integer
+          enum: [100]
+        subscribedLimit:
+          type: integer
+          enum: [1000]
+        errorKind:
+          type: string
+          nullable: true
+          enum:
+            - subscriber_limit_exceeded
+            - target_limit_exceeded
+
+    UserInfoSubscriptionErrorEnvelope:
+      type: object
+      description: 033 已知订阅相关业务错误的统一内部映射视图。
+      required:
+        - httpStatus
+        - reasonKey
+      properties:
+        httpStatus:
+          type: integer
+          enum: [400, 401, 403]
+        serverCode:
+          oneOf:
+            - type: string
+            - type: integer
+        error:
+          type: string
+        exception:
+          type: string
+        errorDescription:
+          type: string
+        reasonKey:
+          type: string
+          enum:
+            - unauthorized
+            - service_forbidden
+            - subscriber_limit_exceeded
+            - target_limit_exceeded
+
+    SubscribeUsersInfoResponseEnvelope:
+      type: object
+      description: upstream 订阅成功的真实 response envelope。
+      required:
+        - path
+        - uri
+        - status
+        - timestamp
+        - organization
+        - application
+        - entities
+        - count
+        - data
+        - duration
+        - applicationName
+      properties:
+        path:
+          type: string
+          example: /user/wzy/metadata/subscription
+        uri:
+          type: string
+          example: https://a1-hsb.easemob.com/hx/hxdemo/user/wzy/metadata/subscription
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: integer
+          format: int64
+        organization:
+          type: string
+        application:
+          type: string
+        entities:
+          type: array
+          items: {}
+        count:
+          type: integer
+        data:
+          type: array
+          items:
+            type: string
+        duration:
+          type: integer
+        applicationName:
+          type: string
+      x-sample-status: confirmed-real-sample
+
+    UnsubscribeUsersInfoResponseEnvelope:
+      type: object
+      description: upstream 取消订阅成功的真实 response envelope。
+      required:
+        - path
+        - uri
+        - status
+        - timestamp
+        - organization
+        - application
+        - entities
+        - count
+        - data
+        - duration
+        - applicationName
+      properties:
+        path:
+          type: string
+          example: /user/wzy/metadata/subscription
+        uri:
+          type: string
+          example: https://a1-hsb.easemob.com/hx/hxdemo/user/wzy/metadata/subscription
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: integer
+          format: int64
+        organization:
+          type: string
+        application:
+          type: string
+        entities:
+          type: array
+          items: {}
+        count:
+          type: integer
+        data:
+          type: array
+          items:
+            type: string
+        duration:
+          type: integer
+        applicationName:
+          type: string
+      x-sample-status: confirmed-real-sample
+
+    GetSubscribedUsersResponseEnvelope:
+      type: object
+      description: upstream 查询订阅列表成功的真实 response envelope；`data` 为用户名数组。
+      required:
+        - path
+        - uri
+        - status
+        - timestamp
+        - organization
+        - application
+        - entities
+        - count
+        - data
+        - duration
+        - applicationName
+      properties:
+        path:
+          type: string
+          example: /user/wzy/metadata/subscription
+        uri:
+          type: string
+          example: https://a1-hsb.easemob.com/hx/hxdemo/user/wzy/metadata/subscription
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: integer
+          format: int64
+        organization:
+          type: string
+        application:
+          type: string
+        entities:
+          type: array
+          items: {}
+        count:
+          type: integer
+        data:
+          type: array
+          items:
+            type: string
+        duration:
+          type: integer
+        applicationName:
+          type: string
+      x-sample-status: confirmed-real-sample
+
+    SDKError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

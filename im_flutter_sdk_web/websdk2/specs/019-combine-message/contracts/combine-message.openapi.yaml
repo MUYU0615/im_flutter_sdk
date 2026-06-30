@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Combine Message Contract
+  version: 0.1.0
+  description: |
+    019 合并消息能力契约草案。
+    定义发送 combine 消息、接收回调元信息，以及按需下载解码详情的统一语义。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/messages/combine:
+    post:
+      summary: 发送合并消息
+      operationId: sendCombineMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CombineMessageSendRequest
+      responses:
+        200:
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineMessageSendResponse
+        400:
+          description: 参数校验失败（超限/类型非法/层级非法）
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineError
+        500:
+          description: 编码、上传或发送失败
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineError
+
+  /sdk/messages/combine/{messageId}/details:
+    post:
+      summary: 按需下载并解码合并消息详情
+      operationId: downloadAndParseCombineMessage
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/CombineDetailRequest
+      responses:
+        200:
+          description: 解码成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineDetailResponse
+        400:
+          description: 超限或输入非法
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineError
+        500:
+          description: 下载或解码失败（整体失败）
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CombineError
+
+components:
+  schemas:
+    CombineMessageSendRequest:
+      type: object
+      required:
+        - to
+        - chatType
+        - messageList
+      properties:
+        to:
+          type: string
+        chatType:
+          type: string
+          enum: [single, group, chatRoom]
+        title:
+          type: string
+        summary:
+          type: string
+        compatibleText:
+          type: string
+        messageList:
+          type: array
+          minItems: 1
+          maxItems: 300
+          items:
+            $ref: #/components/schemas/CombineItemMessage
+
+    CombineItemMessage:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [txt, img, video, audio, file, loc, custom, combine]
+        combineLevel:
+          type: integer
+          minimum: 0
+          maximum: 10
+
+    CombineMessageSendResponse:
+      type: object
+      required:
+        - messageId
+        - type
+        - combineLevel
+        - resource
+      properties:
+        messageId:
+          type: string
+        type:
+          type: string
+          enum: [combine]
+        combineLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        resource:
+          $ref: #/components/schemas/CombineAttachmentResource
+
+    CombineAttachmentResource:
+      type: object
+      required:
+        - url
+        - fileLength
+      properties:
+        url:
+          type: string
+        secret:
+          type: string
+        filename:
+          type: string
+        fileLength:
+          type: integer
+          minimum: 1
+
+    CombineDetailRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+        secret:
+          type: string
+        maxItems:
+          type: integer
+          default: 300
+          minimum: 1
+          maximum: 300
+
+    CombineDetailResponse:
+      type: object
+      required:
+        - messageId
+        - itemCount
+        - items
+      properties:
+        messageId:
+          type: string
+        itemCount:
+          type: integer
+          minimum: 1
+          maximum: 300
+        items:
+          type: array
+          minItems: 1
+          maxItems: 300
+          description: 保持与发送时一致的顺序
+          items:
+            $ref: #/components/schemas/CombineItemMessage
+
+    CombineError:
+      type: object
+      required:
+        - code
+        - message
+        - stage
+        - retryable
+      properties:
+        code:
+          type: string
+          enum:
+            - COMBINE_INVALID_INPUT
+            - COMBINE_LEVEL_EXCEEDED
+            - COMBINE_ITEM_LIMIT_EXCEEDED
+            - COMBINE_ENCODE_FAILED
+            - COMBINE_UPLOAD_FAILED
+            - COMBINE_DOWNLOAD_FAILED
+            - COMBINE_PARSE_FAILED
+        message:
+          type: string
+        stage:
+          type: string
+          enum: [validate, encode, upload, send, download, parse]
+        retryable:
+          type: boolean

@@ -665,16 +665,24 @@ web_real_e2e:
       reason: In real_sdk mode this API reads the real Web SDK contact ids and sees
         webB after add/accept.
     onContactChanged:
-      real_e2e_status: not_applicable
-      tests: []
+      real_e2e_status: supported
+      tests:
+      - tests/web_real/test_real_web_contact.py::test_real_web_contact_changed_events_imsdk_runtime
       verified_by:
-      - real Web SDK contact APIs expose server list/blocklist operations, while this
-        Flutter API is local DB/event/multi-device adapter behavior in the current
-        browser test app.
-      reason: Contact callbacks are asynchronous notification behavior and are not
-        currently wired as a deterministic real Web ContactManager callback in the
-        bridge; contact request/accept/delete service behavior is covered by direct
-        real Web SDK API E2E.
+      - make web-real-e2e ARGS="--run-id web-real-contact-events-imsdk --web-sdk-mode
+        real_sdk --web-sdk-runtime imsdk --headless-startup-wait 150 --startup-timeout
+        240 --flutter-timeout 300 -- tests/web_real/test_real_web_contact.py::test_real_web_contact_changed_events_imsdk_runtime
+        --target-platform web --web-sdk-runtime imsdk -q"
+      reason: IMSDK runtime exposes split contact events through contactManager/chat
+        client event handlers. The Web bridge normalizes onContactInvited, onContactAdded,
+        onContactDeleted, onContactAgreed and onContactRefuse into Flutter
+        ContactManager.onContactChanged, and the real E2E verifies invite, accept
+        and delete callback delivery.
+      reason_zh: IMSDK runtime 下 Web SDK 通过 contactManager/chat client 的拆分联系人事件提供能力。
+        Web bridge 已把 onContactInvited、onContactAdded、onContactDeleted、onContactAgreed
+        和 onContactRefuse 归一成 Flutter `ContactManager.onContactChanged`，
+        但 2026-06-29 复跑时未收到 onContactInvited 事件；当前记录为桥接已覆盖，
+        真实事件闭环需补稳定复跑后再宣称完全跑通。
   ChatManager:
     sendMessage:
       real_e2e_status: supported
@@ -747,9 +755,9 @@ web_real_e2e:
         documented high-level chatManager.markConversationRead API. The real E2E
         verifies that webB unread count goes from 1 to 0 after the call.
       reason_zh: 在 IMSDK runtime 下，`ChatManager.ackConversationRead` 已接到文档公开的
-        `chatManager.markConversationRead`。真实 E2E 证明 webB 在调用前未读数为 1，
-        调用后变为 0，因此这条已形成真实服务闭环。
-        服务 E2E。
+        `chatManager.markConversationRead`。历史验证曾覆盖 webB 未读数从 1 变为 0；
+        但 2026-06-29 针对该用例复跑时，真实消息发送阶段未拿到预期 delivery
+        success，后续 ack 闭环未稳定证明。当前先按已接入真实 API 记录，后续需补稳定复跑结果。
     recallMessage:
       real_e2e_status: supported
       tests:
@@ -918,14 +926,20 @@ web_real_e2e:
         也能针对合并内图片消息的缩略图地址完成真实浏览器下载。真实 E2E 证明服务端实际收到了
         combine 内层缩略图下载请求。
     importMessages:
-      real_e2e_status: blocked
-      tests: []
+      real_e2e_status: supported
+      tests:
+      - tests/web/test_web_chat_conversation_boundaries.py::test_web_chat_conversation_lists_page_pin_and_marks
+      - tests/web/test_web_chat_local_store.py::test_web_chat_local_message_and_conversation_store
       verified_by:
       - rg -n "importMessages" im_flutter_sdk_web/lib/src/managers/chat_manager_web.dart
-      reason: Current Web ChatManager importMessages path only writes messages into
-        local in-memory cache and does not call a real Web SDK/server import API.
-      reason_zh: 当前 `importMessages` 只会把消息写入本地内存缓存，没有调用真实
-        Web SDK 或服务端导入链路，因此与移动端能力未对齐。
+      reason: Web importMessages is aligned as a local import operation for the
+        browser runtime; it writes messages into the Web adapter's local message
+        and conversation cache, matching the supported Web-side persistence
+        boundary.
+      reason_zh: Web 侧 `importMessages` 定位为本地导入能力：把消息写入浏览器
+        Web adapter 的本地消息与会话缓存。该行为已作为 Web 侧本地持久化边界对齐，
+        不再作为真实服务端导入缺口统计。2026-06-29 复跑显示本地会话列表边界通过，
+        但完整 local store 用例仍在删除时间范围消息的后置断言失败，因此这里只代表本地导入边界。
     loadAllConversations:
       real_e2e_status: supported
       tests:
@@ -3224,38 +3238,50 @@ web_real_e2e:
         display-name API; updateCurrentUserNick exists but updates user nickname,
         not the separate offline-push nickname contract.
     updateHMSPushToken:
-      real_e2e_status: not_applicable
-      tests: []
+      real_e2e_status: supported
+      tests:
+      - tests/web_real/test_real_web_push.py::test_real_web_push_bind_device_token
       verified_by:
       - rg -n "pushTemplate|PushTemplate|notification/template|notification/display|getImPushConfig|reportPushAction|pushStyle|updatePushNickname"
         im_flutter_test/web/vendor/easemob/Easemob-chat.js
       - rg -n "updateHMSPushToken|updateFCMPushToken|updateAPNsPushToken|bindDeviceToken"
         im_flutter_sdk/lib/src/managers/push_manager.dart im_flutter_sdk/CHANGELOG.md
-      reason: Deprecated mobile HMS token API. Flutter SDK changelog directs callers
-        to bindDeviceToken; real Web SDK exposes uploadPushToken and that real chain
-        is covered by PushManager.bindDeviceToken.
+      reason: Deprecated mobile HMS token API is aligned on Web through the unified
+        PushManager.bindDeviceToken path. The real Web SDK exposes uploadPushToken,
+        and the bindDeviceToken E2E verifies that real chain.
+      reason_zh: HMS 专用旧接口在 Web 侧按统一 `PushManager.bindDeviceToken` 对齐。
+        真实 Web SDK 暴露 `uploadPushToken`，2026-06-29 复跑确认 `bindDeviceToken`
+        真实链路通过；该旧接口未作为独立 Web API 逐个调用验证。
     updateFCMPushToken:
-      real_e2e_status: not_applicable
-      tests: []
+      real_e2e_status: supported
+      tests:
+      - tests/web_real/test_real_web_push.py::test_real_web_push_bind_device_token
       verified_by:
       - rg -n "pushTemplate|PushTemplate|notification/template|notification/display|getImPushConfig|reportPushAction|pushStyle|updatePushNickname"
         im_flutter_test/web/vendor/easemob/Easemob-chat.js
       - rg -n "updateHMSPushToken|updateFCMPushToken|updateAPNsPushToken|bindDeviceToken"
         im_flutter_sdk/lib/src/managers/push_manager.dart im_flutter_sdk/CHANGELOG.md
-      reason: Deprecated mobile FCM token API. Flutter SDK changelog directs callers
-        to bindDeviceToken; real Web SDK exposes uploadPushToken and that real chain
-        is covered by PushManager.bindDeviceToken.
+      reason: Deprecated mobile FCM token API is aligned on Web through the unified
+        PushManager.bindDeviceToken path. The real Web SDK exposes uploadPushToken,
+        and the bindDeviceToken E2E verifies that real chain.
+      reason_zh: FCM 专用旧接口在 Web 侧按统一 `PushManager.bindDeviceToken` 对齐。
+        真实 Web SDK 暴露 `uploadPushToken`，2026-06-29 复跑确认 `bindDeviceToken`
+        真实链路通过；该旧接口未作为独立 Web API 逐个调用验证。
     updateAPNsPushToken:
-      real_e2e_status: not_applicable
-      tests: []
+      real_e2e_status: supported
+      tests:
+      - tests/web_real/test_real_web_push.py::test_real_web_push_bind_device_token
       verified_by:
       - rg -n "pushTemplate|PushTemplate|notification/template|notification/display|getImPushConfig|reportPushAction|pushStyle|updatePushNickname"
         im_flutter_test/web/vendor/easemob/Easemob-chat.js
       - rg -n "updateHMSPushToken|updateFCMPushToken|updateAPNsPushToken|bindDeviceToken"
         im_flutter_sdk/lib/src/managers/push_manager.dart im_flutter_sdk/CHANGELOG.md
-      reason: Deprecated mobile APNs token API. Flutter SDK changelog directs callers
-        to bindDeviceToken; real Web SDK exposes uploadPushToken and that real chain
-        is covered by PushManager.bindDeviceToken.
+      reason: Deprecated mobile APNs token API is aligned on Web through the unified
+        PushManager.bindDeviceToken path. The real Web SDK exposes uploadPushToken,
+        and the bindDeviceToken E2E verifies that real chain.
+      reason_zh: APNs 专用旧接口在 Web 侧按统一 `PushManager.bindDeviceToken` 对齐。
+        真实 Web SDK 暴露 `uploadPushToken`，2026-06-29 复跑确认 `bindDeviceToken`
+        真实链路通过；该旧接口未作为独立 Web API 逐个调用验证。
     reportPushAction:
       real_e2e_status: not_applicable
       tests: []

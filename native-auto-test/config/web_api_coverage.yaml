@@ -1,0 +1,3104 @@
+web:
+  Client:
+    init:
+      status: supported
+      tests:
+      - tests/web/test_web_smoke.py
+      - tests/web/test_web_client_api.py
+      reason: Web bridge and ClientWeb session foundation verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    createAccount:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web createAccount returns a stable bridge-compatible account result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    login:
+      status: supported
+      tests:
+      - tests/web/test_web_session.py
+      - tests/web/test_web_smoke.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web session login is driven by the same global fixture as Android/iOS.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loginWithAgoraToken:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web agora-token login is verified and state is restored for later tests.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    renewToken:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web renewToken stores the supplied token and returns success.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    logout:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web logout is verified in Client loginWithAgoraToken flow and session
+        teardown.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    changeAppKey:
+      status: not_applicable
+      tests: []
+      reason: Runtime appkey switching is native SDK configuration behavior and is
+        not exposed as a meaningful browser Web runtime regression target.
+    uploadLog:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web Client foundation command returns stable bridge-compatible result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    compressLogs:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web Client foundation command returns stable bridge-compatible result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    kickDevice:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web Client foundation command returns stable bridge-compatible result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    kickAllDevices:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web Client foundation command returns stable bridge-compatible result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getLoggedInDevicesFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web Client foundation command returns stable bridge-compatible result
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getToken:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web token is verified after session login.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getCurrentUser:
+      status: supported
+      tests:
+      - tests/web/test_web_session.py
+      - tests/web/test_web_smoke.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web current user is verified after session login.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getCurrentDeviceId:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      reason: Web device id payload is verified.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    isLoggedInBefore:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web logged-in state is verified after session login.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    isConnected:
+      status: supported
+      tests:
+      - tests/web/test_web_smoke.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web connection state is verified after session login.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    startCallback:
+      status: supported
+      tests:
+      - tests/web/test_web_client_api.py
+      - tests/web/test_web_client_session_transitions.py
+      reason: Web startCallback returns stable true and is invoked after login.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateUsingHttpsOnlySetting:
+      status: not_applicable
+      tests: []
+      reason: Native transport setting; browser Web transport is controlled by page
+        URL and WebSocket endpoint.
+    updateLoginExtensionInfo:
+      status: not_applicable
+      tests: []
+      reason: Native login extension setting has no Web bridge behavior in current
+        Web adapter.
+    updateDeleteMessagesWhenLeaveGroupSetting:
+      status: not_applicable
+      tests: []
+      reason: Native local SDK option; not applicable to Web memory-state adapter.
+    updateDeleteMessageWhenLeaveRoomSetting:
+      status: not_applicable
+      tests: []
+      reason: Native local SDK option; not applicable to Web memory-state adapter.
+    updateRoomOwnerCanLeaveSetting:
+      status: not_applicable
+      tests: []
+      reason: Native local SDK option; not applicable to Web memory-state adapter.
+    updateAutoAcceptGroupInvitationSetting:
+      status: not_applicable
+      tests: []
+      reason: Native local SDK option; not applicable to Web memory-state adapter.
+    acceptInvitationAlways:
+      status: not_applicable
+      tests: []
+      reason: Native local SDK option; not applicable to Web memory-state adapter.
+    updateAutoDownloadAttachmentThumbnailSetting:
+      status: not_applicable
+      tests: []
+      reason: Native media download option; browser Web MVP has no native attachment
+        downloader.
+    updateRequireAckSetting:
+      status: not_applicable
+      tests: []
+      reason: Native message ack option; Web adapter does not expose native transport
+        ack settings.
+    updateDeliveryAckSetting:
+      status: not_applicable
+      tests: []
+      reason: Native message delivery ack option; Web adapter does not expose native
+        transport ack settings.
+    updateSortMessageByServerTimeSetting:
+      status: not_applicable
+      tests: []
+      reason: Native local message sorting option; not applicable to Web memory-state
+        adapter.
+    updateMessagesReceiveCallbackIncludeSendSetting:
+      status: not_applicable
+      tests: []
+      reason: Native callback setting; Web callback delivery is controlled by bridge.
+    updateRegradeMessagesSetting:
+      status: not_applicable
+      tests: []
+      reason: Native SDK setting; no Web bridge behavior in current adapter.
+    changeAppId:
+      status: not_applicable
+      tests: []
+      reason: Runtime app id switching is native SDK configuration behavior and is
+        not exposed as a meaningful browser Web runtime regression target.
+  Unclassified:
+    onMultiDeviceGroupEvent:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMultiDeviceContactEvent:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMultiDeviceThreadEvent:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMultiDeviceRemoveMessagesEvent:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMultiDevicesConversationEvent:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onConnected:
+      status: supported
+      tests:
+      - tests/web/test_web_client_events.py
+      reason: Web EventBridgeHandler forwards deterministic Client.onConnected
+        after startCallback through the JSON bridge and is verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onDisconnected:
+      status: supported
+      tests:
+      - tests/web/test_web_client_events.py
+      reason: Web EventBridgeHandler forwards deterministic Client.onDisconnected
+        after logout through the JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserDidLoginFromOtherDevice:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserDidRemoveFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserDidForbidByServer:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserDidChangePassword:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserDidLoginTooManyDevice:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserKickedByOtherDevice:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserAuthenticationFailed:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onSendDataToFlutter:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onTokenWillExpire:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onTokenDidExpire:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onAppActiveNumberReachLimit:
+      status: supported
+      tests:
+      - tests/web/test_web_client_unclassified_events.py
+      reason: Web im_flutter_test forwards a deterministic Client callback event for JSON bridge regression. This verifies Flutter app -> WebSocket event delivery for the callback key; it does not prove a real server-side multi-device or token-expiry trigger on browser Web.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  ContactManager:
+    addContact:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteContact:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getAllContactsFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getAllContactsFromDB:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addUserToBlockList:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeUserFromBlockList:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getBlockListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getBlockListFromDB:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    acceptInvitation:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager invitation command returns stable bridge-compatible
+        success and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    declineInvitation:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager invitation command returns stable bridge-compatible
+        success and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getSelfIdsOnOtherPlatform:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getAllContacts:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    setContactRemark:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getContact:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchAllContacts:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchContacts:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchAllContactIds:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getAllContactIds:
+      status: supported
+      tests:
+      - tests/web/test_web_contact.py
+      - tests/web/test_web_contact_pagination.py
+      reason: Web ContactManager memory-state foundation is verified through headless
+        JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onContactChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_contact_events.py
+      reason: Web EventBridgeHandler forwards deterministic ContactManager contact-added
+        and contact-deleted events after addContact/deleteContact through the JSON
+        bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  ChatManager:
+    sendMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_message.py
+      reason: Web text message send is verified through JSON bridge.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    sendMessageWithType:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    resendMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state resend behavior is verified through
+        headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    ackMessageRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local read-ack command returns the same stable success
+        shape used by mobile JSON bridge cases.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    ackGroupMessageRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager group read-ack command returns the same stable success
+        shape used by mobile JSON bridge cases.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    ackConversationRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager conversation read-ack clears local conversation unread
+        state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    recallMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local recall removes the message from memory state and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getThreadConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatManager returns a local thread conversation for existing
+        ChatThreadManager thread ids and is verified by headless e2e through the
+        JSON bridge.
+    markAllChatMsgAsRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getUnreadMessageCount:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateChatMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadAttachment:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager fetches attachment body.remotePath and triggers a
+        browser download anchor. Verified by headless e2e with a local HTTP server
+        receiving the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadBigImage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager fetches image body.remotePath and triggers a browser
+        download anchor. Verified by headless e2e with a local HTTP server receiving
+        the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadThumbnail:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager fetches image/video body.thumbnailRemotePath and triggers
+        a browser download anchor. Verified by headless e2e with a local HTTP server
+        receiving the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadMessageAttachmentInCombine:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager fetches combine inner-message body.remotePath and
+        triggers a browser download anchor. Verified by headless e2e with a local
+        HTTP server receiving the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadMessageThumbnailInCombine:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager fetches combine inner-message body.thumbnailRemotePath
+        and triggers a browser download anchor. Verified by headless e2e with a
+        local HTTP server receiving the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    importMessages:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadAllConversations:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getAllConversationsBySort:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager returns local conversations sorted by latest message
+        time and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getConversationsFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager maps server conversation fetch to local Web adapter
+        conversation state for bridge parity testing.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchHistoryMessages:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager basic history fetch returns local conversation messages
+        with cursor shape and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchHistoryMessagesByOptions:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    searchChatMsgFromDB:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager local DB search is represented by Web adapter memory
+        search and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    asyncFetchGroupAcks:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager returns cursor-shaped local group message ack state
+        recorded by ackGroupMessageRead and is verified by headless e2e through
+        the JSON bridge.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteRemoteConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager remote conversation delete is mapped to Web adapter
+        conversation deletion and returns mobile-compatible null success.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteMessagesBeforeTimestamp:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    translateMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager stores deterministic local translation results on text
+        messages and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchSupportLanguages:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addReaction:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager stores local message reaction state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeReaction:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      reason: Web ChatManager removes local message reaction state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchReactionList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager returns local message reaction summaries and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchReactionDetail:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      reason: Web ChatManager returns local message reaction detail cursor shape and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    reportMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager reportMessage returns stable bridge-compatible success
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchConversationsFromServerWithPage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager returns a page from local Web adapter conversation state
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMessagesFromServerWithMsgIds:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager maps server message removal by id to local Web adapter
+        message deletion and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMessagesFromServerWithTs:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager maps server message removal by timestamp to local Web
+        adapter message deletion and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getConversationsFromServerWithCursor:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager returns cursor-paged local conversation state and is
+        verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getPinnedConversationsFromServerWithCursor:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager returns cursor-paged pinned local conversations and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    pinConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager stores local conversation pin state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    modifyMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager modifies local text message body and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadAndParseCombineMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web ChatManager parses local combine body.messageList and returns
+        matching local inner messages. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getPinInfo:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager returns local message pin metadata and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    pinnedMessages:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager returns local pinned messages for a conversation and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addRemoteAndLocalConversationsMark:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager stores local conversation mark state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteRemoteAndLocalConversationsMark:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager removes local conversation mark state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchConversationsByOptions:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_conversation_boundaries.py
+      reason: Web ChatManager returns option/cursor-paged local conversation state
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteAllMessageAndConversation:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager clears local message and conversation state and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    pinMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager pins a local message and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    unpinMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      reason: Web ChatManager unpins a local message and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchPinnedMessages:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      reason: Web ChatManager returns cursor-paged local pinned messages and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    conversationRemindType:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager returns a stable default local conversation remind type
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    conversationSearchMsgsByOptions:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager conversation message search is represented by Web adapter
+        memory search and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    conversationGetLocalMessageCount:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager counts local conversation messages and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    conversationDeleteServerMessageWithIds:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager maps conversation server deletion by id to local message
+        deletion and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    conversationDeleteServerMessageWithTime:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager maps conversation server deletion by timestamp to local
+        message deletion and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    searchMsgsByOptions:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager message search by options is represented by Web adapter
+        memory search and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    syncSilentModels:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      reason: Web ChatManager syncSilentModels returns stable bridge-compatible success
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getMessageCount:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      - tests/web/test_web_chat_delete_cleanup_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadConversationMessagesWithKeyword:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager loads local conversation messages by keyword using Web
+        adapter memory search and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMessagesWithIds:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      - tests/web/test_web_chat_query_boundaries.py
+      reason: Web ChatManager local memory-state message/conversation behavior is
+        verified through headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  MessageManager:
+    onMessagesReceived:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message received events
+        after ChatManager.sendMessage through the JSON bridge and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onStreamMessagesReceived:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic stream message received
+        events after ChatManager.sendMessage stores a text message with streamChunk
+        through the JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onCmdMessagesReceived:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic CMD message received
+        events after ChatManager.sendMessage stores a CMD body through the JSON
+        bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessagesRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message read events
+        after ChatManager.ackMessageRead through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onReadAckForGroupMessageUpdated:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic group-message read-ack
+        update events after ChatManager.ackGroupMessageRead through the JSON bridge
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onGroupMessageRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic group message read ack
+        payloads after ChatManager.ackGroupMessageRead through the JSON bridge and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessagesDelivered:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message delivered events
+        after ChatManager.resendMessage through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessagesRecalled:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message recalled events
+        after ChatManager.recallMessage through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic legacy message changed
+        callbacks after ChatManager.modifyMessage through the JSON bridge and is
+        verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onConversationUpdate:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic conversation update
+        events after ChatManager.pinConversation/deleteConversation through the
+        JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onConversationHasRead:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic conversation read events
+        after ChatManager.ackConversationRead through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    messageReactionDidChange:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message reaction add/remove
+        events after ChatManager.addReaction/removeReaction through the JSON bridge
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageContentChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message content changed
+        events after ChatManager.modifyMessage through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageProgress:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web EventBridgeHandler forwards deterministic download progress
+        callbacks after successful ChatManager media downloads through the JSON
+        bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageProgressUpdate:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web EventBridgeHandler forwards deterministic download progress update
+        callbacks after successful ChatManager media downloads through the JSON
+        bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageError:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_downloads.py
+      reason: Web EventBridgeHandler forwards deterministic message error callbacks
+        when ChatManager media downloads fail on non-2xx HTTP responses through
+        the JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageSuccess:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic legacy message success
+        callbacks after ChatManager.sendMessage through the JSON bridge and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageReadAck:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic legacy message read
+        ack callbacks after ChatManager.ackMessageRead through the JSON bridge
+        and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessageDeliveryAck:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic legacy delivery ack
+        callbacks after ChatManager.resendMessage through the JSON bridge and is
+        verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onPresenceStatusChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web EventBridgeHandler forwards deterministic presence status changed
+        events after PresenceManager.publishPresenceWithDescription updates the
+        Web local presence state through the JSON bridge and is verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessagePinChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      reason: Web EventBridgeHandler forwards deterministic message pin/unpin events
+        after ChatManager.pinMessage/unpinMessage through the JSON bridge and is
+        verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onMessagesRecalledInfo:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_events.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web EventBridgeHandler forwards deterministic recalled-message info
+        events after ChatManager.recallMessage through the JSON bridge and is verified
+        by headless e2e.
+    onOfflineMessageSyncStart:
+      status: not_applicable
+      tests: []
+      reason: Offline sync callback is native SDK storage/server sync behavior and
+        cannot be triggered by current browser Web memory-state adapter.
+    onOfflineMessageSyncFinish:
+      status: not_applicable
+      tests: []
+      reason: Offline sync callback is native SDK storage/server sync behavior and
+        cannot be triggered by current browser Web memory-state adapter.
+  ConversationManager:
+    getUnreadMsgCount:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager reuses ChatManager Web conversation state for
+        per-conversation unread count and is verified by headless JSON bridge e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    markAllMessagesAsRead:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager marks all local messages in the conversation
+        as read using ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    markMessageAsRead:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager marks one local message as read using ChatManager
+        Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    syncConversationExt:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager syncs local conversation ext metadata through
+        ChatManager Web conversation state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager removes one local conversation message and associated
+        Web reaction/pin state, verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteMessageByIds:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager deletes local conversation messages by id and
+        associated Web reaction/pin state, verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getLatestMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager returns the latest local message for the conversation
+        from ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getLatestMessageFromOthers:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager returns the latest incoming local message for
+        the conversation and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    clearAllMessages:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager clears local messages for one conversation and
+        associated Web reaction/pin state, verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    deleteMessagesWithTs:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager deletes local conversation messages within a
+        timestamp range and associated Web reaction/pin state, verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    insertMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager inserts a local message into ChatManager Web
+        state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    appendMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager appends a local message into ChatManager Web
+        state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateConversationMessage:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager updates a local message while preserving message
+        id and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMsgWithId:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager loads a local conversation message by id from
+        ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMsgWithStartId:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager loads local conversation messages around a start
+        message id from ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMsgWithKeywords:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager filters local conversation messages by text
+        keyword from ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMsgWithMsgType:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager filters local conversation messages by body
+        type from ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    loadMsgWithTime:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager filters local conversation messages by timestamp
+        range from ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    messageCount:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager returns local conversation message count from
+        ChatManager Web state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMsgFromServerWithTimeStamp:
+      status: supported
+      tests:
+      - tests/web/test_web_conversation_manager.py
+      reason: Web ConversationManager maps server timestamp deletion to local conversation
+        message cleanup and is verified by headless e2e; public Dart API coverage
+        is still not verified.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getReactionList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_reaction_pin_boundaries.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web MessageManager returns local reactions from ChatManager message
+        reaction state for EMMessage.reactionList and is verified by headless e2e
+        through the JSON bridge.
+    groupAckCount:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_local_store.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web MessageManager returns the local group ack count recorded by
+        ChatManager.ackGroupMessageRead for EMMessage.groupAckCount and is verified
+        by headless e2e through the JSON bridge.
+    chatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web MessageManager resolves a local message id to the ChatThreadManager
+        thread overview created for that message and is verified by headless e2e
+        through the JSON bridge.
+  ChatRoomManager:
+    joinChatRoom:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager joins local Web adapter chat room state and is
+        verified by headless e2e through the JSON bridge.
+    leaveChatRoom:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager leaves local Web adapter chat room state and is
+        verified by headless e2e through the JSON bridge.
+    fetchPublicChatRoomsFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns paged local chat room metadata and is
+        verified by headless e2e through the JSON bridge.
+    fetchChatRoomInfoFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns local chat room metadata by roomId and
+        is verified by headless e2e through the JSON bridge.
+    getChatRoom:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns cached local chat room metadata and is
+        verified by headless e2e through the JSON bridge.
+    getAllChatRooms:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns locally joined chat rooms and is verified
+        by headless e2e through the JSON bridge.
+    createChatRoom:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager creates local chat room state and is verified
+        by headless e2e through the JSON bridge.
+    destroyChatRoom:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes local chat room state and is verified
+        by headless e2e through the JSON bridge.
+    changeChatRoomSubject:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager updates local chat room subject and is verified
+        by headless e2e through the JSON bridge.
+    changeChatRoomDescription:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager updates local chat room description and is
+        verified by headless e2e through the JSON bridge.
+    fetchChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns cursor-paged local room members and is
+        verified by headless e2e through the JSON bridge.
+    muteChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager stores local room mute list state and is verified
+        by headless e2e through the JSON bridge.
+    unMuteChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes users from local room mute list state
+        and is verified by headless e2e through the JSON bridge.
+    changeChatRoomOwner:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager updates local room owner state and is verified
+        by headless e2e through the JSON bridge.
+    addChatRoomAdmin:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager adds users to local room admin state and is
+        verified by headless e2e through the JSON bridge.
+    removeChatRoomAdmin:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes users from local room admin state and
+        is verified by headless e2e through the JSON bridge.
+    fetchChatRoomMuteList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns page-number local room mute list state
+        and is verified by headless e2e through the JSON bridge.
+    removeChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes users from local room member state and
+        is verified by headless e2e through the JSON bridge.
+    blockChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager adds users to local room block list state and
+        removes them from member state, verified by headless e2e through the JSON
+        bridge.
+    unBlockChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes users from local room block list state
+        and is verified by headless e2e through the JSON bridge.
+    fetchChatRoomBlockList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns page-number local room block list state
+        and is verified by headless e2e through the JSON bridge.
+    updateChatRoomAnnouncement:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager stores local room announcement state and is
+        verified by headless e2e through the JSON bridge.
+    fetchChatRoomAnnouncement:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns local room announcement state and is
+        verified by headless e2e through the JSON bridge.
+    addMembersToChatRoomWhiteList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager adds users to local room allow list state and
+        is verified by headless e2e through the JSON bridge.
+    removeMembersFromChatRoomWhiteList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes users from local room allow list state
+        and is verified by headless e2e through the JSON bridge.
+    fetchChatRoomWhiteListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns local room allow list state and is
+        verified by headless e2e through the JSON bridge.
+    isMemberInChatRoomWhiteListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager checks current user membership in local room
+        allow list state and is verified by headless e2e through the JSON bridge.
+    muteAllChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager stores local all-member mute state and is verified
+        by headless e2e through the JSON bridge.
+    unMuteAllChatRoomMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager clears local all-member mute state and is verified
+        by headless e2e through the JSON bridge.
+    fetchChatRoomAttributes:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_attributes.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager returns local room attribute state with optional
+        key filtering and is verified by headless e2e through the JSON bridge.
+    setChatRoomAttributes:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_attributes.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager stores local room attribute state and is verified
+        by headless e2e through the JSON bridge.
+    removeChatRoomAttributes:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_attributes.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager removes keys from local room attribute state
+        and is verified by headless e2e through the JSON bridge.
+    onChatRoomChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_events.py
+      reason: Web EventBridgeHandler forwards deterministic ChatRoom specification
+        change, announcement-changed, admin add/remove, mute add/remove, white-list
+        add/remove, member join/exit, owner change, all-member mute change, attributes
+        update/remove, member removed/blocked, and room-destroyed events after createChatRoom/changeChatRoomSubject/updateChatRoomAnnouncement/addChatRoomAdmin/removeChatRoomAdmin/muteChatRoomMembers/unMuteChatRoomMembers/addMembersToChatRoomWhiteList/removeMembersFromChatRoomWhiteList/joinChatRoom/leaveChatRoom/changeChatRoomOwner/muteAllChatRoomMembers/unMuteAllChatRoomMembers/setChatRoomAttributes/removeChatRoomAttributes/removeChatRoomMembers/blockChatRoomMembers/destroyChatRoom
+        through the JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    isMemberInChatRoomMuteList:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_room_moderation.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatRoomManager checks current user membership in local room
+        mute list state and is verified by headless e2e through the JSON bridge.
+  GroupManager:
+    getGroupWithId:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local group objects from the Web adapter group
+        state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getJoinedGroups:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns locally joined groups from the Web adapter
+        group state and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getJoinedGroupsFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns a paged view of locally joined groups from
+        the Web adapter state. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getPublicGroupsFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns a cursor page of local group summaries as public
+        group data. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    createGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager creates a local group object with owner and invited
+        members and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupSpecificationFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local group metadata as the server specification
+        result. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupMemberListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns a cursor page from the local group memberList.
+        Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupBlockListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns a page from the local group blockList. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupMuteListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local muted members as a mute map. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupWhiteListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns the local group whiteList. Verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    isMemberInWhiteListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager checks whether the current Web user is in the local
+        whiteList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupFileListFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local shared-file metadata created by upload/remove
+        APIs. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    getGroupAnnouncementFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns the local group announcement metadata. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager adds members to the local group memberList and updates
+        memberCount. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    inviterUser:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager treats inviterUser as a local member add operation.
+        Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes members from local group membership and related
+        local role lists. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    blockMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager adds members to the local blockList and removes them
+        from active local membership. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    unblockMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes members from the local blockList. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateGroupSubject:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local group name metadata and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateDescription:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local group description metadata and is verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    leaveGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes a group from the local joined group set and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    destroyGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes the local group object and joined state and
+        is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    blockGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager sets local messageBlocked state to true. Verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    unblockGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager sets local messageBlocked state to false. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateGroupOwner:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local group owner metadata and keeps the new
+        owner in memberList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addAdmin:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager adds a member to the local adminList. Verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeAdmin:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes a member from the local adminList. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    muteMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager adds members to the local muteList. Verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    unMuteMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes members from the local muteList. Verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    muteAllMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager sets local isAllMemberMuted state to true. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    unMuteAllMembers:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager sets local isAllMemberMuted state to false. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    addWhiteList:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager adds members to the local whiteList. Verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeWhiteList:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes members from the local whiteList. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    uploadGroupSharedFile:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager stores local shared-file metadata from filePath without
+        browser file IO. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    downloadGroupSharedFile:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager fetches HTTP/HTTPS shared-file URLs and triggers
+        a browser download anchor. Verified by headless e2e with a local HTTP
+        server receiving the GET request.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeGroupSharedFile:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes local shared-file metadata by fileId. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateGroupAnnouncement:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local group announcement metadata. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateGroupExt:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local group extension metadata. Verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    joinPublicGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager accepts the local public join command and keeps local
+        joined state stable. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    requestToJoinPublicGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager records the public join request command as a local
+        no-op state transition. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    acceptJoinApplication:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager accepts a local join application by adding the requested
+        userId to memberList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    declineJoinApplication:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager records a declined local join application without changing
+        memberList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    acceptInvitationFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager accepts a local group invitation and returns the local
+        group object. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    declineInvitationFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager records a declined local group invitation without changing
+        memberList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    setMemberAttributesFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager stores local member custom attributes by groupId and
+        userId. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    removeMemberAttributesFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager removes selected local member custom attributes. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchMemberAttributesFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local member custom attributes for one user.
+        Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchMembersAttributesFromGroup:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns filtered local member custom attributes for
+        multiple users. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchJoinedGroupCount:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager returns local joined group count and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onGroupChanged:
+      status: supported
+      tests:
+      - tests/web/test_web_group_events.py
+      reason: Web EventBridgeHandler forwards deterministic Group specification
+        change, announcement-changed, admin add/remove, mute add/remove, white-list
+        add/remove, member join/exit, owner change, all-member mute change, member
+        attribute update/remove, user removed, group state change, and group-destroyed
+        events after createGroup/updateGroupSubject/updateGroupAnnouncement/addAdmin/removeAdmin/muteMembers/unMuteMembers/addWhiteList/removeWhiteList/addMembers/removeMembers/updateGroupOwner/muteAllMembers/unMuteAllMembers/setMemberAttributesFromGroup/removeMemberAttributesFromGroup/blockMembers/blockGroup/unblockGroup/destroyGroup
+        through the JSON bridge and is verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    clearAllGroupsFromDB:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager clears local group state for the Web adapter. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    isMemberInGroupMuteList:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager checks whether the current Web user is in the local
+        muteList. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchGroupMembersInfo:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager builds local cursor member info from group membership
+        state. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateGroupAvatar:
+      status: supported
+      tests:
+      - tests/web/test_web_group_manager.py
+      reason: Web GroupManager updates local avatar metadata and returns the updated
+        group object. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  PushManager:
+    getImPushConfig:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns local push display config state and is verified by headless e2e through the JSON bridge.
+    getImPushConfigFromServer:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns the same deterministic local push display config state through the server-fetch API name. Browser Web does not perform a real push server fetch here; verified by headless e2e through the JSON bridge.
+    updateImPushStyle:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager updates local push display style state and is verified by headless e2e through the JSON bridge.
+    updatePushNickname:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager updates local push display nickname state and is verified by headless e2e through the JSON bridge.
+    updateHMSPushToken:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager accepts and records the HMS token locally for API parity. Browser Web does not perform native Huawei push registration; verified by headless e2e through the JSON bridge.
+    updateFCMPushToken:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager accepts and records the FCM token locally for API parity. Browser Web does not perform native/mobile push registration; verified by headless e2e through the JSON bridge.
+    updateAPNsPushToken:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager accepts and records the APNs token locally for API parity. Browser Web does not perform native Apple push registration; verified by headless e2e through the JSON bridge.
+    reportPushAction:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager records push action payloads locally and returns success for JSON bridge parity. Browser Web does not report to the real push pipeline here; verified by headless e2e.
+    setConversationSilentMode:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager stores local conversation silent mode state and is verified by headless e2e through the JSON bridge.
+    removeConversationSilentMode:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager removes local conversation silent mode state and is verified by headless e2e through the JSON bridge.
+    fetchConversationSilentMode:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns local conversation silent mode state with global fallback and is verified by headless e2e through the JSON bridge.
+    setSilentModeForAll:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager stores local app-level silent mode state and is verified by headless e2e through the JSON bridge.
+    fetchSilentModeForAll:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns local app-level silent mode state and is verified by headless e2e through the JSON bridge.
+    fetchSilentModeForConversations:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns local silent mode state for requested conversations and is verified by headless e2e through the JSON bridge.
+    setPreferredNotificationLanguage:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager stores local preferred notification language state and is verified by headless e2e through the JSON bridge.
+    fetchPreferredNotificationLanguage:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns local preferred notification language state and is verified by headless e2e through the JSON bridge.
+    setPushTemplate:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager stores the local push template name and is verified by headless e2e through the JSON bridge.
+    getPushTemplate:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager returns the local push template name and is verified by headless e2e through the JSON bridge.
+    bindDeviceToken:
+      status: supported
+      tests:
+      - tests/web/test_web_push_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web PushManager accepts and records notifier/device token pairs locally for API parity. Browser Web does not bind a native push token with the provider; verified by headless e2e.
+  UserInfoManager:
+    updateOwnUserInfo:
+      status: supported
+      tests:
+      - tests/web/test_web_user_info.py
+      - tests/web/test_web_user_info_type_filters.py
+      reason: Web user info memory-state update is verified through JSON bridge.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    updateOwnUserInfoWithType:
+      status: supported
+      tests:
+      - tests/web/test_web_user_info.py
+      - tests/web/test_web_user_info_type_filters.py
+      reason: Web typed user info update is verified through JSON bridge.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchOwnInfo:
+      status: supported
+      tests:
+      - tests/web/test_web_user_info.py
+      - tests/web/test_web_user_info_type_filters.py
+      reason: Web fetchOwnInfo returns the current in-memory user info and is verified
+        after update by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchUserInfoById:
+      status: supported
+      tests:
+      - tests/web/test_web_user_info.py
+      - tests/web/test_web_user_info_type_filters.py
+      reason: Web user info fetch by id is verified after update.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchUserInfoByIdWithType:
+      status: supported
+      tests:
+      - tests/web/test_web_user_info.py
+      - tests/web/test_web_user_info_type_filters.py
+      reason: Web typed user info fetch is verified after update.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  PresenceManager:
+    publishPresenceWithDescription:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web PresenceManager stores the current Web user presence description
+        in local state. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    presenceSubscribe:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web PresenceManager records local subscribed members and returns their
+        local presence payloads. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    presenceUnsubscribe:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web PresenceManager removes members from the local subscribed set. Verified
+        by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchSubscribedMembersWithPageNum:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web PresenceManager returns a paged view of the local subscribed member
+        set. Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    fetchPresenceStatus:
+      status: supported
+      tests:
+      - tests/web/test_web_presence.py
+      reason: Web PresenceManager returns local presence payloads for requested members.
+        Verified by headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+  ChatThreadManager:
+    fetchChatThreadDetail:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager returns local thread detail state by threadId and is verified by headless e2e through the JSON bridge.
+    fetchJoinedChatThreads:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager returns cursor-paged locally joined thread state and is verified by headless e2e through the JSON bridge.
+    fetchChatThreadsWithParentId:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager returns cursor-paged local thread state filtered by parentId and is verified by headless e2e through the JSON bridge.
+    fetchJoinedChatThreadsWithParentId:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager returns cursor-paged locally joined thread state filtered by parentId and is verified by headless e2e through the JSON bridge.
+    fetchChatThreadMember:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager returns cursor-paged local thread member state and is verified by headless e2e through the JSON bridge.
+    fetchLastMessageWithChatThreads:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager maps thread ids to the local ChatManager message
+        referenced by each thread msgId and is verified by headless e2e through
+        the JSON bridge.
+    removeMemberFromChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager removes users from local thread member state and is verified by headless e2e through the JSON bridge.
+    updateChatThreadSubject:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager updates local thread subject state and is verified by headless e2e through the JSON bridge.
+    createChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager creates local thread state and is verified by headless e2e through the JSON bridge.
+    joinChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager joins users into local thread state and is verified by headless e2e through the JSON bridge.
+    leaveChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager leaves local joined thread state and is verified by headless e2e through the JSON bridge.
+    destroyChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_manager.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web ChatThreadManager removes local thread state and is verified by headless e2e through the JSON bridge.
+    onChatThreadCreate:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_events.py
+      reason: Web EventBridgeHandler forwards deterministic ChatThread create events
+        after createChatThread through the JSON bridge and is verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onChatThreadUpdate:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_events.py
+      reason: Web EventBridgeHandler forwards deterministic ChatThread update events
+        after updateChatThreadSubject through the JSON bridge and is verified by
+        headless e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onChatThreadDestroy:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_events.py
+      reason: Web EventBridgeHandler forwards deterministic ChatThread destroy events
+        after destroyChatThread through the JSON bridge and is verified by headless
+        e2e.
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+    onUserKickOutOfChatThread:
+      status: supported
+      tests:
+      - tests/web/test_web_chat_thread_events.py
+      verified_by:
+      - json_bridge
+      - client_instance_manager
+      public_api_verified: false
+      reason: Web EventBridgeHandler forwards deterministic ChatThread user-kicked
+        events after removeMemberFromChatThread removes the current user through
+        the JSON bridge and is verified by headless e2e.

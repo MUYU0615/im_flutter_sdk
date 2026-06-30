@@ -1,0 +1,30 @@
+# Flutter 测试 App 可见配置。
+# 本文件会通过 im_flutter_test/assets/config.yaml 打包进测试 App。
+# 只能放客户端运行所需配置；不要放 rest_api、client_secret、auth_token 等控制端凭据。
+
+# WebSocket 桥接连接配置，与 native-auto-test/config.yaml.websocket 保持一致。
+websocket:
+  base_url: "ws://127.0.0.1:2000/iov/websocket/dual"
+  default_topic: "adc"
+  topic_prefix: "im-auto"
+
+# Web SDK 执行模式：
+# - real_sdk：通过 im_flutter_sdk_web 调用真实 Web IM SDK / 真实 IM 服务端。
+# - local_adapter：仅在明确做 wrapper JSON 映射验证时手动指定。
+web:
+  sdk_mode: real_sdk
+
+# Flutter SDK EMOptions 配置（与 SdkConfigLoader 映射字段一一对应）。
+sdk_options:
+  app_key: "easemob#dutest"
+  auto_login: false
+  debug_mode: true
+  enable_dns_config: false
+  require_ack: true
+  # enable_auto_sync_contacts: false
+  rest_server: "https://a1.easemob.com"
+  web_socket_server: "im-api-wechat.easemob.com"
+  web_socket_port: 80
+  # enable_user_info: true
+  # sync_data_web_socket_server: "140.143.132.6"
+  # sync_data_web_socket_port: 8086

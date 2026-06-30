@@ -1,4 +1,4 @@
-# Group 模块 Agent 规范（设计与落地）
+# Group 模块代理规范（设计与落地）
 
 > 主入口与唯一总规范：`docs/agents/AGENTS.zh.md`
 > 

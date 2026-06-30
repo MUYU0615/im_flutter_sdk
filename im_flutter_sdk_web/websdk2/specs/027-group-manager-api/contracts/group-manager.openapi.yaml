@@ -1,0 +1,726 @@
+openapi: 3.0.3
+info:
+  title: IM SDK GroupManager Contract
+  version: 0.1.0
+  description: |
+    027 GroupManager 逻辑契约。
+    既描述 SDK 对外的 GroupManager 方法语义，也标注旧工程 upstream endpoint 与待确认的响应样例清单，供 fixture 与契约测试复用。
+    已确认的真实响应样例来源：docs/reference/group-api.md。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/group-manager/groups:
+    post:
+      summary: 创建群组
+      operationId: createGroup
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatgroups?resource={clientResource}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        200:
+          description: 返回最小群组结果或标准化群对象
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupCreateResult'
+
+  /sdk/group-manager/groups/joined:
+    get:
+      summary: 获取已加入群分页列表
+      operationId: getJoinedGroupList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/users/{userId}/joined_chatgroups or /{org}/{app}/chatgroups/user/{userId}
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-joined-groups
+      responses:
+        200:
+          description: 返回标准化后的已加入群分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResult'
+
+  /sdk/group-manager/groups/{groupId}:
+    get:
+      summary: 获取单个群详情
+      operationId: getGroupInfo
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}?joined_time=true&version=v3
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-detail
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回标准化群详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetail'
+    put:
+      summary: 更新群信息
+      operationId: updateGroupInfo
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/chatgroups/{groupId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupInfoRequest'
+      responses:
+        204:
+          description: 更新成功，SDK 返回 void 或受控群对象结果
+    delete:
+      summary: 解散群组
+      operationId: destroyGroup
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatgroups/{groupId}?version=v3&resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        204:
+          description: 解散成功
+
+  /sdk/group-manager/groups/{groupId}/members:
+    get:
+      summary: 获取群成员分页列表
+      operationId: getGroupMemberList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-members
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回对象化群成员分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMemberListResult'
+    delete:
+      summary: 批量移除群成员
+      operationId: removeGroupMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatgroups/{groupId}/users/{csvUserIds}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 移除成功
+
+  /sdk/group-manager/groups/{groupId}/admins:
+    get:
+      summary: 获取群管理员列表
+      operationId: getGroupAdminList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/admin
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-admins
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回对象化管理员列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+    post:
+      summary: 新增群管理员
+      operationId: addGroupAdmin
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatgroups/{groupId}/admin?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 设置成功
+    delete:
+      summary: 移除群管理员
+      operationId: removeGroupAdmin
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatgroups/{groupId}/admin/{userId}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 移除成功
+
+  /sdk/group-manager/groups/{groupId}/blocks:
+    get:
+      summary: 获取群黑名单
+      operationId: getGroupBlocklist
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/blocks/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-blocklist
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回对象化黑名单条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupBlocklistEntry'
+    post:
+      summary: 批量加入群黑名单
+      operationId: blockGroupMembers
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatgroups/{groupId}/blocks/users?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 添加成功
+    delete:
+      summary: 批量移出群黑名单
+      operationId: unblockGroupMembers
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatgroups/{groupId}/blocks/users/{csvUserIds}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 移除成功
+
+  /sdk/group-manager/groups/{groupId}/allowlist:
+    get:
+      summary: 获取群 allowlist
+      operationId: getGroupAllowlist
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/white/users
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-allowlist
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回对象化 allowlist 条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAllowlistEntry'
+    post:
+      summary: 批量加入群 allowlist
+      operationId: addUsersToGroupAllowlist
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatgroups/{groupId}/white/users?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 添加成功
+    delete:
+      summary: 批量移出群 allowlist
+      operationId: removeUsersFromGroupAllowlist
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatgroups/{groupId}/white/users/{csvUserIds}?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUserBatchRequest'
+      responses:
+        204:
+          description: 移除成功
+
+  /sdk/group-manager/groups/{groupId}/mutes:
+    get:
+      summary: 获取群禁言列表
+      operationId: getGroupMuteList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/mute
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-mute-list
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回对象化禁言条目数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMuteEntry'
+
+  /sdk/group-manager/groups/{groupId}/announcement:
+    get:
+      summary: 获取群公告
+      operationId: getGroupAnnouncement
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/announcement
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-announcement
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回标准化公告结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAnnouncement'
+    put:
+      summary: 更新群公告
+      operationId: updateGroupAnnouncement
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatgroups/{groupId}/announcement?resource={clientResource}
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAnnouncement'
+      responses:
+        204:
+          description: 更新成功
+
+  /sdk/group-manager/groups/{groupId}/shared-files:
+    get:
+      summary: 获取群共享文件分页列表
+      operationId: getGroupSharedFileList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatgroups/{groupId}/sharefiles
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-shared-files
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        200:
+          description: 返回共享文件分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupSharedFileListResult'
+
+  /sdk/group-manager/groups/{groupId}/members/attributes:
+    post:
+      summary: 批量获取群成员属性
+      operationId: getGroupMembersAttributes
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/sdk/metadata/chatgroup/{groupId}/get
+        responseSampleRequired: false
+        sampleRef: docs/reference/group-api.md#get-group-members-attributes
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userIds
+              properties:
+                userIds:
+                  type: array
+                  items:
+                    type: string
+                keys:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: 返回批量成员属性结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMembersAttributesResult'
+
+components:
+  parameters:
+    GroupId:
+      in: path
+      name: groupId
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    UserInfo:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    GroupSummary:
+      type: object
+      required:
+        - groupId
+        - name
+      properties:
+        groupId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        memberCount:
+          type: integer
+          format: int64
+        public:
+          type: boolean
+        joinApprovalRequired:
+          type: boolean
+        allowInvites:
+          type: boolean
+        maxMembers:
+          type: integer
+        role:
+          type: string
+          enum: [owner, admin, member]
+        disabled:
+          type: boolean
+      description: |
+        已加入群列表真实样例确认原始字段为 groupid/groupname/disabled，
+        其中 disabled 可能以字符串布尔值返回，SDK 需归一化为 boolean。
+
+    GroupListResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupSummary'
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+        cursor:
+          type: string
+        hasMore:
+          type: boolean
+      description: |
+        已加入群列表样例确认可从 envelope params.pagenum[] / params.pagesize[] 解析页码信息；
+        cursor/hasMore 仍需公开群列表真实样例进一步确认。
+
+    GroupDetail:
+      allOf:
+        - $ref: '#/components/schemas/GroupSummary'
+        - type: object
+          properties:
+            owner:
+              $ref: '#/components/schemas/UserInfo'
+            inviteNeedConfirm:
+              type: boolean
+            muteAllMembers:
+              type: boolean
+            ext:
+              type: string
+            createdAt:
+              type: integer
+              format: int64
+            joinedAt:
+              type: integer
+              format: int64
+      description: |
+        群详情真实样例确认原始字段包含 id/name/description/membersonly/allowinvites/maxusers/owner/created/custom/mute/affiliations_count/disabled/affiliations/public。
+        SDK 分别将其归一化为 groupId/name/description/joinApprovalRequired/allowInvites/maxMembers/owner/createdAt/ext/muteAllMembers/memberCount/disabled/joinedAt/public。
+
+    GroupCreateResult:
+      type: object
+      required:
+        - groupId
+      properties:
+        groupId:
+          type: string
+
+    CreateGroupRequest:
+      type: object
+      required:
+        - name
+        - description
+        - public
+        - joinApprovalRequired
+        - allowInvites
+        - inviteNeedConfirm
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: string
+        public:
+          type: boolean
+        joinApprovalRequired:
+          type: boolean
+        allowInvites:
+          type: boolean
+        inviteNeedConfirm:
+          type: boolean
+        maxMembers:
+          type: integer
+        ext:
+          type: string
+
+    UpdateGroupInfoRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        public:
+          type: boolean
+        joinApprovalRequired:
+          type: boolean
+        allowInvites:
+          type: boolean
+        inviteNeedConfirm:
+          type: boolean
+        maxMembers:
+          type: integer
+        ext:
+          type: string
+
+    GroupUserBatchRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    GroupMemberEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        role:
+          type: string
+          enum: [owner, admin, member]
+        joinedAt:
+          type: integer
+          format: int64
+      description: |
+        成员列表真实样例确认原始条目可能为 { member } 或 { owner }；
+        SDK 需据此归一化 user 与 role，且不为未提供的 joinedAt 臆造值。
+
+    GroupMemberListResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMemberEntry'
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+        cursor:
+          type: string
+        hasMore:
+          type: boolean
+
+    GroupAllowlistEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+      description: 真实样例确认原始 data 为 string[]，SDK 需对象化为 user。
+
+    GroupMuteEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        muteExpire:
+          type: integer
+          format: int64
+        muteDuration:
+          type: integer
+          format: int64
+      description: |
+        需求已确认原始 data 为 string[]。
+        若真实响应未携带禁言截止时间，SDK 仅返回对象化 user，不臆造 muteExpire/muteDuration。
+
+    GroupBlocklistEntry:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+      description: 需求已确认原始 data 为 string[]，SDK 需对象化为 user。
+
+    GroupAnnouncement:
+      type: object
+      required:
+        - announcement
+      properties:
+        announcement:
+          type: string
+      description: 真实样例确认原始返回为 data.announcement。
+
+    GroupSharedFile:
+      type: object
+      required:
+        - fileId
+        - fileName
+      properties:
+        fileId:
+          type: string
+        fileName:
+          type: string
+        fileOwner:
+          $ref: '#/components/schemas/UserInfo'
+        fileSize:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+      description: |
+        真实样例确认原始字段为 file_id/created/file_owner/file_name/file_size；
+        SDK 需归一化为驼峰字段并对象化 fileOwner。
+
+    GroupSharedFileListResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupSharedFile'
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+        cursor:
+          type: string
+        hasMore:
+          type: boolean
+
+    GroupMembersAttributesResult:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+      description: |
+        批量成员属性读取返回 `items[userId] -> attribute map` 结构；
+        与已确认的 `data[userId] -> attribute map` 上游样例保持一一对应。

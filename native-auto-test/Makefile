@@ -7,7 +7,10 @@ SKILL_CREATOR ?= $(HOME)/.codex/skills/.system/skill-creator
 
 .PHONY: help ws-call ws-wait create-users delete-user \
         contact-establish contact-delete contact-block contact-unblock \
-        skills-validate test test-allure test-html test-chat-strict test-chat-discover clean
+        skills-validate test test-allure test-html test-chat-strict test-chat-discover \
+        web-e2e web-wrapper-mapping web-coverage-report \
+        android-real-e2e ios-real-e2e web-real-e2e web-real-matrix web-real-report \
+        web-real-no-real-api-audit web-real-docs web-real-full-baseline clean
 
 help:
 	@echo "Available targets:"
@@ -23,6 +26,17 @@ help:
 	@echo "  test               Run pytest (pass ARGS=... to forward extra args)"
 	@echo "  test-allure        Run pytest with --alluredir=out/allure-results"
 	@echo "  test-html          Run pytest with HTML report to out/report.html"
+	@echo "  web-e2e            Run local relay + Flutter web-server + headless Web regression"
+	@echo "  web-wrapper-mapping Run Web wrapper JSON mapping cases via local_adapter"
+	@echo "  web-coverage-report Generate Web API coverage markdown report"
+	@echo "  android-real-e2e   Run Android real SDK/service E2E cases"
+	@echo "  ios-real-e2e       Run iOS real SDK/service E2E cases"
+	@echo "  web-real-e2e       Run real Web SDK/service E2E through local relay + headless Web clients"
+	@echo "  web-real-matrix    Generate real Web E2E API matrix"
+	@echo "  web-real-report    Generate real Web E2E coverage markdown report"
+	@echo "  web-real-no-real-api-audit Generate no-real-API audit markdown report"
+	@echo "  web-real-docs      Generate real Web matrix/report/audit docs together"
+	@echo "  web-real-full-baseline Run full real Web E2E baseline suite (tests/web_real)"
 
 # --- WebSocket calls ---
 ws-call:
@@ -92,9 +106,11 @@ contact-unblock:
 
 # --- Validate skills ---
 skills-validate:
+	$(PY) $(SKILL_CREATOR)/scripts/quick_validate.py skills/native-auto-test-framework
 	$(PY) $(SKILL_CREATOR)/scripts/quick_validate.py skills/im-ws
 	$(PY) $(SKILL_CREATOR)/scripts/quick_validate.py skills/im-rest-users
 	$(PY) $(SKILL_CREATOR)/scripts/quick_validate.py skills/im-contact-flow
+	$(PY) $(SKILL_CREATOR)/scripts/quick_validate.py skills/release-note-case-mapping
 
 # --- Tests ---
 test:
@@ -107,6 +123,53 @@ test-allure:
 test-html:
 	mkdir -p out
 	$(PY) -m pytest --html=out/report.html --self-contained-html $(ARGS)
+
+web-e2e:
+	$(PY) -m src.tools.web_e2e_runner $(ARGS)
+
+web-wrapper-mapping:
+	$(PY) -m src.tools.web_e2e_runner \
+	  --web-sdk-mode local_adapter \
+	  $(if $(ARGS),$(ARGS),-- tests/web --target-platform web -m wrapper_mapping -q)
+
+web-coverage-report:
+	$(PY) -m src.tools.web_coverage_report --strict --markdown \
+	  --output docs/agents/web/WEB_API_COVERAGE_REPORT.md
+
+android-real-e2e:
+	$(PY) -m src.tools.android_e2e_runner \
+	  $(if $(ARGS),$(ARGS),-- tests --target-platform android -m real_e2e -q)
+
+ios-real-e2e:
+	$(PY) -m pytest tests --target-platform ios -m real_e2e $(ARGS)
+
+web-real-e2e:
+	$(PY) -m src.tools.web_e2e_runner \
+	  --web-sdk-mode real_sdk \
+	  $(if $(ARGS),$(ARGS),-- tests/web_real --target-platform web -m real_e2e -q)
+
+web-real-matrix:
+	$(PY) -m src.tools.web_real_e2e_matrix --strict --markdown \
+	  --output docs/agents/web/WEB_REAL_E2E_API_MATRIX.md
+
+web-real-report:
+	$(PY) -m src.tools.web_real_e2e_report --strict --markdown \
+	  --output docs/agents/web/WEB_REAL_E2E_COVERAGE_REPORT.md
+
+web-real-no-real-api-audit:
+	$(PY) -m src.tools.web_real_e2e_no_real_api_audit --strict \
+	  --output docs/agents/web/WEB_REAL_E2E_NO_REAL_API_AUDIT.md
+
+web-real-docs: web-real-matrix web-real-report web-real-no-real-api-audit
+
+web-real-full-baseline:
+	$(PY) -m src.tools.web_e2e_runner \
+	  --run-id web-real-full-baseline \
+	  --web-sdk-mode real_sdk \
+	  --headless-startup-wait 150 \
+	  --startup-timeout 240 \
+	  --flutter-timeout 300 \
+	  -- tests/web_real --target-platform web -q
 
 # --- Chat test presets ---
 test-chat-strict:

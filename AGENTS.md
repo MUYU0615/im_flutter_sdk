@@ -10,6 +10,7 @@
 通用规则
 - 统一命名：若 Android/iOS/Dart 命名不一致，以 Android 为准；Dart 与 iOS 对齐。
 - 依赖切换：不使用 IM_USE_LOCAL_DEPS 等开关；通过编辑构建文件进行“手动切换”，脚本仅在获得确认后代改。
+- 工作视角：本仓库既是 Flutter SDK 工程，也是自动化测试工程。当前日常主目标是用 `native-auto-test/` + `im_flutter_test/` 逐步覆盖完整 SDK；`im_flutter_sdk/` 及平台包是被测对象和发布包，默认不承载测试脚手架。
 - 文档先行：任何操作前先阅读/更新规范：
   - 依赖切换规范：docs/specs/dependency-spec.md
   - API 适配规范：docs/specs/api-adaptation-spec.md
@@ -40,9 +41,67 @@
 | `im_flutter_test/` | 被测设备 App：承载 WebSocket 桥接、事件转发、配置加载、媒体素材、连接 UI。`path` 依赖 `im_flutter_sdk`。 | 否（测试专用） |
 | `native-auto-test/` | Python 用例端，通过同一 WebSocket + topic 驱动 `im_flutter_test`。 | 否 |
 
+## 两种工作角色（重要）
+
+本仓库同时支持“测试人员”和“开发人员”两种角色。开始任务前先判断当前角色，因为两种角色的资产边界不同。
+
+### 角色一：测试人员
+
+测试人员的核心目标是：在原生 SDK 更新、Flutter SDK 适配、平台能力变更或代码提测时，完成对应能力的自动化测试、全量回归和版本覆盖测试，并输出可追踪报告。
+
+测试人员视角下：
+- `im_flutter_sdk/` 是发布 SDK 入口和被测对象，默认不作为测试资产随意修改。
+- 除 `im_flutter_sdk/` 之外，其余目录都可以视为测试资产或测试支撑资产，包括：
+  - `native-auto-test/`：自动化测试主工程，负责用例、断言、REST 准备、覆盖统计、报告生成。
+  - `im_flutter_test/`：被控测试 App，负责接收长链接控制、转发请求、转发事件、返回真实 SDK 结果。
+  - `im_flutter_sdk_interface/`：桥接调用契约和 manager/method channel 契约。
+  - `im_flutter_sdk_android/`、`im_flutter_sdk_ios/`、`im_flutter_sdk_web/` 等 `im_flutter_sdk_xxx/`：各平台原生 SDK wrapper，是原生 SDK 能力适配与回归验证的重点。
+- “原生 SDK”在本仓库语境中指各平台包 `im_flutter_sdk_xxx/` 背后的平台 SDK 能力，其中 `xxx` 是 Android、iOS、Web、OHOS 或后续新增平台。
+
+测试人员执行提测覆盖时，应按完整链路工作：
+1. 在各平台补齐或确认 MethodKeys / 等价方法表。
+2. 在平台 wrapper 中把 `manager/cmd/info` 映射到真实原生 SDK API。
+3. 通过 `im_flutter_sdk_interface/` 保持 Flutter 侧调用契约一致。
+4. 在 `im_flutter_test/` 通过长链接接收 `native-auto-test` 发来的 JSON，并调用 interface/manager。
+5. 平台层处理 JSON 参数、调用真实 SDK、序列化同步结果或事件。
+6. `im_flutter_test` 把结果/事件通过长链接返回。
+7. `native-auto-test` 对响应、事件、服务端状态、本地状态进行严格断言。
+
+典型测试方式是启动多个客户端互测，例如 Android-A 与 Android-B、Android 与 iOS、Android 与 Web，互相发送消息、加好友、进群、进聊天室、订阅 presence，并在双方分别断言发送结果、接收事件、服务端查询结果和本地缓存状态。
+
+测试人员新增或维护 API 覆盖时必须做到：
+- 功能测试：至少覆盖成功链路、关键事件、服务端状态和本地状态。
+- 参数校验：覆盖必填缺失、空值、非法类型、边界值、枚举差异、组合参数，并确保不同参数产生不同可观察 E2E 结果。
+- 全量回归：在目标平台执行对应模块或全量 E2E，不能只跑单个 happy path。
+- 版本覆盖：原生 SDK 升级或平台新增能力时，标记该能力对应的 SDK 版本、平台支持状态和不适用原因。
+- 报告输出：最终生成测试报告，明确哪些 API、哪些 case 已测，哪些没过，失败原因是什么，哪些平台未实现/不适用/待确认。
+- 统计产物统一输出到 `native-auto-test/out/`；运行日志按平台放到 `native-auto-test/out/log/<platform>/`。
+- 测试报告必须至少包含两张表：
+  1. SDK 功能覆盖表：按 SDK/API/Manager/Cmd/平台/版本记录能力是否存在、是否实现、是否可测、是否已覆盖、覆盖用例入口、不适用或未实现原因。
+  2. 测试 case 结果信息表：按 case 记录执行平台、设备组合、运行 ID、结果（通过/失败/跳过/不适用）、失败原因、关联 API、日志路径、HTML 报告路径。
+
+测试人员不得为了让 case 通过而伪造 SDK 能力。若平台未暴露、未实现、不支持或环境不适用，应记录为覆盖统计中的明确状态，而不是写成通过。
+
+### 角色二：开发人员
+
+开发人员拥有本仓库全部资产，目标是维护发布 SDK、平台 wrapper、接口契约、测试 App 和自动化测试工程的一致性。
+
+开发人员视角下：
+- 可以修改 `im_flutter_sdk/`、`im_flutter_sdk_interface/`、`im_flutter_sdk_xxx/`、`im_flutter_test/`、`native-auto-test/` 等全部目录。
+- 修改发布 SDK 或平台 wrapper 时，必须同步考虑自动化测试链路是否仍能打通。
+- 新增真实 SDK 能力时，应同步补齐 Dart API、interface、各平台 MethodKeys、平台实现、事件序列化和测试用例。
+- 修复平台差异时，以 Android 命名和语义为基准，Dart、iOS、Web 与其对齐；确有平台差异时要写入覆盖统计和文档。
+- 不能把测试专用桥接、账号配置、REST 凭据、pytest 断言等混入发布 SDK 包。
+
+开发人员交付时除构建通过外，还应提供对应测试证据：至少包括受影响模块的 E2E 结果、失败/跳过说明、报告路径，以及是否需要刷新平台 API 支持统计。
+
+### 目录级代理规则
+各关键目录可以有自己的 `AGENTS.md`。根目录规则负责全局边界；子目录规则只补充本目录职责、可改范围和校验命令。若规则冲突，优先级为：用户最新指令 > 更深层目录 `AGENTS.md` 的具体规则 > 根目录总规则。
+
 ### 日常测试工作流
 - 构建 `im_flutter_test` 装到设备/模拟器 → `native-auto-test` 跑 pytest 用例驱动。
 - 桥接采用通用 `callNativeMethod(manager, cmd, info)` 转发：**新增用例通常无需改动 `im_flutter_sdk` 与 `im_flutter_test`**，只在 Python 侧发新的 manager/cmd 即可。
+- 多端互测必须显式说明参与平台与设备，例如 Android-A/Android-B、Android/iOS、Android/Web。不要用“mobile”掩盖真实平台统计。
 
 ### 何时改 `im_flutter_test`
 - 需要转发新的 SDK 事件回调 → `im_flutter_test/lib/bridge/event_bridge_handler.dart`。

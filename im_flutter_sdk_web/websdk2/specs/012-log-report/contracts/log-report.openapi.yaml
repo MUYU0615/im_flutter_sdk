@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: 日志上报 API
+  version: 1.0.0
+paths:
+  /{orgName}/{appName}/sdk/users/{userId}/client/logs:
+    post:
+      summary: 上报 SDK 日志
+      parameters:
+        - in: path
+          name: orgName
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: appName
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogReportRequest'
+      responses:
+        '200':
+          description: 上报成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogReportResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LogReportRequest:
+      type: object
+      properties:
+        resource:
+          type: string
+          description: 设备资源标识
+        logContent:
+          type: string
+          description: 日志内容（已脱敏）
+      required:
+        - resource
+        - logContent
+    LogReportResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: 预期值为 ok

@@ -108,6 +108,116 @@ def _web_reason_text(info: dict[str, Any]) -> str:
     return str(info.get("reason_zh") or info.get("reason") or "").strip()
 
 
+def _contains_cjk(text: str) -> bool:
+    return any("\u4e00" <= char <= "\u9fff" for char in text)
+
+
+def _not_applicable_reason_zh(reason: str) -> str:
+    if not reason:
+        return "浏览器 Web 场景不适用。"
+    if _contains_cjk(reason):
+        return reason
+    lower = reason.lower()
+    patterns = [
+        (
+            ("open registration", "register user need token"),
+            "当前测试应用关闭浏览器端开放注册，用户创建由 REST 测试准备流程完成，因此不作为 Web 真实 E2E 覆盖项。",
+        ),
+        (
+            ("runtime appkey", "native sdk configuration"),
+            "运行时切换 AppKey 属于原生 SDK 配置行为，浏览器 Web 运行时没有等价回归目标。",
+        ),
+        (
+            ("runtime app id", "native sdk configuration"),
+            "运行时切换 AppId 属于原生 SDK 配置行为，浏览器 Web 运行时没有等价回归目标。",
+        ),
+        (
+            ("does not expose", "uploadlog"),
+            "当前真实 Web SDK 未暴露上传日志接口，浏览器端没有与移动端 SDK 对等的日志上传入口。",
+        ),
+        (
+            ("does not expose", "compresslogs"),
+            "当前真实 Web SDK 未暴露压缩日志接口，浏览器端没有与移动端 SDK 对等的日志归档路径。",
+        ),
+        (
+            ("does not expose", "kickdevice"),
+            "当前真实 Web SDK 未暴露踢出指定设备接口，该能力属于服务端或管理端场景，浏览器端没有稳定 E2E 入口。",
+        ),
+        (
+            ("does not expose", "kickalldevices"),
+            "当前真实 Web SDK 未暴露踢出全部设备接口，该能力属于服务端或管理端场景，浏览器端没有稳定 E2E 入口。",
+        ),
+        (
+            ("does not expose", "getloggedindevicesfromserver"),
+            "当前真实 Web SDK 未暴露查询已登录设备接口，浏览器端没有稳定 E2E 入口。",
+        ),
+        (
+            ("native transport",),
+            "原生传输配置项；浏览器 Web 传输由页面 URL 和 WebSocket 端点控制。",
+        ),
+        (
+            ("native login extension",),
+            "原生登录扩展配置项；当前 Web bridge 没有对应行为。",
+        ),
+        (
+            ("native local sdk option", "memory-state adapter"),
+            "原生本地 SDK 配置项；浏览器 Web 运行时没有对应的本地存储适配能力。",
+        ),
+        (
+            ("native media download option",),
+            "原生媒体下载配置项；浏览器 Web MVP 没有对应的原生附件下载器。",
+        ),
+        (
+            ("native message ack option",),
+            "原生消息已读回执配置项；Web adapter 不暴露对应的原生传输回执设置。",
+        ),
+        (
+            ("native message delivery ack option",),
+            "原生消息送达回执配置项；Web adapter 不暴露对应的原生传输回执设置。",
+        ),
+        (
+            ("native local message sorting option",),
+            "原生本地消息排序配置项；浏览器 Web 运行时没有对应的本地消息数据库排序能力。",
+        ),
+        (
+            ("native callback setting",),
+            "原生回调配置项；Web 回调投递由 bridge 控制。",
+        ),
+        (
+            ("local db contact list",),
+            "本地联系人数据库能力；浏览器 real_sdk 模式没有原生联系人 DB，服务端联系人能力已由服务端 API 覆盖。",
+        ),
+        (
+            ("local db blocklist",),
+            "本地黑名单数据库能力；浏览器 real_sdk 模式没有原生黑名单 DB，服务端黑名单能力已由服务端 API 覆盖。",
+        ),
+        (
+            ("local memory/local db",),
+            "本地内存或本地数据库能力；浏览器 real_sdk 模式没有对应的原生本地数据库，真实服务端能力需通过对应服务 API 覆盖。",
+        ),
+        (
+            ("local conversation", "local db"),
+            "本地会话数据库能力；浏览器 real_sdk 模式没有对应的原生本地会话 DB。",
+        ),
+        (
+            ("offline sync callback",),
+            "离线同步回调属于原生 SDK 存储与服务同步行为，当前浏览器 Web 适配层无法稳定触发。",
+        ),
+        (
+            ("deprecated mobile", "binddevicetoken"),
+            "已废弃的移动端推送 token API；Flutter SDK 变更建议使用 bindDeviceToken，Web 真实链路按 bindDeviceToken 覆盖。",
+        ),
+        (
+            ("push", "does not expose"),
+            "当前真实 Web SDK 未暴露对应推送配置接口，浏览器 Web 运行时没有稳定服务端 E2E 入口。",
+        ),
+    ]
+    for terms, translation in patterns:
+        if all(term in lower for term in terms):
+            return translation
+    return "浏览器 Web 场景不适用；原始原因来自英文 manifest，需补充 reason_zh。"
+
+
 def _classify_web_blocked(reason: str) -> str:
     lower = reason.lower()
     not_found_terms = (
@@ -165,9 +275,9 @@ def _web_status(info: dict[str, Any]) -> PlatformStatus:
     status = str(info.get("real_e2e_status") or "pending")
     reason = _web_reason_text(info)
     if status == "supported":
-        return PlatformStatus("supported", "支持", "Web 真实 E2E 已通过。")
+        return PlatformStatus("supported", "支持", reason or "Web 真实 E2E 已通过。")
     if status == "not_applicable":
-        return PlatformStatus("not_applicable", "Web 不适用", reason or "浏览器 Web 场景不适用。")
+        return PlatformStatus("not_applicable", "Web 不适用", _not_applicable_reason_zh(reason))
     if status == "blocked":
         return PlatformStatus("blocked", _classify_web_blocked(reason), reason or "Web 真实 E2E blocked。")
     return PlatformStatus("pending", "待确认", reason or "尚未完成最终定性。")

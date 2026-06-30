@@ -1,0 +1,851 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Conversation REST Contract
+  version: 0.1.0
+  description: |
+    034 Conversation / Silent Mode / ChatThread 逻辑契约。
+    本文件描述 SDK 对外的 manager-facing 逻辑接口，并通过 x-upstream 标注旧 websdk/upstream 参考来源。
+    已确认的关键决策：
+    - conversation 主线归属 ChatManager
+    - conversation silent mode 继续归属 PushManager
+    - thread 归属 ChatThreadManager
+    - conversation mutation 成功后默认不自动 patch 当前列表；调用方复用 getConversationList() 主动刷新
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/chat/conversations:
+    get:
+      summary: 获取会话分页列表
+      operationId: getConversationList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/sdk/user/{userId}/user_channels/list
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#getsessionlist
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: includeEmptyConversations
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 返回标准化后的会话分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+
+  /sdk/chat/conversations/pinned:
+    get:
+      summary: 获取置顶会话分页列表
+      operationId: getPinnedConversationList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/sdk/user/{userId}/pinned_channels
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#getserverpinnedconversations
+      responses:
+        '200':
+          description: 返回置顶会话分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+
+  /sdk/chat/conversations/by-mark/{mark}:
+    get:
+      summary: 根据标记查询会话分页列表
+      operationId: getConversationListByMark
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/sdk/user/{userId}/user_channels/filter
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#getserverconversationsbyfilter
+      parameters:
+        - name: mark
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ConversationMark'
+      responses:
+        '200':
+          description: 返回带指定 mark 的会话分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+
+  /sdk/chat/conversations/{conversationId}:
+    delete:
+      summary: 删除单个会话
+      operationId: deleteConversation
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/users/{userId}/user_channels/{conversationId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#deleteconversation
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/ConversationTypeQuery'
+        - name: deleteRoamingMessages
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 返回标准化删除结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationMutationResult'
+
+  /sdk/chat/conversations/{conversationId}/pinned:
+    put:
+      summary: 设置或取消会话置顶
+      operationId: setConversationPinned
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/pin_conversation
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#pinconversation
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConversationPinnedRequest'
+      responses:
+        '200':
+          description: 返回标准化置顶结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationMutationResult'
+
+  /sdk/chat/conversations/marks:
+    post:
+      summary: 为多个会话增加标记
+      operationId: addConversationMark
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/conversation_marks
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#addconversationmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationMarkRequest'
+      responses:
+        '200':
+          description: 返回标准化标记结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationMarkMutationResult'
+    delete:
+      summary: 为多个会话移除标记
+      operationId: removeConversationMark
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/users/{userId}/conversation_marks/{mark}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#removeconversationmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationMarkRequest'
+      responses:
+        '200':
+          description: 返回标准化取消标记结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationMarkMutationResult'
+
+  /sdk/chat/conversations:clear-all:
+    post:
+      summary: 清空所有消息和会话
+      operationId: clearAllMessagesAndConversations
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/clear_user_channels
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#deleteallmessagesandconversations
+      responses:
+        '204':
+          description: 清空成功
+
+  /sdk/chat/conversations/{conversationId}/pinned-messages:
+    get:
+      summary: 获取会话内置顶消息列表
+      operationId: getPinnedMessageList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/messages/pin/{conversationId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#getserverpinnedmessages
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/ConversationTypeQuery'
+      responses:
+        '200':
+          description: 返回置顶消息列表；不分页，最多 20 条
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PinnedMessageListResult'
+    post:
+      summary: 置顶单条消息
+      operationId: pinMessage
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/messages/pin
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#pinmessage
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PinMessageRequest'
+      responses:
+        '200':
+          description: 返回最小 pin 结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePinMutationResult'
+    delete:
+      summary: 取消置顶单条消息
+      operationId: unpinMessage
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/messages/pin/{messageId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/index.ts#unpinmessage
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PinMessageRequest'
+      responses:
+        '200':
+          description: 返回最小 unpin 结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePinMutationResult'
+
+  /sdk/push/conversations/silent-mode:
+    put:
+      summary: 设置会话免打扰
+      operationId: setConversationSilentMode
+      x-owner: PushManager
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/users/{userId}/notification/conversation/{conversationId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/silentModeApi.ts#setsilentmodeforconversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetConversationSilentModeRequest'
+      responses:
+        '200':
+          description: 返回会话免打扰规则快照
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSilentModeResponse'
+
+  /sdk/push/conversations/silent-mode/query:
+    post:
+      summary: 批量查询会话免打扰
+      operationId: getConversationSilentModes
+      x-owner: PushManager
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/users/{userId}/notification/conversations
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/silentModeApi.ts#getsilentmodeforconversations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationSilentModeBatchRequest'
+      responses:
+        '200':
+          description: 返回批量免打扰结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSilentModeBatchResponse'
+
+  /sdk/chat-threads:
+    post:
+      summary: 创建 thread
+      operationId: createChatThread
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatthreads
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#createchatthread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatThreadRequest'
+      responses:
+        '200':
+          description: 返回最小创建结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateChatThreadResult'
+    get:
+      summary: 获取公开 thread 列表
+      operationId: getChatThreadList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatthreads
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#getchatthreads
+      responses:
+        '200':
+          description: 返回 thread 分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadListPage'
+
+  /sdk/chat-threads/joined:
+    get:
+      summary: 获取当前用户已加入的 thread 列表
+      operationId: getJoinedChatThreadList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/users/{userId}/joined_chatthreads
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#getjoinedchatthreads
+      responses:
+        '200':
+          description: 返回 joined thread 分页结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadListPage'
+
+  /sdk/chat-threads/last-message:
+    post:
+      summary: 批量获取 thread 最后一条消息
+      operationId: getChatThreadLastMessageList
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatthreads/last_message
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#getchatthreadlastmessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatThreadLastMessageQueryRequest'
+      responses:
+        '200':
+          description: 返回每个 thread 的最后一条消息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadLastMessageListResult'
+
+  /sdk/chat-threads/{chatThreadId}:
+    get:
+      summary: 获取单个 thread 详情
+      operationId: getChatThreadInfo
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatthreads/{chatThreadId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#getchatthreaddetail
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '200':
+          description: 返回 thread 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadDetail'
+    delete:
+      summary: 销毁 thread
+      operationId: destroyChatThread
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatthreads/{chatThreadId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#destroychatthread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '204':
+          description: 销毁成功
+
+  /sdk/chat-threads/{chatThreadId}/join:
+    post:
+      summary: 加入 thread
+      operationId: joinChatThread
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatthreads/{chatThreadId}/users/{userId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#joinchatthread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '204':
+          description: 加入成功
+
+  /sdk/chat-threads/{chatThreadId}/leave:
+    post:
+      summary: 退出 thread
+      operationId: leaveChatThread
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/chatthreads/{chatThreadId}/leave
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#leavechatthread
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '204':
+          description: 退出成功
+
+  /sdk/chat-threads/{chatThreadId}/name:
+    put:
+      summary: 更新 thread 名称
+      operationId: updateChatThreadName
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/chatthreads/{chatThreadId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#changechatthreadname
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChatThreadNameRequest'
+      responses:
+        '204':
+          description: 更新成功
+
+  /sdk/chat-threads/{chatThreadId}/members:
+    get:
+      summary: 获取 thread 成员列表
+      operationId: getChatThreadMemberList
+      x-upstream:
+        method: GET
+        path: /{org}/{app}/chatthreads/{chatThreadId}/users
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#getchatthreadmembers
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      responses:
+        '200':
+          description: 返回成员列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadMemberListResult'
+    delete:
+      summary: 移除 thread 成员
+      operationId: removeChatThreadMember
+      x-upstream:
+        method: DELETE
+        path: /{org}/{app}/chatthreads/{chatThreadId}/users/{memberId}
+        sampleRef: ../websdk/packages/IM/sdk/src/apis/threadApi.ts#removechatthreadmember
+      parameters:
+        - $ref: '#/components/parameters/ChatThreadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveChatThreadMemberRequest'
+      responses:
+        '204':
+          description: 移除成功
+components:
+  parameters:
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+    ConversationTypeQuery:
+      name: conversationType
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/ConversationPublicType'
+    Mark:
+      name: mark
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ConversationMark'
+    ChatThreadId:
+      name: chatThreadId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    ConversationPublicType:
+      type: string
+      enum: [singleChat, groupChat, chatRoom]
+    ConversationMark:
+      type: integer
+      enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    MessageSnippet:
+      type: object
+      required: [msgId, type, body, timestamp]
+      properties:
+        msgId:
+          type: string
+        type:
+          type: string
+        body:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: integer
+        userInfoUpdateTime:
+          type: integer
+        namecardUpdateTime:
+          type: integer
+    ConversationItem:
+      type: object
+      required:
+        - conversationId
+        - type
+        - lastMessage
+        - unreadCount
+        - marks
+        - lastAccess
+        - lastUpdate
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        lastMessage:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MessageSnippet'
+        unreadCount:
+          type: integer
+        isPinned:
+          type: boolean
+        pinnedTime:
+          type: integer
+        marks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMark'
+        lastAccess:
+          type: integer
+        lastUpdate:
+          type: integer
+    ConversationPage:
+      type: object
+      required: [items, cursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationItem'
+        cursor:
+          type: string
+    SetConversationPinnedRequest:
+      type: object
+      required: [conversationType, pinned]
+      properties:
+        conversationType:
+          $ref: '#/components/schemas/ConversationPublicType'
+        pinned:
+          type: boolean
+    ConversationTypeBody:
+      type: object
+      required: [conversationType]
+      properties:
+        conversationType:
+          $ref: '#/components/schemas/ConversationPublicType'
+    ConversationMarkTarget:
+      type: object
+      required: [conversationId, conversationType]
+      properties:
+        conversationId:
+          type: string
+        conversationType:
+          $ref: '#/components/schemas/ConversationPublicType'
+    ConversationMarkRequest:
+      type: object
+      required: [conversations, mark]
+      properties:
+        conversations:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ConversationMarkTarget'
+        mark:
+          $ref: '#/components/schemas/ConversationMark'
+    ConversationMarkMutationItem:
+      type: object
+      required: [conversationId, conversationType, applied]
+      properties:
+        conversationId:
+          type: string
+        conversationType:
+          $ref: '#/components/schemas/ConversationPublicType'
+        applied:
+          type: boolean
+    ConversationMarkMutationResult:
+      type: object
+      required: [conversations, mark, applied, operation]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMarkMutationItem'
+        mark:
+          $ref: '#/components/schemas/ConversationMark'
+        applied:
+          type: boolean
+        operation:
+          type: string
+          enum: [addMark, removeMark]
+    ConversationMutationResult:
+      type: object
+      required: [conversationId, type, applied, operation]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        applied:
+          type: boolean
+        operation:
+          type: string
+          enum: [delete, setPinned]
+    PinMessageRequest:
+      type: object
+      required: [conversationType, messageId]
+      properties:
+        conversationType:
+          $ref: '#/components/schemas/ConversationPublicType'
+        messageId:
+          type: string
+    MessagePinMutationResult:
+      type: object
+      required: [conversationId, type, messageId, operation, applied]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        messageId:
+          type: string
+        operation:
+          type: string
+          enum: [pin, unpin]
+        applied:
+          type: boolean
+    PinnedMessageSummary:
+      type: object
+      required: [messageId, conversationId, type, pinnedAt]
+      properties:
+        messageId:
+          type: string
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        operatorId:
+          type: string
+        pinnedAt:
+          type: integer
+        message:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MessageSnippet'
+    PinnedMessageListResult:
+      type: object
+      description: getPinnedMessageList 不分页，最多返回 20 条置顶消息。
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PinnedMessageSummary'
+    PushSilentModeRuleInput:
+      type: object
+      description: Reuse PushManager 021 rule model; actual field variants follow existing push contract.
+      additionalProperties: true
+    SetConversationSilentModeRequest:
+      type: object
+      required: [conversationId, type, rule]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        rule:
+          $ref: '#/components/schemas/PushSilentModeRuleInput'
+    ConversationSilentModeResponse:
+      type: object
+      required: [conversationId, type, rule]
+      properties:
+        conversationId:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationPublicType'
+        rule:
+          type: object
+          additionalProperties: true
+    ConversationSilentModeBatchRequest:
+      type: object
+      required: [conversationList]
+      properties:
+        conversationList:
+          type: array
+          items:
+            type: object
+            required: [conversationId, type]
+            properties:
+              conversationId:
+                type: string
+              type:
+                $ref: '#/components/schemas/ConversationPublicType'
+    ConversationSilentModeBatchResponse:
+      type: object
+      required: [conversations]
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationSilentModeResponse'
+    CreateChatThreadRequest:
+      type: object
+      required: [parentId, name, messageId]
+      properties:
+        parentId:
+          type: string
+        name:
+          type: string
+        messageId:
+          type: string
+    CreateChatThreadResult:
+      type: object
+      required: [chatThreadId]
+      properties:
+        chatThreadId:
+          type: string
+    ChatThreadSummary:
+      type: object
+      required: [chatThreadId, parentId, name]
+      properties:
+        chatThreadId:
+          type: string
+        parentId:
+          type: string
+        name:
+          type: string
+        ownerId:
+          type: string
+        memberCount:
+          type: integer
+        messageCount:
+          type: integer
+        createdAt:
+          type: integer
+        lastMessage:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MessageSnippet'
+    ChatThreadListPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatThreadSummary'
+        cursor:
+          type: string
+    ChatThreadDetail:
+      allOf:
+        - $ref: '#/components/schemas/ChatThreadSummary'
+    ChatThreadLastMessageQueryRequest:
+      type: object
+      required: [chatThreadIds]
+      properties:
+        chatThreadIds:
+          type: array
+          items:
+            type: string
+    ChatThreadLastMessageListResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [chatThreadId, lastMessage]
+            properties:
+              chatThreadId:
+                type: string
+              lastMessage:
+                nullable: true
+                allOf:
+                  - $ref: '#/components/schemas/MessageSnippet'
+    UpdateChatThreadNameRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    ChatThreadMemberEntry:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+        joinedAt:
+          type: integer
+    ChatThreadMemberListResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatThreadMemberEntry'
+        cursor:
+          type: string
+    RemoveChatThreadMemberRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string

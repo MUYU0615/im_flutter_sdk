@@ -1,0 +1,44 @@
+{
+  "name": "@easemob/im-sdk-web-ai-kit",
+  "version": "0.14.103",
+  "description": "AI skill installer and doctor for im-sdk-web projects",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "websdk2-ai-kit": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "scripts/*.mjs",
+    "src/knowledge/**/*.md",
+    "src/references/**/*.md"
+  ],
+  "scripts": {
+    "sync:references": "node scripts/sync-doc-references.mjs",
+    "build": "npm run sync:references && node scripts/clean-dist.mjs && tsc -p tsconfig.json",
+    "prepack": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "ai",
+    "cursor",
+    "codex",
+    "agent",
+    "im-sdk-web",
+    "skill"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

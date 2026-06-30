@@ -1,23 +1,41 @@
-# WebSocket 连接配置，与 Flutter demo 端保持一致
+# native-auto-test 控制端配置。
+# 本文件复制为 config.yaml 后可包含 REST 凭据；config.yaml 已被 .gitignore 忽略。
+# 不要把本文件中的 rest_api 凭据打包进 Flutter 测试 App。
+
+# WebSocket 连接配置，与 Flutter 测试端 flutter_config.yaml 保持一致。
 websocket:
-  base_url: "ws://140.143.132.6:2000/iov/websocket/dual"
+  # 本地长期回归建议先启动：
+  #   python -m src.tools.local_ws_relay --host 127.0.0.1 --port 2000
+  base_url: "ws://127.0.0.1:2000/iov/websocket/dual"
   default_topic: "adc"
+  # 设置 NATIVE_AUTO_TEST_RUN_ID 时，topic 会按
+  #   {topic_prefix}-{run_id}-{device}
+  # 动态生成，例如 im-auto-20260618-153012-webA。
+  topic_prefix: "im-auto"
   connect_timeout: 10
   response_timeout: 30
 
-# 多端测试时可为每个设备指定不同 topic（Flutter 端用相同 topic 连接即为同一设备）
-topics:
-  deviceA: adc
-  deviceB: adc01
+# Web SDK 执行模式：
+# - real_sdk：通过 im_flutter_sdk_web 调用真实 Web IM SDK / 真实 IM 服务端。
+# - local_adapter：仅在明确做 wrapper JSON 映射验证时手动指定。
+web:
+  sdk_mode: real_sdk
 
 # REST 用户管理（创建/删除用户，用于 presence 等用例的临时账号）
 rest_api:
-  base_url: "http://a1.easemob.com/your_org_name/your_app_name"
-  auth_token: "Bearer Token"
+  # 只配置 REST host 前缀；完整 URL 会由 app_key pin 成：
+  #   {base_url}/{org_name}/{app_name}
+  base_url: "http://a1.easemob.com"
+  app_key: "your_org_name#your_app_name"
+  # 已有 token 时优先使用 auth_token，不会再请求 client_id/client_secret。
+  auth_token: ""
+  # 未配置 auth_token 时，框架会 POST {base_url}/token 获取 access_token。
+  client_id: "your_client_id"
+  client_secret: "your_client_secret"
   verify_ssl: false  # 临时绕过证书校验（仅测试环境使用）
 
-# Flutter SDK EMOptions 配置（与 main.dart 中 EMOptions.withAppKey 参数一一对应）
-# 脚本 sync_sdk_config.py 会读取此节并生成 Dart 配置文件注入到 Flutter example 中
+# Flutter SDK EMOptions 配置（与 im_flutter_test/lib/sdk_config_loader.dart 映射字段一一对应）。
+# 若修改本节中客户端也需要的字段，请同步 native-auto-test/flutter_config.yaml。
 sdk_options:
   app_key: "your_org_name#your_app_name"
   # rest_server: "https://a1-hsb.easemob.com"

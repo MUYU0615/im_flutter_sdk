@@ -1,0 +1,201 @@
+openapi: 3.0.3
+info:
+  title: Test Layer Orchestrator Contract
+  version: 0.1.0
+  description: |
+    工程测试分层执行契约（规划阶段）。
+    用于统一表达 PR 门禁、定时执行、发布前门禁的触发与结果查询语义。
+servers:
+  - url: https://ci.internal.example
+    description: CI 编排服务（示例）
+paths:
+  /test-runs:
+    post:
+      summary: 创建一次分层测试运行
+      description: 按执行策略触发测试运行，返回运行批次 ID。
+      operationId: createTestRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTestRunRequest'
+      responses:
+        '202':
+          description: 已受理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRunAccepted'
+        '400':
+          description: 参数错误
+  /test-runs/{runId}:
+    get:
+      summary: 查询测试运行结果
+      description: 返回本次运行的层级结果、场景结果与失败证据摘要。
+      operationId: getTestRun
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRunResult'
+        '404':
+          description: 运行不存在
+  /scenario-catalog:
+    get:
+      summary: 获取场景目录
+      description: 按层级返回可执行场景与风险等级，用于门禁覆盖核对。
+      operationId: listScenarioCatalog
+      parameters:
+        - name: layerId
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [unit, protocol_integration, e2e_browser, smoke_real_env]
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioCatalogResponse'
+
+components:
+  schemas:
+    CreateTestRunRequest:
+      type: object
+      required:
+        - policyId
+      properties:
+        policyId:
+          type: string
+          enum: [pr_gate, nightly_full, release_gate]
+          description: 执行策略标识
+        retryOnEnvUnreachable:
+          type: boolean
+          default: true
+          description: 真实环境不可达是否启用自动重试
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: 关联 PR/分支/提交等上下文信息
+    TestRunAccepted:
+      type: object
+      required:
+        - runId
+        - status
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [queued]
+    TestRunResult:
+      type: object
+      required:
+        - runId
+        - policyId
+        - status
+        - layerResults
+      properties:
+        runId:
+          type: string
+        policyId:
+          type: string
+          enum: [pr_gate, nightly_full, release_gate]
+        status:
+          type: string
+          enum: [queued, running, passed, failed, blocked]
+        layerResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayerResult'
+        failureEvidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureEvidence'
+    LayerResult:
+      type: object
+      required:
+        - layerId
+        - status
+        - totalScenarios
+        - passedScenarios
+      properties:
+        layerId:
+          type: string
+          enum: [unit, protocol_integration, e2e_browser, smoke_real_env]
+        status:
+          type: string
+          enum: [passed, failed, skipped, blocked]
+        totalScenarios:
+          type: integer
+          minimum: 0
+        passedScenarios:
+          type: integer
+          minimum: 0
+    FailureEvidence:
+      type: object
+      required:
+        - layerId
+        - scenarioId
+        - failureType
+        - message
+        - occurredAt
+      properties:
+        layerId:
+          type: string
+          enum: [unit, protocol_integration, e2e_browser, smoke_real_env]
+        scenarioId:
+          type: string
+        failureType:
+          type: string
+          enum: [assertion, env_unreachable, timeout, protocol_mismatch]
+        message:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        retryCount:
+          type: integer
+          minimum: 0
+    ScenarioCatalogResponse:
+      type: object
+      required:
+        - scenarios
+      properties:
+        scenarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioItem'
+    ScenarioItem:
+      type: object
+      required:
+        - scenarioId
+        - layerId
+        - category
+        - riskLevel
+      properties:
+        scenarioId:
+          type: string
+        layerId:
+          type: string
+          enum: [unit, protocol_integration, e2e_browser, smoke_real_env]
+        category:
+          type: string
+          enum: [happy_path, error_path, recovery]
+        riskLevel:
+          type: string
+          enum: [high, medium, low]
+        description:
+          type: string

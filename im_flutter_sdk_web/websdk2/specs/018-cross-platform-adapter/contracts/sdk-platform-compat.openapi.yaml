@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: IM SDK Platform Compatibility Contract
+  version: 0.1.0
+  description: |
+    018 跨平台适配特性的契约草案。
+    该契约用于定义跨平台一致性验收所需的逻辑接口与返回语义。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/init:
+    post:
+      summary: 初始化 SDK 并解析平台能力
+      operationId: sdkInit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/InitRequest
+      responses:
+        200:
+          description: 初始化成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/InitResponse
+        400:
+          description: 初始化失败（关键能力缺失或配置错误）
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CompatError
+  /sdk/login:
+    post:
+      summary: 登录并建立连接
+      operationId: sdkLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/LoginRequest
+      responses:
+        200:
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/LoginResponse
+        400:
+          description: 登录失败
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CompatError
+  /sdk/messages/text:
+    post:
+      summary: 发送文本消息（统一语义）
+      operationId: sendTextMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/TextMessageRequest
+      responses:
+        200:
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/TextMessageResponse
+        400:
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CompatError
+  /sdk/messages/attachment:
+    post:
+      summary: 发送附件消息（统一上传语义）
+      operationId: sendAttachmentMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: #/components/schemas/AttachmentMessageRequest
+      responses:
+        200:
+          description: 上传并发送成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/AttachmentMessageResponse
+        400:
+          description: 上传或发送失败
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/CompatError
+  /sdk/connection/status:
+    get:
+      summary: 获取连接状态
+      operationId: getConnectionStatus
+      responses:
+        200:
+          description: 状态查询成功
+          content:
+            application/json:
+              schema:
+                $ref: #/components/schemas/ConnectionStatusResponse
+components:
+  schemas:
+    InitRequest:
+      type: object
+      required: [appKey]
+      properties:
+        appKey:
+          type: string
+        preferPlatform:
+          type: string
+          enum: [web, wechat-miniapp, uniapp, react-native, electron-renderer]
+    InitResponse:
+      type: object
+      required: [platformId, capability]
+      properties:
+        platformId:
+          type: string
+        capability:
+          $ref: #/components/schemas/PlatformCapability
+    PlatformCapability:
+      type: object
+      required: [request, upload, socket, proto]
+      properties:
+        request:
+          type: boolean
+        upload:
+          type: boolean
+        socket:
+          type: boolean
+        proto:
+          type: boolean
+        storage:
+          type: boolean
+    LoginRequest:
+      type: object
+      required: [userId, token]
+      properties:
+        userId:
+          type: string
+        token:
+          type: string
+    LoginResponse:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [connecting, connected, disconnected, reconnecting]
+    TextMessageRequest:
+      type: object
+      required: [channelId, channelType, message]
+      properties:
+        channelId:
+          type: string
+        channelType:
+          type: string
+          enum: [single, group, room]
+        message:
+          type: string
+    TextMessageResponse:
+      type: object
+      required: [msgLocalId, status]
+      properties:
+        msgLocalId:
+          type: string
+        status:
+          type: string
+          enum: [sending, sent, failed]
+    AttachmentMessageRequest:
+      type: object
+      required: [channelId, channelType, attachmentType, source]
+      properties:
+        channelId:
+          type: string
+        channelType:
+          type: string
+          enum: [single, group, room]
+        attachmentType:
+          type: string
+          enum: [image, file, voice, video]
+        source:
+          $ref: #/components/schemas/AttachmentSource
+    AttachmentSource:
+      type: object
+      properties:
+        sourceType:
+          type: string
+          enum: [web-file, miniapp-path, rn-uri]
+        name:
+          type: string
+        mimeType:
+          type: string
+        size:
+          type: integer
+        path:
+          type: string
+        uri:
+          type: string
+    AttachmentMessageResponse:
+      type: object
+      required: [msgLocalId, status]
+      properties:
+        msgLocalId:
+          type: string
+        status:
+          type: string
+          enum: [sending, sent, failed]
+        uploadResult:
+          $ref: #/components/schemas/UploadResult
+    UploadResult:
+      type: object
+      properties:
+        url:
+          type: string
+        secret:
+          type: string
+        fileLength:
+          type: integer
+        filetype:
+          type: string
+        filename:
+          type: string
+    ConnectionStatusResponse:
+      type: object
+      required: [state, isOnline]
+      properties:
+        state:
+          type: string
+          enum: [connecting, connected, disconnected, reconnecting, reconnect_failed]
+        isOnline:
+          type: boolean
+    CompatError:
+      type: object
+      required: [code, message, stage, retryable]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        stage:
+          type: string
+          enum: [init, request, upload, socket, proto, runtime]
+        retryable:
+          type: boolean

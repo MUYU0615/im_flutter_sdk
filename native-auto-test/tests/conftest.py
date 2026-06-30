@@ -16,8 +16,9 @@ import pytest
 # 保证能 import src
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.tools.config import get_default_topic, get_topic, get_rest_auth_token
-from src.rest_api.user_api import create_users, delete_user
+from src.tools.config import get_default_topic, get_topic, get_rest_authorization_header
+from src.rest_api.user_api import create_users, delete_user, get_user_access_token
+from src.tools.target_platforms import TARGET_PLATFORMS, target_device_pair_for_platform
 from src.tools.ws_client import (
     request as ws_request,
     request_and_wait_for_event as ws_request_and_wait_event,
@@ -91,19 +92,33 @@ def _session_login(
     user_a: str,
     user_b: str,
     password: str = "1",
+    *,
+    use_token_login: bool = False,
 ) -> None:
     """
     所有 test_* cases 执行前调用一次：deviceA 以 user_a、deviceB 以 user_b 登录，并清空该连接上的回调。
     """
     def _do_login():
-        ra = device_a.call(
-            "Client", Cmd.login.value,
-            info={"userId": user_a, "pwdOrToken": password, "isPassword": True},
-        )
-        rb = device_b.call(
-            "Client", Cmd.login.value,
-            info={"userId": user_b, "pwdOrToken": password, "isPassword": True},
-        )
+        if use_token_login:
+            token_a = get_user_access_token(user_a, password)
+            token_b = get_user_access_token(user_b, password)
+            ra = device_a.call(
+                "Client", Cmd.loginWithAgoraToken.value,
+                info={"userId": user_a, "agoraToken": token_a},
+            )
+            rb = device_b.call(
+                "Client", Cmd.loginWithAgoraToken.value,
+                info={"userId": user_b, "agoraToken": token_b},
+            )
+        else:
+            ra = device_a.call(
+                "Client", Cmd.login.value,
+                info={"userId": user_a, "pwdOrToken": password, "isPassword": True},
+            )
+            rb = device_b.call(
+                "Client", Cmd.login.value,
+                info={"userId": user_b, "pwdOrToken": password, "isPassword": True},
+            )
         return ra, rb
 
     def _need_create_user(r: dict) -> bool:
@@ -122,9 +137,9 @@ def _session_login(
         return False
 
     with _allure_step("Session 登录"):
-        has_rest_token = bool(get_rest_auth_token())
-        # 仅在未配置 REST token 时，走 WS createAccount 预创建
-        if not has_rest_token:
+        has_rest_auth = bool(get_rest_authorization_header())
+        # 仅在未配置 REST 鉴权时，走 WS createAccount 预创建
+        if not has_rest_auth:
             try:
                 _, _, user_c = _test_usernames()
                 for uid in (user_a, user_b, user_c):
@@ -146,8 +161,8 @@ def _session_login(
                 pass
         resp_a, resp_b = _do_login()
 
-        # 仅在未配置 REST token 时，允许 WS createAccount 兜底
-        if (not has_rest_token) and (_need_create_user(resp_a) or _need_create_user(resp_b)):
+        # 仅在未配置 REST 鉴权时，允许 WS createAccount 兜底
+        if (not has_rest_auth) and (_need_create_user(resp_a) or _need_create_user(resp_b)):
             try:
                 for uid in (user_a, user_b):
                     create_resp = device_a.call(
@@ -196,8 +211,8 @@ def _session_login(
                 f"deviceA: {resp_a}\n"
                 f"deviceB: {resp_b}\n"
                 "排查建议：\n"
-                "1) 确认被测端已创建当天用户名（tests/conftest.py 中 testMMDDuser1/2/3），或在 config.yaml 的 rest_api.auth_token 中配置 token 以自动创建。\n"
-                "2) 检查 config.yaml.websocket.base_url 与 topics 是否指向在线集成端。\n"
+                "1) 确认被测端已创建当天用户名（tests/conftest.py 中 testMMDDuser1/2/3），或在 config.yaml 的 rest_api 中配置 auth_token 或 client_id/client_secret 以自动创建。\n"
+                "2) 检查 config.yaml.websocket.base_url 与动态 topic 是否和在线集成端一致。\n"
                 "3) 若使用网关鉴权，确认 token/APPKEY 正确。\n"
                 f"{extra}"
             )
@@ -264,6 +279,24 @@ def pytest_addoption(parser):
         default=False,
         help="Relax all event matching for chat tests (success/received).",
     )
+    parser.addoption(
+        "--skip-global-login",
+        action="store_true",
+        default=False,
+        help="Skip session deviceA/deviceB login. Use for isolated Web smoke runs.",
+    )
+    parser.addoption(
+        "--target-platform",
+        choices=TARGET_PLATFORMS,
+        default="mobile",
+        help="Select target platform. mobile is a compatibility alias for the default deviceA/deviceB group.",
+    )
+    parser.addoption(
+        "--web-sdk-runtime",
+        choices=("legacy_webim", "imsdk"),
+        default="legacy_webim",
+        help="Select Web SDK runtime baseline for web target.",
+    )
 @pytest.fixture(scope="session")
 def ws_debug(request) -> bool:
     return bool(request.config.getoption("--ws-debug"))
@@ -285,6 +318,21 @@ def ws_relax_received(request) -> bool:
 
 
 @pytest.fixture(scope="session")
+def target_platform(request) -> str:
+    return request.config.getoption("--target-platform")
+
+
+@pytest.fixture(scope="session")
+def web_sdk_runtime(request) -> str:
+    return request.config.getoption("--web-sdk-runtime")
+
+
+@pytest.fixture(scope="session")
+def target_device_pair(target_platform) -> tuple[str, str]:
+    return target_device_pair_for_platform(target_platform)
+
+
+@pytest.fixture(scope="session")
 def ws_topic() -> str:
     """默认 WebSocket topic，与 Flutter 端一致。"""
     return get_default_topic()
@@ -292,7 +340,7 @@ def ws_topic() -> str:
 
 @pytest.fixture(scope="session")
 def ws_device() -> str | None:
-    """多端测试时的设备标识，对应 config 中 topics 的 key。"""
+    """多端测试时的设备标识，用于解析动态 topic。"""
     return None
 
 
@@ -339,14 +387,20 @@ def _make_api(device: str):
 
 @pytest.fixture(scope="session")
 def api_device_a():
-    """设备 A 的 api（config 中 topics.deviceA）；session 内已以 user_a 登录。"""
+    """设备 A 的 api；session 内已以 user_a 登录。"""
     return _make_api("deviceA")
 
 
 @pytest.fixture(scope="session")
 def api_device_b():
-    """设备 B 的 api（config 中 topics.deviceB）；session 内已以 user_b 登录。"""
+    """设备 B 的 api；session 内已以 user_b 登录。"""
     return _make_api("deviceB")
+
+
+@pytest.fixture
+def web_api():
+    """Web 设备 api；用例自行控制 login/logout。"""
+    return _make_api("webA")
 
 
 def _test_usernames() -> tuple[str, str, str]:
@@ -360,16 +414,16 @@ def _test_usernames() -> tuple[str, str, str]:
 def created_test_users():
     """
     Session 内创建两名用户供所有测试用例使用，teardown 时删除。
-    若未配置 REST auth_token（config.yaml -> rest_api.auth_token），则不创建/不删除，直接使用日期用户名。
+    若未配置 REST 鉴权（auth_token 或 client_id/client_secret），则不创建/不删除，直接使用日期用户名。
     返回 (user_a, user_b)。
     """
     global _LAST_CREATE_USERS_ERROR
     _LAST_CREATE_USERS_ERROR = ""
-    token = get_rest_auth_token()
+    token = get_rest_authorization_header()
     # 优先使用日期用户名，避免固定回退账号与被测端不一致
     user_a, user_b, user_c = _test_usernames()
     if not token:
-        # 无 REST token：直接使用日期用户名，不创建
+        # 无 REST 鉴权：直接使用日期用户名，不创建
         yield user_a, user_b, user_c
         return
     with _allure_step("创建测试用户"):
@@ -431,16 +485,67 @@ def user_c(created_test_users):
     return created_test_users[2]
 
 @pytest.fixture(scope="session", autouse=True)
-def global_login_logout(device_a, device_b, created_test_users):
+def global_login_logout(request):
     """
     全 session 只执行一次（autouse=True）：
     - setup：用 created_test_users 的两人在 device_a/device_b 上登录并清空回调。
     - teardown：登出两设备。用户删除由 created_test_users 的 teardown 负责。
     """
+    if bool(request.config.getoption("--skip-global-login")):
+        yield
+        return
+    device_a = request.getfixturevalue("primary_device")
+    device_b = request.getfixturevalue("secondary_device")
+    target_platform = request.getfixturevalue("target_platform")
+    web_sdk_runtime = request.getfixturevalue("web_sdk_runtime")
+    created_test_users = request.getfixturevalue("created_test_users")
     user_a, user_b, user_c = created_test_users
-    _session_login(device_a, device_b, user_a, user_b, SESSION_PWD)
+    _session_login(
+        device_a,
+        device_b,
+        user_a,
+        user_b,
+        SESSION_PWD,
+        use_token_login=(target_platform == "web" and web_sdk_runtime == "imsdk"),
+    )
     yield
     _session_logout(device_a, device_b)
+
+
+def _reset_web_devices(primary, secondary) -> None:
+    for device in (primary, secondary):
+        device.call("Client", "webReset", info={})
+        device.drain_events(timeout=0.5)
+
+
+@pytest.fixture(autouse=True)
+def web_state_reset(request, target_platform):
+    """
+    Web 测试端是长期运行的浏览器 SDK 实例，消息、联系人、用户属性等内存态会跨 case 保留。
+    每个在线 Web case 执行前统一清理 Web 专属内存态，避免 case 顺序和重复运行影响断言。
+    """
+    if target_platform != "web":
+        yield
+        return
+    if bool(request.config.getoption("--skip-global-login")):
+        yield
+        return
+    if request.node.get_closest_marker("web") is None:
+        yield
+        return
+
+    primary = request.getfixturevalue("primary_device")
+    secondary = request.getfixturevalue("secondary_device")
+    try:
+        _reset_web_devices(primary, secondary)
+    except Exception as e:
+        try:
+            import allure
+            allure.attach(str(e), "Web state reset failed", allure.attachment_type.TEXT)
+        except ImportError:
+            pass
+        raise
+    yield
 
 
 @pytest.fixture
@@ -468,14 +573,14 @@ def message_listener():
 
 
 def _device_topic(device: str) -> str:
-    """与 api_device_a / api_device_b 一致的 topic：根据设备从 config 的 topics 读取。"""
+    """与 api_device_a / api_device_b 一致的 topic：根据设备解析动态 topic。"""
     return get_topic(device)
 
 
 @pytest.fixture(scope="session")
 def listener_a(ws_debug):
     """
-    设备 A 的纯接收监听器，与 api_device_a 共用同一 topic（config 中 topics.deviceA）。
+    设备 A 的纯接收监听器，与 api_device_a 共用同一 topic。
     - 发送请求-等待响应：使用 api_device_a.call(...)。
     - 主动获取推送消息：使用本 listener 的 .receive_message(...)。
     """
@@ -489,7 +594,7 @@ def listener_a(ws_debug):
 @pytest.fixture(scope="session")
 def listener_b(ws_debug):
     """
-    设备 B 的纯接收监听器，与 api_device_b 共用同一 topic（config 中 topics.deviceB）。
+    设备 B 的纯接收监听器，与 api_device_b 共用同一 topic。
     - 发送请求-等待响应：使用 api_device_b.call(...)。
     - 主动获取推送消息：使用本 listener 的 .receive_message(...)。
     """
@@ -559,10 +664,45 @@ def device_b(ws_debug):
         conn.stop()
 
 
+@pytest.fixture(scope="session")
+def primary_device(target_device_pair, ws_debug):
+    """目标平台的主设备；android/ios/mobile=deviceA，web=webA。"""
+    conn = DeviceConnection(device=target_device_pair[0])
+    conn.start()
+    try:
+        yield _DeviceChannelWrapper(conn, target_device_pair[0])
+    finally:
+        conn.stop()
+
+
+@pytest.fixture(scope="session")
+def secondary_device(target_device_pair, ws_debug):
+    """目标平台的副设备；android/ios/mobile=deviceB，web=webB。"""
+    conn = DeviceConnection(device=target_device_pair[1])
+    conn.start()
+    try:
+        yield _DeviceChannelWrapper(conn, target_device_pair[1])
+    finally:
+        conn.stop()
+
+
 @pytest.fixture
 def assert_api():
     """提供断言方法的 fixture：assert_api.assert_success(resp), assert_api.get_result(resp) 等。"""
     return assertions
+
+
+@pytest.fixture
+def require_capability(target_platform):
+    from src.tools.capabilities import api_status
+
+    def _require(manager: str, cmd: str):
+        status = api_status(target_platform, manager, cmd)
+        if status == "pending":
+            pytest.skip(f"{manager}.{cmd} is pending on {target_platform}")
+        return status
+
+    return _require
 
 
 def pytest_configure(config):
@@ -573,4 +713,27 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "contact: ContactManager / friend API tests")
     config.addinivalue_line("markers", "presence: PresenceManager / online status tests")
     config.addinivalue_line("markers", "multi_device: tests requiring multiple devices/topics")
+    config.addinivalue_line("markers", "real_e2e: real SDK/service end-to-end coverage evidence")
+    config.addinivalue_line("markers", "wrapper_mapping: manager/cmd/info/result/event JSON wrapper mapping tests")
+    config.addinivalue_line("markers", "fixture: config, manifest, tool, or fixture tests that do not prove SDK capability")
+    config.addinivalue_line("markers", "capability: capability matrix and platform support status tests")
+    config.addinivalue_line("markers", "unit: pure unit tests for scripts/helpers")
+    config.addinivalue_line("markers", "web: Flutter Web test app cases")
+    config.addinivalue_line("markers", "android: Android target platform cases")
+    config.addinivalue_line("markers", "ios: iOS target platform cases")
+    config.addinivalue_line("markers", "real_web: real Web SDK/service E2E cases")
     config.addinivalue_line("markers", "agorachat4_23_0: AgoraChat SDK 4.23.0 release coverage tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    """把历史 marker 归一到新的执行层 marker，避免覆盖统计拆分时漏算。"""
+    for item in items:
+        if item.get_closest_marker("real_web") and not item.get_closest_marker("real_e2e"):
+            item.add_marker(pytest.mark.real_e2e)
+        if (
+            item.get_closest_marker("web")
+            and not item.get_closest_marker("real_e2e")
+            and not item.get_closest_marker("wrapper_mapping")
+            and "/tests/web/" in item.path.as_posix()
+        ):
+            item.add_marker(pytest.mark.wrapper_mapping)

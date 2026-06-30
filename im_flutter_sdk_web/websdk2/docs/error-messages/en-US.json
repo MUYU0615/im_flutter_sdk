@@ -1,0 +1,3042 @@
+{
+  "locale": "en-US",
+  "generatedFrom": "src/rest/api-errors.json",
+  "common": {
+    "validation": {
+      "errors": {
+        "MISSING_REQUIRED": {
+          "message": "Invalid parameters: missing required parameter"
+        },
+        "INVALID_FORMAT": {
+          "message": "Invalid parameters: incorrect format"
+        },
+        "UNKNOWN": {
+          "message": "Invalid parameters"
+        }
+      }
+    },
+    "auth": {
+      "errors": {
+        "ALREADY_LOGIN": {
+          "message": "User is already logged in"
+        },
+        "NOT_LOGIN": {
+          "message": "User is not logged in"
+        },
+        "UNAUTHORIZED": {
+          "message": "User authentication failed"
+        },
+        "FORBIDDEN": {
+          "message": "User permission denied"
+        },
+        "TOKEN_EXPIRED": {
+          "message": "User token has expired"
+        },
+        "BIND_ANOTHER_DEVICE": {
+          "message": "User is logged in on another device"
+        },
+        "LOGIN_TOO_MANY_DEVICES": {
+          "message": "User login device count exceeds the limit"
+        },
+        "USER_MUTED": {
+          "message": "User is muted"
+        }
+      }
+    },
+    "connection": {
+      "errors": {
+        "TIMEOUT": {
+          "message": "Service request timed out"
+        },
+        "WEBSOCKET_ERROR": {
+          "message": "Server is unreachable"
+        },
+        "NOT_CREATED": {
+          "message": "General error"
+        },
+        "CLOSED_BEFORE_READY": {
+          "message": "Server is unreachable"
+        },
+        "CANCELLED": {
+          "message": "General error: connection cancelled"
+        },
+        "PROVISION_TIMEOUT": {
+          "message": "Service request timed out"
+        },
+        "PROVISION_REJECTED": {
+          "message": "User authentication failed"
+        },
+        "PROVISION_CLOSED": {
+          "message": "Server is unreachable"
+        },
+        "DNSLIST_FAILED": {
+          "message": "Failed to get server configuration"
+        },
+        "SERVER_BUSY": {
+          "message": "Server is busy"
+        }
+      }
+    },
+    "storage": {
+      "errors": {
+        "OPERATION_FAILED": {
+          "message": "Local storage operation failed"
+        }
+      }
+    },
+    "message": {
+      "errors": {
+        "NOT_CONNECTED": {
+          "message": "Server is unreachable"
+        },
+        "ACK_TIMEOUT": {
+          "message": "Service request timed out"
+        },
+        "SEND_FAILED": {
+          "message": "Generic service request error"
+        },
+        "SENDER_DESTROYED": {
+          "message": "General error: sender has been destroyed"
+        },
+        "ENCODE_FAILED": {
+          "message": "Message error: encoding failed"
+        },
+        "DECODE_FAILED": {
+          "message": "Message error: decoding failed"
+        },
+        "ACK_MISSING": {
+          "message": "Service request timed out: ACK missing"
+        }
+      }
+    },
+    "transport": {
+      "errors": {
+        "NETWORK_ERROR": {
+          "message": "Network error"
+        },
+        "TIMEOUT": {
+          "message": "Service request timed out"
+        },
+        "HTTP_ERROR": {
+          "message": "Generic service request error"
+        },
+        "BUSINESS_UNKNOWN": {
+          "message": "Generic service request error: unmapped business error"
+        }
+      }
+    },
+    "upload": {
+      "errors": {
+        "REQUIRED_FIELD_MISSING": {
+          "message": "Invalid parameters: missing required field"
+        },
+        "INVALID_APPKEY": {
+          "message": "Invalid App Key"
+        },
+        "SIZE_EXCEEDED": {
+          "message": "File is too large"
+        },
+        "REQUEST_FAILED": {
+          "message": "File upload failed"
+        },
+        "TIMEOUT": {
+          "message": "Service request timed out"
+        },
+        "ABORTED": {
+          "message": "General error: upload cancelled"
+        }
+      }
+    },
+    "unknown": {
+      "errors": {
+        "UNKNOWN": {
+          "message": "General error"
+        },
+        "SERVICE_LIMIT_EXCEEDED": {
+          "message": "Service limit exceeded"
+        }
+      }
+    },
+    "push": {
+      "errors": {
+        "TOKEN_UPLOAD_FAILED": {
+          "message": "Push token upload failed"
+        },
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed"
+        },
+        "PUSH_LANGUAGE_OPERATION_FAILED": {
+          "message": "Push language operation failed"
+        }
+      }
+    },
+    "chatroom": {
+      "errors": {
+        "CHATROOM_INVALID_ID": {
+          "message": "Invalid chat room ID"
+        },
+        "CHATROOM_NOT_JOINED": {
+          "message": "Not joined the chat room"
+        },
+        "CHATROOM_PERMISSION_DENIED": {
+          "message": "Chat room permission denied"
+        },
+        "CHATROOM_MEMBERS_FULL": {
+          "message": "Chat room member limit reached"
+        },
+        "CHATROOM_NOT_EXIST": {
+          "message": "Chat room does not exist"
+        },
+        "CHATROOM_OWNER_NOT_ALLOW_LEAVE": {
+          "message": "Chat room owner cannot leave"
+        },
+        "CHATROOM_USER_IN_BLOCKLIST": {
+          "message": "User is in the chat room blocklist"
+        }
+      }
+    }
+  },
+  "apis": {
+    "updateOwnUserInfo": {
+      "summary": "Update own user info",
+      "localErrors": {
+        "updateOwnInfo": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in update own user info",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "updateOwnInfoByAttribute": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in update own user info",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "data_length_exceed": {
+          "message": "update own user info failed: data length exceed",
+          "reason": "data length exceed occurred in update own user info",
+          "action": "Check data length exceed and try again"
+        },
+        "resource_not_found": {
+          "message": "User does not exist",
+          "reason": "Current user does not exist",
+          "action": "Confirm the user is registered"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        }
+      }
+    },
+    "getUserInfoByUserId": {
+      "summary": "Get user info by user id",
+      "localErrors": {
+        "getUserInfoByUserId": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get user info by user id",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "usercount_exceed": {
+          "message": "Batch user query count exceeds the limit",
+          "reason": "User count in one query exceeds the server limit",
+          "action": "Reduce the user count per query and try again"
+        },
+        "resource_not_found": {
+          "message": "User does not exist",
+          "reason": "Queried user does not exist",
+          "action": "Confirm the user ID is correct"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        }
+      }
+    },
+    "getUserInfoByAttribute": {
+      "summary": "Get user info by attribute",
+      "localErrors": {
+        "getUserInfoByAttribute": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get user info by attribute",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "usercount_exceed": {
+          "message": "Batch user query count exceeds the limit",
+          "reason": "User count in one query exceeds the server limit",
+          "action": "Reduce the user count per query and try again"
+        },
+        "resource_not_found": {
+          "message": "User does not exist",
+          "reason": "Queried user does not exist",
+          "action": "Confirm the user ID is correct"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        }
+      }
+    },
+    "subscribeUsersInfo": {
+      "summary": "Subscribe users info",
+      "localErrors": {},
+      "errors": {
+        "unauthorized": {
+          "message": "User authentication failed",
+          "reason": "Unauthorized",
+          "action": "Refresh token"
+        },
+        "forbidden": {
+          "message": "Service is not enabled or permission is denied",
+          "reason": "Service forbidden",
+          "action": "Check service permission"
+        },
+        "subscriber_limit_exceeded": {
+          "message": "Subscriber count exceeds the limit",
+          "reason": "Subscriber limit exceeded",
+          "action": "Reduce subscription targets"
+        },
+        "target_limit_exceeded": {
+          "message": "Target user subscriber count exceeds the limit",
+          "reason": "Target limit exceeded",
+          "action": "Change subscription target"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        },
+        "server_unknown_error": {
+          "message": "Generic service request error: server internal error",
+          "reason": "Server unknown error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "unsubscribeUsersInfo": {
+      "summary": "Unsubscribe users info",
+      "localErrors": {},
+      "errors": {
+        "unauthorized": {
+          "message": "User authentication failed",
+          "reason": "Unauthorized",
+          "action": "Refresh token"
+        },
+        "forbidden": {
+          "message": "Service is not enabled or permission is denied",
+          "reason": "Service forbidden",
+          "action": "Check service permission"
+        },
+        "subscriber_limit_exceeded": {
+          "message": "Subscriber count exceeds the limit",
+          "reason": "Subscriber limit exceeded",
+          "action": "Reduce subscription targets"
+        },
+        "target_limit_exceeded": {
+          "message": "Target user subscriber count exceeds the limit",
+          "reason": "Target limit exceeded",
+          "action": "Change subscription target"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        },
+        "server_unknown_error": {
+          "message": "Generic service request error: server internal error",
+          "reason": "Server unknown error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getSubscribedUsers": {
+      "summary": "Get subscribed users",
+      "localErrors": {},
+      "errors": {
+        "unauthorized": {
+          "message": "User authentication failed",
+          "reason": "Unauthorized",
+          "action": "Refresh token"
+        },
+        "forbidden": {
+          "message": "Service is not enabled or permission is denied",
+          "reason": "Service forbidden",
+          "action": "Check service permission"
+        },
+        "subscriber_limit_exceeded": {
+          "message": "Subscriber count exceeds the limit",
+          "reason": "Subscriber limit exceeded",
+          "action": "Reduce subscription targets"
+        },
+        "target_limit_exceeded": {
+          "message": "Target user subscriber count exceeds the limit",
+          "reason": "Target limit exceeded",
+          "action": "Change subscription target"
+        },
+        "rate_limit": {
+          "message": "Service limit exceeded",
+          "reason": "Requests are too frequent",
+          "action": "Reduce request frequency and try again"
+        },
+        "server_unknown_error": {
+          "message": "Generic service request error: server internal error",
+          "reason": "Server unknown error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "addContact": {
+      "summary": "Add contact",
+      "localErrors": {
+        "addContact": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in add contact",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "USER_NOT_FOUND": {
+          "message": "User does not exist",
+          "reason": "Target user does not exist",
+          "action": "Confirm the user ID is correct"
+        },
+        "ALREADY_FRIEND": {
+          "message": "add contact failed: already friend"
+        },
+        "BLOCKED_BY_USER": {
+          "message": "add contact failed: blocked by user"
+        },
+        "CONTACT_REACH_LIMIT": {
+          "message": "add contact failed: contact reach limit",
+          "reason": "contact reach limit occurred in add contact",
+          "action": "Check contact reach limit and try again"
+        },
+        "CONTACT_REACH_LIMIT_PEER": {
+          "message": "add contact failed: contact reach limit peer",
+          "reason": "contact reach limit peer occurred in add contact",
+          "action": "Check contact reach limit peer and try again"
+        }
+      }
+    },
+    "deleteContact": {
+      "summary": "Delete contact",
+      "localErrors": {
+        "deleteContact": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in delete contact",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "USER_NOT_FOUND": {
+          "message": "User does not exist",
+          "reason": "Target user does not exist",
+          "action": "Confirm the user ID is correct"
+        }
+      }
+    },
+    "acceptContactInvite": {
+      "summary": "Accept contact invite",
+      "localErrors": {
+        "acceptContactInvite": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in accept contact invite",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "USER_NOT_FOUND": {
+          "message": "User does not exist",
+          "reason": "Target user does not exist",
+          "action": "Confirm the user ID is correct"
+        },
+        "CONTACT_REACH_LIMIT": {
+          "message": "accept contact invite failed: contact reach limit",
+          "reason": "contact reach limit occurred in accept contact invite",
+          "action": "Check contact reach limit and try again"
+        },
+        "CONTACT_REACH_LIMIT_PEER": {
+          "message": "accept contact invite failed: contact reach limit peer",
+          "reason": "contact reach limit peer occurred in accept contact invite",
+          "action": "Check contact reach limit peer and try again"
+        }
+      }
+    },
+    "declineContactInvite": {
+      "summary": "Decline contact invite",
+      "localErrors": {
+        "declineContactInvite": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in decline contact invite",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "USER_NOT_FOUND": {
+          "message": "User does not exist",
+          "reason": "Target user does not exist",
+          "action": "Confirm the user ID is correct"
+        }
+      }
+    },
+    "setContactRemark": {
+      "summary": "Set contact remark",
+      "localErrors": {
+        "setContactRemark": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in set contact remark",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "illegal_argument": {
+          "message": "Cannot set a remark for a non-friend",
+          "reason": "Target user is not a friend of the current user",
+          "action": "Add the user as a friend before setting a remark"
+        },
+        "remark_length_exceeded": {
+          "message": "Remark length exceeds the limit",
+          "reason": "remark length exceeded occurred in set contact remark",
+          "action": "Shorten the remark and try again"
+        }
+      }
+    },
+    "getBlocklist": {
+      "summary": "Get blocklist",
+      "localErrors": {},
+      "errors": {}
+    },
+    "addUsersToBlocklist": {
+      "summary": "Add users to blocklist",
+      "localErrors": {
+        "addUsersToBlocklist": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in add users to blocklist",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_resource_not_found": {
+          "message": "add users to blocklist failed: service resource not found",
+          "reason": "Target user does not exist",
+          "action": "Confirm the user ID is correct"
+        },
+        "blocklist_limit_exceeded": {
+          "message": "Blocklist size reaches the limit",
+          "reason": "Blocklist size reaches the server limit",
+          "action": "Remove unnecessary blocked users and try again"
+        }
+      }
+    },
+    "removeUserFromBlocklist": {
+      "summary": "Remove user from blocklist",
+      "localErrors": {
+        "removeUserFromBlocklist": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove user from blocklist",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createGroup": {
+      "summary": "Create group",
+      "localErrors": {},
+      "errors": {
+        "invalid_parameter": {
+          "message": "create group failed: invalid parameter",
+          "reason": "invalid parameter occurred in create group",
+          "action": "Check invalid parameter and try again"
+        },
+        "illegal_argument": {
+          "message": "create group failed: illegal argument",
+          "reason": "illegal argument occurred in create group",
+          "action": "Check illegal argument and try again"
+        },
+        "exceed_limit": {
+          "message": "create group failed: exceed limit",
+          "reason": "exceed limit occurred in create group",
+          "action": "Check exceed limit and try again"
+        },
+        "group_name_violation": {
+          "message": "Invalid group name",
+          "reason": "group name violation occurred in create group",
+          "action": "Check group name violation and try again"
+        },
+        "resource_not_found": {
+          "message": "User does not exist",
+          "reason": "resource not found occurred in create group",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getGroupInfo": {
+      "summary": "Get group info",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupInfoList": {
+      "summary": "Get group info list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "resource not found occurred in get group info list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "updateGroupInfo": {
+      "summary": "Update group info",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "Group operation permission denied",
+          "reason": "group authorization occurred in update group info",
+          "action": "Try again with the group owner or an administrator account"
+        },
+        "forbidden_op": {
+          "message": "Group operation permission denied",
+          "reason": "forbidden op occurred in update group info",
+          "action": "Check forbidden op and try again"
+        },
+        "illegal_argument": {
+          "message": "update group info failed: illegal argument",
+          "reason": "illegal argument occurred in update group info",
+          "action": "Check illegal argument and try again"
+        },
+        "exceed_limit": {
+          "message": "update group info failed: exceed limit",
+          "reason": "exceed limit occurred in update group info",
+          "action": "Check exceed limit and try again"
+        },
+        "group_name_violation": {
+          "message": "Invalid group name",
+          "reason": "group name violation occurred in update group info",
+          "action": "Check group name violation and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        },
+        "group_disabled": {
+          "message": "Group is disabled",
+          "reason": "group disabled occurred in update group info",
+          "action": "Check group disabled and try again"
+        }
+      }
+    },
+    "changeGroupOwner": {
+      "summary": "Change group owner",
+      "localErrors": {},
+      "errors": {
+        "forbidden_op": {
+          "message": "Group operation permission denied",
+          "reason": "forbidden op occurred in change group owner",
+          "action": "Check forbidden op and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "destroyGroup": {
+      "summary": "Destroy group",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "Group operation permission denied",
+          "reason": "group authorization occurred in destroy group",
+          "action": "Check group authorization and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        },
+        "group_disabled": {
+          "message": "Group is disabled",
+          "reason": "group disabled occurred in destroy group",
+          "action": "Check group disabled and try again"
+        }
+      }
+    },
+    "leaveGroup": {
+      "summary": "Leave group",
+      "localErrors": {},
+      "errors": {
+        "not_joined": {
+          "message": "User has not joined the group",
+          "reason": "not joined occurred in leave group",
+          "action": "Check not joined and try again"
+        },
+        "owner_cannot_leave": {
+          "message": "Group owner cannot leave the group directly",
+          "reason": "owner cannot leave occurred in leave group",
+          "action": "Check owner cannot leave and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getChatRoomList": {
+      "summary": "Get chat room list",
+      "localErrors": {},
+      "errors": {}
+    },
+    "getChatRoomInfo": {
+      "summary": "Get chat room info",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room info",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "updateChatRoomInfo": {
+      "summary": "Update chat room info",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "update chat room info failed: group authorization",
+          "reason": "Current user is not chat room owner/admin and cannot update chat room info",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "forbidden_op": {
+          "message": "update chat room info failed: forbidden op",
+          "reason": "forbidden op occurred in update chat room info",
+          "action": "Check forbidden op and try again"
+        },
+        "illegal_argument": {
+          "message": "update chat room info failed: illegal argument",
+          "reason": "illegal argument occurred in update chat room info",
+          "action": "Check illegal argument and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in update chat room info",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "destroyChatRoom": {
+      "summary": "Destroy chat room",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "destroy chat room failed: group authorization",
+          "reason": "Current user has no permission to destroy the chat room",
+          "action": "Check group authorization and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in destroy chat room",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "joinChatRoom": {
+      "summary": "Join chat room",
+      "localErrors": {},
+      "errors": {
+        "exceed_limit": {
+          "message": "join chat room failed: exceed limit",
+          "reason": "exceed limit occurred in join chat room",
+          "action": "Check exceed limit and try again"
+        },
+        "members_full": {
+          "message": "Chat room member limit reached",
+          "reason": "Chat room member count has reached the limit",
+          "action": "Check members full and try again"
+        },
+        "user_in_blocklist": {
+          "message": "User is in the chat room blocklist",
+          "reason": "user in blocklist occurred in join chat room",
+          "action": "Check user in blocklist and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in join chat room",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "leaveChatRoom": {
+      "summary": "Leave chat room",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in leave chat room",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomMemberList": {
+      "summary": "Get chat room member list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room member list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "addChatRoomMembers": {
+      "summary": "Add chat room members",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "add chat room members failed: illegal argument",
+          "reason": "illegal argument occurred in add chat room members",
+          "action": "Check illegal argument and try again"
+        },
+        "group_authorization": {
+          "message": "add chat room members failed: group authorization",
+          "reason": "group authorization occurred in add chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in add chat room members",
+          "action": "Check resource not found and try again"
+        },
+        "service_resource_not_found": {
+          "message": "User does not exist",
+          "reason": "service resource not found occurred in add chat room members",
+          "action": "Check service resource not found and try again"
+        }
+      }
+    },
+    "removeChatRoomMembers": {
+      "summary": "Remove chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "remove chat room members failed: group authorization",
+          "reason": "group authorization occurred in remove chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in remove chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomAdminList": {
+      "summary": "Get chat room admin list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room admin list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "setChatRoomAdmin": {
+      "summary": "Set chat room admin",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "set chat room admin failed: group authorization",
+          "reason": "group authorization occurred in set chat room admin",
+          "action": "Check group authorization and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in set chat room admin",
+          "action": "Check resource not found and try again"
+        },
+        "service_resource_not_found": {
+          "message": "User does not exist",
+          "reason": "service resource not found occurred in set chat room admin",
+          "action": "Check service resource not found and try again"
+        }
+      }
+    },
+    "removeChatRoomAdmin": {
+      "summary": "Remove chat room admin",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "remove chat room admin failed: group authorization",
+          "reason": "group authorization occurred in remove chat room admin",
+          "action": "Check group authorization and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in remove chat room admin",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomMuteList": {
+      "summary": "Get chat room mute list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room mute list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "muteChatRoomMembers": {
+      "summary": "Mute chat room members",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "mute chat room members failed: illegal argument",
+          "reason": "illegal argument occurred in mute chat room members",
+          "action": "Check illegal argument and try again"
+        },
+        "group_authorization": {
+          "message": "mute chat room members failed: group authorization",
+          "reason": "group authorization occurred in mute chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in mute chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "unmuteChatRoomMembers": {
+      "summary": "Unmute chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "unmute chat room members failed: group authorization",
+          "reason": "group authorization occurred in unmute chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in unmute chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "muteAllChatRoomMembers": {
+      "summary": "Mute all chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "mute all chat room members failed: group authorization",
+          "reason": "group authorization occurred in mute all chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in mute all chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "unmuteAllChatRoomMembers": {
+      "summary": "Unmute all chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "unmute all chat room members failed: group authorization",
+          "reason": "group authorization occurred in unmute all chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in unmute all chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "isCurrentUserMutedInChatRoom": {
+      "summary": "Is current user muted in chat room",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in is current user muted in chat room",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomBlocklist": {
+      "summary": "Get chat room blocklist",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room blocklist",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "blockChatRoomMembers": {
+      "summary": "Block chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "block chat room members failed: group authorization",
+          "reason": "group authorization occurred in block chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in block chat room members",
+          "action": "Check resource not found and try again"
+        },
+        "service_resource_not_found": {
+          "message": "User does not exist",
+          "reason": "service resource not found occurred in block chat room members",
+          "action": "Check service resource not found and try again"
+        }
+      }
+    },
+    "unblockChatRoomMembers": {
+      "summary": "Unblock chat room members",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "unblock chat room members failed: group authorization",
+          "reason": "group authorization occurred in unblock chat room members",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in unblock chat room members",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomAllowlist": {
+      "summary": "Get chat room allowlist",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room allowlist",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "addUsersToChatRoomAllowlist": {
+      "summary": "Add users to chat room allowlist",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "add users to chat room allowlist failed: group authorization",
+          "reason": "group authorization occurred in add users to chat room allowlist",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in add users to chat room allowlist",
+          "action": "Check resource not found and try again"
+        },
+        "service_resource_not_found": {
+          "message": "User does not exist",
+          "reason": "service resource not found occurred in add users to chat room allowlist",
+          "action": "Check service resource not found and try again"
+        }
+      }
+    },
+    "removeUsersFromChatRoomAllowlist": {
+      "summary": "Remove users from chat room allowlist",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "remove users from chat room allowlist failed: group authorization",
+          "reason": "group authorization occurred in remove users from chat room allowlist",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in remove users from chat room allowlist",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "checkIfInChatRoomAllowList": {
+      "summary": "Check if in chat room allow list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in check if in chat room allow list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomAnnouncement": {
+      "summary": "Get chat room announcement",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room announcement",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "updateChatRoomAnnouncement": {
+      "summary": "Update chat room announcement",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "update chat room announcement failed: group authorization",
+          "reason": "group authorization occurred in update chat room announcement",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "forbidden_op": {
+          "message": "update chat room announcement failed: forbidden op",
+          "reason": "forbidden op occurred in update chat room announcement",
+          "action": "Check forbidden op and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in update chat room announcement",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomSharedFileList": {
+      "summary": "Get chat room shared file list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room shared file list",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "deleteChatRoomSharedFile": {
+      "summary": "Delete chat room shared file",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "delete chat room shared file failed: group authorization",
+          "reason": "group authorization occurred in delete chat room shared file",
+          "action": "Try again with a chat room owner/admin account"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in delete chat room shared file",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "getChatRoomAttributes": {
+      "summary": "Get chat room attributes",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "get chat room attributes failed: illegal argument",
+          "reason": "illegal argument occurred in get chat room attributes",
+          "action": "Check illegal argument and try again"
+        },
+        "resource_not_found": {
+          "message": "Chat room does not exist",
+          "reason": "resource not found occurred in get chat room attributes",
+          "action": "Check resource not found and try again"
+        }
+      }
+    },
+    "setChatRoomAttributes": {
+      "summary": "Set chat room attributes",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "set chat room attributes failed: illegal argument",
+          "reason": "illegal argument occurred in set chat room attributes",
+          "action": "Check illegal argument and try again"
+        },
+        "chatroom_not_joined": {
+          "message": "Not joined the chat room",
+          "reason": "Current user has not joined the target chat room and cannot set attributes",
+          "action": "Join the chat room and try again"
+        },
+        "chatroom_permission_denied": {
+          "message": "Chat room attribute permission denied",
+          "reason": "chatroom permission denied occurred in set chat room attributes",
+          "action": "Check chatroom permission denied and try again"
+        },
+        "exceed_limit": {
+          "message": "Chat room attribute count or total size exceeds the limit",
+          "reason": "exceed limit occurred in set chat room attributes",
+          "action": "Delete unused attributes and try again, or contact the server team to increase the quota"
+        },
+        "MetadataException": {
+          "message": "set chat room attributes failed: metadata exception",
+          "reason": "metadata exception occurred in set chat room attributes",
+          "action": "Check metadata exception and try again"
+        }
+      }
+    },
+    "setChatRoomAttribute": {
+      "summary": "Set chat room attribute",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "set chat room attribute failed: illegal argument",
+          "reason": "illegal argument occurred in set chat room attribute",
+          "action": "Check illegal argument and try again"
+        },
+        "chatroom_not_joined": {
+          "message": "Not joined the chat room",
+          "reason": "Current user has not joined the target chat room and cannot set attributes",
+          "action": "Join the chat room and try again"
+        },
+        "chatroom_permission_denied": {
+          "message": "Chat room attribute permission denied",
+          "reason": "chatroom permission denied occurred in set chat room attribute",
+          "action": "Check chatroom permission denied and try again"
+        },
+        "exceed_limit": {
+          "message": "Chat room attribute count or total size exceeds the limit",
+          "reason": "exceed limit occurred in set chat room attribute",
+          "action": "Check exceed limit and try again"
+        },
+        "MetadataException": {
+          "message": "set chat room attribute failed: metadata exception",
+          "reason": "metadata exception occurred in set chat room attribute",
+          "action": "Check metadata exception and try again"
+        }
+      }
+    },
+    "removeChatRoomAttributes": {
+      "summary": "Remove chat room attributes",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "remove chat room attributes failed: illegal argument",
+          "reason": "illegal argument occurred in remove chat room attributes",
+          "action": "Check illegal argument and try again"
+        },
+        "chatroom_not_joined": {
+          "message": "Not joined the chat room",
+          "reason": "chatroom not joined occurred in remove chat room attributes",
+          "action": "Join the chat room and try again"
+        },
+        "chatroom_permission_denied": {
+          "message": "Chat room attribute permission denied",
+          "reason": "chatroom permission denied occurred in remove chat room attributes",
+          "action": "Check chatroom permission denied and try again"
+        },
+        "exceed_limit": {
+          "message": "remove chat room attributes failed: exceed limit",
+          "reason": "exceed limit occurred in remove chat room attributes",
+          "action": "Check exceed limit and try again"
+        },
+        "MetadataException": {
+          "message": "remove chat room attributes failed: metadata exception",
+          "reason": "metadata exception occurred in remove chat room attributes",
+          "action": "Check metadata exception and try again"
+        }
+      }
+    },
+    "removeChatRoomAttribute": {
+      "summary": "Remove chat room attribute",
+      "localErrors": {},
+      "errors": {
+        "illegal_argument": {
+          "message": "remove chat room attribute failed: illegal argument",
+          "reason": "illegal argument occurred in remove chat room attribute",
+          "action": "Check illegal argument and try again"
+        },
+        "chatroom_not_joined": {
+          "message": "Not joined the chat room",
+          "reason": "chatroom not joined occurred in remove chat room attribute",
+          "action": "Join the chat room and try again"
+        },
+        "chatroom_permission_denied": {
+          "message": "Chat room attribute permission denied",
+          "reason": "chatroom permission denied occurred in remove chat room attribute",
+          "action": "Check chatroom permission denied and try again"
+        },
+        "exceed_limit": {
+          "message": "remove chat room attribute failed: exceed limit",
+          "reason": "exceed limit occurred in remove chat room attribute",
+          "action": "Check exceed limit and try again"
+        },
+        "MetadataException": {
+          "message": "remove chat room attribute failed: metadata exception",
+          "reason": "metadata exception occurred in remove chat room attribute",
+          "action": "Check metadata exception and try again"
+        }
+      }
+    },
+    "joinGroup": {
+      "summary": "Join group",
+      "localErrors": {},
+      "errors": {
+        "group_invalid_id": {
+          "message": "Invalid group ID",
+          "reason": "group invalid id occurred in join group",
+          "action": "Check group invalid id and try again"
+        },
+        "already_joined": {
+          "message": "Already joined the group",
+          "reason": "Current user has already joined the target group",
+          "action": "Check already joined and try again"
+        },
+        "not_joined": {
+          "message": "User has not joined the group",
+          "reason": "not joined occurred in join group",
+          "action": "Check not joined and try again"
+        },
+        "group_authorization": {
+          "message": "Group operation permission denied",
+          "reason": "group authorization occurred in join group",
+          "action": "Check group authorization and try again"
+        },
+        "group_full": {
+          "message": "Group member count exceeds the limit",
+          "reason": "group full occurred in join group",
+          "action": "Check group full and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        },
+        "group_disabled": {
+          "message": "Group is disabled",
+          "reason": "group disabled occurred in join group",
+          "action": "Check group disabled and try again"
+        },
+        "group_user_in_blocklist": {
+          "message": "join group failed: group user in blocklist",
+          "reason": "group user in blocklist occurred in join group",
+          "action": "Check group user in blocklist and try again"
+        }
+      }
+    },
+    "inviteUsersToGroup": {
+      "summary": "Invite users to group",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "Group operation permission denied",
+          "reason": "group authorization occurred in invite users to group",
+          "action": "Check group authorization and try again"
+        },
+        "resource_not_found": {
+          "message": "User does not exist",
+          "reason": "resource not found occurred in invite users to group",
+          "action": "Check resource not found and try again"
+        },
+        "group_not_found": {
+          "message": "Group does not exist",
+          "reason": "group not found occurred in invite users to group",
+          "action": "Confirm the groupId is correct and the group still exists"
+        },
+        "group_disabled": {
+          "message": "Group is disabled",
+          "reason": "group disabled occurred in invite users to group",
+          "action": "Check group disabled and try again"
+        }
+      }
+    },
+    "getGroupMemberList": {
+      "summary": "Get group member list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupAdminList": {
+      "summary": "Get group admin list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupMuteList": {
+      "summary": "Get group mute list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupBlocklist": {
+      "summary": "Get group blocklist",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupAllowlist": {
+      "summary": "Get group allowlist",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupAnnouncement": {
+      "summary": "Get group announcement",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "getGroupSharedFileList": {
+      "summary": "Get group shared file list",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "deleteGroupSharedFile": {
+      "summary": "Delete group shared file",
+      "localErrors": {},
+      "errors": {
+        "group_authorization": {
+          "message": "Group operation permission denied",
+          "reason": "group authorization occurred in delete group shared file",
+          "action": "Check group authorization and try again"
+        },
+        "file_not_found": {
+          "message": "Invalid group shared file ID",
+          "reason": "file not found occurred in delete group shared file",
+          "action": "Check file not found and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "setGroupMemberAttributes": {
+      "summary": "Set group member attributes",
+      "localErrors": {},
+      "errors": {
+        "attributes_reach_limit": {
+          "message": "Group member attribute count exceeds the limit",
+          "reason": "attributes reach limit occurred in set group member attributes",
+          "action": "Check attributes reach limit and try again"
+        },
+        "attributes_update_failed": {
+          "message": "Failed to update group member attributes",
+          "reason": "attributes update failed occurred in set group member attributes",
+          "action": "Check attributes update failed and try again"
+        },
+        "attributes_key_reach_limit": {
+          "message": "Group member attribute key length exceeds the limit",
+          "reason": "attributes key reach limit occurred in set group member attributes",
+          "action": "Check attributes key reach limit and try again"
+        },
+        "attributes_value_reach_limit": {
+          "message": "Group member attribute value length exceeds the limit",
+          "reason": "attributes value reach limit occurred in set group member attributes",
+          "action": "Check attributes value reach limit and try again"
+        },
+        "not_joined": {
+          "message": "User has not joined the group",
+          "reason": "not joined occurred in set group member attributes",
+          "action": "Confirm the target user has joined the group"
+        },
+        "permission_denied": {
+          "message": "Permission denied for setting group member attributes",
+          "reason": "permission denied occurred in set group member attributes",
+          "action": "Check permission denied and try again"
+        },
+        "permission_denied_403": {
+          "message": "Permission denied for setting group member attributes",
+          "reason": "permission denied 403 occurred in set group member attributes",
+          "action": "Check permission denied 403 and try again"
+        },
+        "exceed_service_limit": {
+          "message": "Service limit exceeded",
+          "reason": "exceed service limit occurred in set group member attributes",
+          "action": "Check exceed service limit and try again"
+        },
+        "service_disabled": {
+          "message": "Service is disabled",
+          "reason": "service disabled occurred in set group member attributes",
+          "action": "Check service disabled and try again"
+        }
+      }
+    },
+    "getGroupMembersAttributes": {
+      "summary": "Get group members attributes",
+      "localErrors": {},
+      "errors": {
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "groupId does not exist or the group has been destroyed",
+          "action": "Confirm the groupId is correct and the group still exists"
+        }
+      }
+    },
+    "sendMessage": {
+      "summary": "Send message",
+      "localErrors": {
+        "sendMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in send message",
+            "action": "Check validation invalid and try again"
+          },
+          "not_connected": {
+            "message": "Server is unreachable",
+            "reason": "not connected occurred in send message",
+            "action": "Check not connected and try again"
+          },
+          "encode_failed": {
+            "message": "Message error: encoding failed",
+            "reason": "encode failed occurred in send message",
+            "action": "Check encode failed and try again"
+          }
+        }
+      },
+      "errors": {
+        "MESSAGE_BLOCKED": {
+          "message": "Rejected by third-party content moderation"
+        },
+        "USER_MUTED": {
+          "message": "User is muted"
+        }
+      }
+    },
+    "getSelfIdsOnOtherPlatform": {
+      "summary": "Get self ids on other platform",
+      "localErrors": {},
+      "errors": {}
+    },
+    "createTextMessage": {
+      "summary": "Create text message",
+      "localErrors": {
+        "createTextMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "Conversation ID, conversation type, text content, extension, or receiver configuration is invalid",
+            "action": "Pass a valid conversationId, conversationType, and non-empty content; receiverList and needGroupReadReceipt are only for group chat"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createImageMessage": {
+      "summary": "Create image message",
+      "localErrors": {
+        "createImageMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create image message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createFileMessage": {
+      "summary": "Create file message",
+      "localErrors": {
+        "createFileMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create file message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createVoiceMessage": {
+      "summary": "Create voice message",
+      "localErrors": {
+        "createVoiceMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create voice message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createVideoMessage": {
+      "summary": "Create video message",
+      "localErrors": {
+        "createVideoMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create video message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createLocationMessage": {
+      "summary": "Create location message",
+      "localErrors": {
+        "createLocationMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create location message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createCmdMessage": {
+      "summary": "Create cmd message",
+      "localErrors": {
+        "createCmdMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create cmd message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createCustomMessage": {
+      "summary": "Create custom message",
+      "localErrors": {
+        "createCustomMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create custom message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "createCombineMessage": {
+      "summary": "Create combine message",
+      "localErrors": {
+        "createCombineMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create combine message",
+            "action": "Check validation invalid and try again"
+          },
+          "combine_level_exceeded": {
+            "message": "Service limit exceeded",
+            "reason": "combine level exceeded occurred in create combine message",
+            "action": "Check combine level exceeded and try again"
+          },
+          "combine_encode_failed": {
+            "message": "Message error: encoding failed",
+            "reason": "combine encode failed occurred in create combine message",
+            "action": "Check combine encode failed and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "publishPresence": {
+      "summary": "Publish presence",
+      "localErrors": {},
+      "errors": {
+        "PRESENCE_PARAM_EXCEED": {
+          "message": "publish presence failed: presence param exceed",
+          "reason": "presence param exceed occurred in publish presence",
+          "action": "Check presence param exceed and try again"
+        }
+      }
+    },
+    "subscribePresences": {
+      "summary": "Subscribe presences",
+      "localErrors": {},
+      "errors": {
+        "cannot_subscribe_yourself": {
+          "message": "Cannot subscribe to your own presence",
+          "reason": "Subscription list contains the current user",
+          "action": "Remove the current user from the subscription list"
+        },
+        "param_length_exceed": {
+          "message": "Parameter length exceeds the limit",
+          "reason": "param length exceed occurred in subscribe presences",
+          "action": "Reduce the number of users per subscription request"
+        }
+      }
+    },
+    "unsubscribePresence": {
+      "summary": "Unsubscribe presence",
+      "localErrors": {},
+      "errors": {
+        "param_length_exceed": {
+          "message": "Parameter length exceeds the limit",
+          "reason": "param length exceed occurred in unsubscribe presence",
+          "action": "Reduce the number of users per unsubscribe request"
+        }
+      }
+    },
+    "getSubscribedPresenceList": {
+      "summary": "Get subscribed presence list",
+      "localErrors": {},
+      "errors": {
+        "param_length_exceed": {
+          "message": "Parameter length exceeds the limit",
+          "reason": "param length exceed occurred in get subscribed presence list",
+          "action": "Adjust pageNum or pageSize and try again"
+        }
+      }
+    },
+    "getPresenceStatus": {
+      "summary": "Get presence status",
+      "localErrors": {},
+      "errors": {
+        "param_length_exceed": {
+          "message": "Parameter length exceeds the limit",
+          "reason": "param length exceed occurred in get presence status",
+          "action": "Check param length exceed and try again"
+        }
+      }
+    },
+    "setGlobalSilentMode": {
+      "summary": "Set global silent mode",
+      "localErrors": {
+        "setGlobalSilentMode": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in set global silent mode",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed",
+          "reason": "silent mode operation failed occurred in set global silent mode",
+          "action": "Check silent mode operation failed and try again"
+        }
+      }
+    },
+    "setConversationSilentMode": {
+      "summary": "Set conversation silent mode",
+      "localErrors": {
+        "setConversationSilentMode": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in set conversation silent mode",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed",
+          "reason": "silent mode operation failed occurred in set conversation silent mode",
+          "action": "Check silent mode operation failed and try again"
+        }
+      }
+    },
+    "setPushLanguage": {
+      "summary": "Set push language",
+      "localErrors": {
+        "setPushLanguage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in set push language",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "PUSH_LANGUAGE_OPERATION_FAILED": {
+          "message": "Push language operation failed",
+          "reason": "push language operation failed occurred in set push language",
+          "action": "Check push language operation failed and try again"
+        }
+      }
+    },
+    "uploadPushToken": {
+      "summary": "Upload push token",
+      "localErrors": {
+        "uploadPushToken": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in upload push token",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "TOKEN_UPLOAD_FAILED": {
+          "message": "Push token upload failed",
+          "reason": "token upload failed occurred in upload push token",
+          "action": "Check token upload failed and try again"
+        }
+      }
+    },
+    "getGlobalSilentMode": {
+      "summary": "Get global silent mode",
+      "localErrors": {},
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed"
+        }
+      }
+    },
+    "getConversationSilentMode": {
+      "summary": "Get conversation silent mode",
+      "localErrors": {
+        "getConversationSilentMode": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get conversation silent mode",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed"
+        }
+      }
+    },
+    "clearConversationRemindType": {
+      "summary": "Clear conversation remind type",
+      "localErrors": {
+        "clearConversationRemindType": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in clear conversation remind type",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed"
+        }
+      }
+    },
+    "getConversationSilentModes": {
+      "summary": "Get conversation silent modes",
+      "localErrors": {
+        "getConversationSilentModes": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get conversation silent modes",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "SILENT_MODE_OPERATION_FAILED": {
+          "message": "Silent mode operation failed"
+        }
+      }
+    },
+    "getConversationListByRemindType": {
+      "summary": "Get conversation list by remind type",
+      "localErrors": {
+        "getConversationListByRemindType": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get conversation list by remind type",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "getConversationList": {
+      "summary": "Get conversation list",
+      "localErrors": {
+        "getConversationList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "Pagination cursor, pageSize, or includeEmptyConversations type is invalid",
+            "action": "Use the cursor returned by the SDK and ensure pageSize is a positive integer and includeEmptyConversations is boolean"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "getPinnedConversationList": {
+      "summary": "Get pinned conversation list",
+      "localErrors": {
+        "getPinnedConversationList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "Pagination cursor, pageSize, or includeEmptyConversations type is invalid",
+            "action": "Use the cursor returned by the SDK and ensure pageSize is a positive integer and includeEmptyConversations is boolean"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "getConversationListByMark": {
+      "summary": "Get conversation list by mark",
+      "localErrors": {
+        "getConversationListByMark": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get conversation list by mark",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "deleteConversation": {
+      "summary": "Delete conversation",
+      "localErrors": {
+        "deleteConversation": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in delete conversation",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "setConversationPinned": {
+      "summary": "Set conversation pinned",
+      "localErrors": {
+        "setConversationPinned": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in set conversation pinned",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "addConversationMark": {
+      "summary": "Add conversation mark",
+      "localErrors": {
+        "addConversationMark": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in add conversation mark",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "removeConversationMark": {
+      "summary": "Remove conversation mark",
+      "localErrors": {
+        "removeConversationMark": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove conversation mark",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {}
+    },
+    "clearAllMessagesAndConversations": {
+      "summary": "Clear all messages and conversations",
+      "localErrors": {},
+      "errors": {}
+    },
+    "createChatThread": {
+      "summary": "Create chat thread",
+      "localErrors": {
+        "createChatThread": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in create chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before creating a thread"
+        },
+        "permission_denied": {
+          "message": "Permission denied to create thread",
+          "reason": "permission denied occurred in create chat thread",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Group or parent message does not exist",
+          "reason": "resource not found occurred in create chat thread",
+          "action": "Check resource not found and try again"
+        },
+        "service_limit_exceeded": {
+          "message": "Service limit exceeded",
+          "reason": "Thread count or creation frequency exceeds server limits",
+          "action": "Check service limit exceeded and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread creation error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getChatThreadList": {
+      "summary": "Get chat thread list",
+      "localErrors": {
+        "getChatThreadList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread list",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before querying the thread list"
+        },
+        "permission_denied": {
+          "message": "Permission denied to query thread list",
+          "reason": "permission denied occurred in get chat thread list",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "resource not found occurred in get chat thread list",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread list query error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getJoinedChatThreadList": {
+      "summary": "Get joined chat thread list",
+      "localErrors": {
+        "getJoinedChatThreadList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get joined chat thread list",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before querying joined threads"
+        },
+        "permission_denied": {
+          "message": "Permission denied to query joined threads",
+          "reason": "permission denied occurred in get joined chat thread list",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Group does not exist",
+          "reason": "resource not found occurred in get joined chat thread list",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified joined thread query error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getChatThreadInfo": {
+      "summary": "Get chat thread info",
+      "localErrors": {
+        "getChatThreadInfo": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread info",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "getInfo": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread info",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "refresh": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread info",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before querying thread details"
+        },
+        "permission_denied": {
+          "message": "Permission denied to query thread details",
+          "reason": "permission denied occurred in get chat thread info",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in get chat thread info",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread detail query error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "joinChatThread": {
+      "summary": "Join chat thread",
+      "localErrors": {
+        "joinChatThread": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in join chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "join": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in join chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before joining the thread"
+        },
+        "permission_denied": {
+          "message": "Permission denied to join thread",
+          "reason": "permission denied occurred in join chat thread",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in join chat thread",
+          "action": "Check resource not found and try again"
+        },
+        "service_limit_exceeded": {
+          "message": "Service limit exceeded",
+          "reason": "service limit exceeded occurred in join chat thread",
+          "action": "Check service limit exceeded and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread join error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "leaveChatThread": {
+      "summary": "Leave chat thread",
+      "localErrors": {
+        "leaveChatThread": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in leave chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "leave": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in leave chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before leaving the thread"
+        },
+        "permission_denied": {
+          "message": "Permission denied to leave thread",
+          "reason": "permission denied occurred in leave chat thread",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in leave chat thread",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread leave error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "destroyChatThread": {
+      "summary": "Destroy chat thread",
+      "localErrors": {
+        "destroyChatThread": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in destroy chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "destroy": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in destroy chat thread",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before destroying the thread"
+        },
+        "permission_denied": {
+          "message": "Permission denied to destroy thread",
+          "reason": "permission denied occurred in destroy chat thread",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in destroy chat thread",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread destroy error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "updateChatThreadName": {
+      "summary": "Update chat thread name",
+      "localErrors": {
+        "updateChatThreadName": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in update chat thread name",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "updateName": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in update chat thread name",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before updating the thread name"
+        },
+        "permission_denied": {
+          "message": "Permission denied to update thread name",
+          "reason": "permission denied occurred in update chat thread name",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in update chat thread name",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread name update error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getChatThreadMemberList": {
+      "summary": "Get chat thread member list",
+      "localErrors": {
+        "getChatThreadMemberList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread member list",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "getMemberList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread member list",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before querying thread members"
+        },
+        "permission_denied": {
+          "message": "Permission denied to query thread members",
+          "reason": "permission denied occurred in get chat thread member list",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in get chat thread member list",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread member list query error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "removeChatThreadMember": {
+      "summary": "Remove chat thread member",
+      "localErrors": {
+        "removeChatThreadMember": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove chat thread member",
+            "action": "Check validation invalid and try again"
+          }
+        },
+        "removeMember": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove chat thread member",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before removing a thread member"
+        },
+        "permission_denied": {
+          "message": "Permission denied to remove thread member",
+          "reason": "permission denied occurred in remove chat thread member",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread or member does not exist",
+          "reason": "resource not found occurred in remove chat thread member",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread member removal error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getChatThreadLastMessageList": {
+      "summary": "Get chat thread last message list",
+      "localErrors": {
+        "getChatThreadLastMessageList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get chat thread last message list",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in",
+          "reason": "Current user login state is unavailable or token is invalid",
+          "action": "Log in again before querying thread last messages"
+        },
+        "permission_denied": {
+          "message": "Permission denied to query thread last messages",
+          "reason": "permission denied occurred in get chat thread last message list",
+          "action": "Check permission denied and try again"
+        },
+        "resource_not_found": {
+          "message": "Thread does not exist",
+          "reason": "resource not found occurred in get chat thread last message list",
+          "action": "Check resource not found and try again"
+        },
+        "request_timeout": {
+          "message": "Service request timed out",
+          "reason": "Server processing timed out or network timed out",
+          "action": "Try again later"
+        },
+        "service_error": {
+          "message": "Generic service request error",
+          "reason": "Server returned an unspecified thread last message query error",
+          "action": "Try again later or contact the server team"
+        }
+      }
+    },
+    "getPushLanguage": {
+      "summary": "Get push language",
+      "localErrors": {},
+      "errors": {
+        "PUSH_LANGUAGE_OPERATION_FAILED": {
+          "message": "Push language operation failed"
+        }
+      }
+    },
+    "markConversationRead": {
+      "summary": "Mark conversation read",
+      "localErrors": {
+        "markConversationRead": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in mark conversation read",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_login": {
+          "message": "User is not logged in"
+        },
+        "not_connected": {
+          "message": "Not connected to server"
+        },
+        "message_invalid": {
+          "message": "No message in the conversation"
+        }
+      }
+    },
+    "markMessageRead": {
+      "summary": "Mark message read",
+      "localErrors": {
+        "markMessageRead": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in mark message read",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "invalid_direction": {
+          "message": "Read receipts can only be sent for received messages"
+        },
+        "not_connected": {
+          "message": "Not connected to server"
+        }
+      }
+    },
+    "recallMessage": {
+      "summary": "Recall message",
+      "localErrors": {
+        "recallMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in recall message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "message_invalid": {
+          "message": "Message is invalid or was not sent successfully"
+        },
+        "not_login": {
+          "message": "User is not logged in"
+        },
+        "not_connected": {
+          "message": "Not connected to server"
+        },
+        "recall_time_limit": {
+          "message": "Message recall time limit exceeded"
+        },
+        "recall_disabled": {
+          "message": "Message recall is not enabled"
+        }
+      }
+    },
+    "updateMessage": {
+      "summary": "Update message",
+      "localErrors": {
+        "modifyMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in update message",
+            "action": "Check validation invalid and try again"
+          },
+          "unsupported_type": {
+            "message": "Operation is not supported",
+            "reason": "Currently only text and custom messages can be edited",
+            "action": "Check unsupported type and try again"
+          }
+        }
+      },
+      "errors": {
+        "message_invalid": {
+          "message": "Invalid message"
+        },
+        "unsupported_type": {
+          "message": "Only text and custom messages are supported"
+        },
+        "not_login": {
+          "message": "User is not logged in"
+        },
+        "permission_denied": {
+          "message": "No permission to edit this message"
+        },
+        "not_connected": {
+          "message": "Not connected to server"
+        },
+        "edit_failed": {
+          "message": "Message edit failed"
+        }
+      }
+    },
+    "downloadMessageAttachment": {
+      "summary": "Download message attachment",
+      "localErrors": {
+        "downloadAttachment": {
+          "validation_invalid": {
+            "message": "Attachment is invalid or the message type does not support download",
+            "reason": "validation invalid occurred in download message attachment",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "not_found": {
+          "message": "Attachment does not exist"
+        },
+        "invalid": {
+          "message": "Attachment is invalid or the message type does not support download"
+        },
+        "download_failed": {
+          "message": "Attachment download failed"
+        },
+        "expired": {
+          "message": "Attachment has expired"
+        }
+      }
+    },
+    "downloadAndParseCombineMessage": {
+      "summary": "Download and parse combine message",
+      "localErrors": {
+        "downloadAndParseCombineMessage": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in download and parse combine message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "invalid_param": {
+          "message": "Message is empty"
+        },
+        "invalid_type": {
+          "message": "Message is not a combine message"
+        },
+        "parse_failed": {
+          "message": "Failed to parse combine message"
+        },
+        "download_failed": {
+          "message": "Failed to download combine message"
+        }
+      }
+    },
+    "getHistoryMessages": {
+      "summary": "Get history messages",
+      "localErrors": {
+        "getHistoryMessages": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get history messages",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_not_enabled": {
+          "message": "get history messages failed: service not enabled",
+          "reason": "this appKey not open message roaming"
+        },
+        "page_size_exceeded": {
+          "message": "get history messages failed: page size exceeded"
+        }
+      }
+    },
+    "removeHistoryMessages": {
+      "summary": "Remove history messages",
+      "localErrors": {
+        "removeHistoryMessages": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove history messages",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_not_enabled": {
+          "message": "remove history messages failed: service not enabled",
+          "reason": "this appKey not open message roaming"
+        },
+        "query_param_reaches_limit": {
+          "message": "remove history messages failed: query param reaches limit"
+        }
+      }
+    },
+    "getGroupMessageReadUsers": {
+      "summary": "Get group message read users",
+      "localErrors": {
+        "getGroupMessageReadUsers": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get group message read users",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "message_not_found": {
+          "message": "Message does not exist"
+        }
+      }
+    },
+    "addReaction": {
+      "summary": "Add reaction",
+      "localErrors": {
+        "addReaction": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in add reaction",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "reaction_already_operated": {
+          "message": "add reaction failed: reaction already operated",
+          "reason": "the user is already operation this message"
+        },
+        "reaction_reach_limit": {
+          "message": "add reaction failed: reaction reach limit",
+          "reason": "The quantity has exceeded the limit!"
+        },
+        "group_not_joined": {
+          "message": "Current user is not in the group",
+          "reason": "The user not in this group!"
+        },
+        "reaction_operation_illegal": {
+          "message": "add reaction failed: reaction operation illegal",
+          "reason": "the user operation is illegal!"
+        },
+        "service_not_enabled": {
+          "message": "add reaction failed: service not enabled",
+          "reason": "this appKey is not open reaction service!"
+        },
+        "server_busy": {
+          "message": "add reaction failed: server busy",
+          "reason": "this message is creating reaction, please try again."
+        }
+      }
+    },
+    "removeReaction": {
+      "summary": "Remove reaction",
+      "localErrors": {
+        "removeReaction": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in remove reaction",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_not_enabled": {
+          "message": "remove reaction failed: service not enabled",
+          "reason": "this appKey is not open reaction service!"
+        },
+        "reaction_operation_illegal": {
+          "message": "remove reaction failed: reaction operation illegal",
+          "reason": "the user operation is illegal!"
+        }
+      }
+    },
+    "getReactionList": {
+      "summary": "Get reaction list",
+      "localErrors": {
+        "getReactionList": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get reaction list",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_not_enabled": {
+          "message": "get reaction list failed: service not enabled",
+          "reason": "this appKey is not open reaction service!"
+        },
+        "group_invalid_id": {
+          "message": "get reaction list failed: group invalid id",
+          "reason": "groupId can not be null!"
+        }
+      }
+    },
+    "getReactionDetail": {
+      "summary": "Get reaction detail",
+      "localErrors": {
+        "getReactionDetail": {
+          "validation_invalid": {
+            "message": "Invalid parameters",
+            "reason": "validation invalid occurred in get reaction detail",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "service_not_enabled": {
+          "message": "get reaction detail failed: service not enabled",
+          "reason": "this appKey is not open reaction service!"
+        },
+        "reaction_operation_illegal": {
+          "message": "get reaction detail failed: reaction operation illegal",
+          "reason": "the user operation is illegal!"
+        }
+      }
+    },
+    "pinMessage": {
+      "summary": "Pin message",
+      "localErrors": {},
+      "errors": {
+        "pin_msg_id_illegal": {
+          "message": "pin message failed: pin msg id illegal",
+          "reason": "param pin_msg_id illegal, please check it!"
+        },
+        "pin_message_limit": {
+          "message": "pin message failed: pin message limit"
+        },
+        "pin_message_not_found": {
+          "message": "pin message failed: pin message not found"
+        }
+      }
+    },
+    "unpinMessage": {
+      "summary": "Unpin message",
+      "localErrors": {},
+      "errors": {
+        "pin_msg_id_illegal": {
+          "message": "unpin message failed: pin msg id illegal",
+          "reason": "param pin_msg_id illegal, please check it!"
+        },
+        "pin_message_not_found": {
+          "message": "unpin message failed: pin message not found"
+        }
+      }
+    },
+    "getPinnedMessageList": {
+      "summary": "Get pinned message list",
+      "localErrors": {},
+      "errors": {
+        "operation_unsupported": {
+          "message": "get pinned message list failed: operation unsupported"
+        },
+        "pin_message_not_found": {
+          "message": "get pinned message list failed: pin message not found"
+        }
+      }
+    },
+    "getSupportedTranslationLanguages": {
+      "summary": "Get supported translation languages",
+      "localErrors": {},
+      "errors": {
+        "service_not_enabled": {
+          "message": "Translation service is not enabled"
+        }
+      }
+    },
+    "translateMessage": {
+      "summary": "Translate message",
+      "localErrors": {
+        "translateMessage": {
+          "validation_invalid": {
+            "message": "Invalid target language",
+            "reason": "validation invalid occurred in translate message",
+            "action": "Check validation invalid and try again"
+          }
+        }
+      },
+      "errors": {
+        "translate_text_too_long": {
+          "message": "Translation text is too long",
+          "reason": "The input text is too long."
+        },
+        "translate_param_invalid": {
+          "message": "Invalid target language",
+          "reason": "The target language is not valid."
+        },
+        "service_not_enabled": {
+          "message": "Translation service is not enabled"
+        },
+        "translate_usage_limit": {
+          "message": "Translation quota has been reached"
+        },
+        "translate_failed": {
+          "message": "Translation service error"
+        }
+      }
+    },
+    "voiceMessageToText": {
+      "summary": "Voice message to text",
+      "localErrors": {
+        "voiceMessageToText": {
+          "validation_invalid": {
+            "message": "Invalid voice file",
+            "reason": "validation invalid occurred in voice message to text",
+            "action": "Check validation invalid and try again"
+          },
+          "file_not_found": {
+            "message": "Voice file does not exist",
+            "reason": "file not found occurred in voice message to text",
+            "action": "Check file not found and try again"
+          }
+        }
+      },
+      "errors": {
+        "unauthorized": {
+          "message": "User authentication failed",
+          "reason": "unauthorized occurred in voice message to text",
+          "action": "Refresh the token and try again"
+        },
+        "file_not_found": {
+          "message": "Voice file does not exist",
+          "reason": "file not found occurred in voice message to text",
+          "action": "Check file not found and try again"
+        },
+        "file_invalid": {
+          "message": "Invalid voice file",
+          "reason": "Voice file format or content is invalid",
+          "action": "Check file invalid and try again"
+        },
+        "duration_too_long": {
+          "message": "Voice duration exceeds the limit",
+          "reason": "duration too long occurred in voice message to text",
+          "action": "Check duration too long and try again"
+        },
+        "file_too_large": {
+          "message": "Voice file is too large",
+          "reason": "file too large occurred in voice message to text",
+          "action": "Check file too large and try again"
+        },
+        "service_not_enabled": {
+          "message": "Voice-to-text service is not enabled",
+          "reason": "service not enabled occurred in voice message to text",
+          "action": "Check service not enabled and try again"
+        },
+        "service_limit_exceeded": {
+          "message": "Service limit exceeded",
+          "reason": "Voice-to-text usage limit reached",
+          "action": "Check service limit exceeded and try again"
+        },
+        "voice_to_text_failed": {
+          "message": "Voice-to-text failed",
+          "reason": "voice to text failed occurred in voice message to text",
+          "action": "Check voice to text failed and try again"
+        }
+      }
+    },
+    "voiceFileToText": {
+      "summary": "Voice file to text",
+      "localErrors": {
+        "voiceFileToText": {
+          "validation_invalid": {
+            "message": "Invalid voice file",
+            "reason": "validation invalid occurred in voice file to text",
+            "action": "Check validation invalid and try again"
+          },
+          "upload_required": {
+            "message": "Invalid parameters: missing required field",
+            "reason": "upload required occurred in voice file to text",
+            "action": "Check upload required and try again"
+          }
+        }
+      },
+      "errors": {
+        "unauthorized": {
+          "message": "User authentication failed",
+          "reason": "unauthorized occurred in voice file to text",
+          "action": "Refresh the token and try again"
+        },
+        "upload_failed": {
+          "message": "File upload failed",
+          "reason": "Voice file upload failed",
+          "action": "Check upload failed and try again"
+        },
+        "file_invalid": {
+          "message": "Invalid voice file",
+          "reason": "Voice file format or content is invalid",
+          "action": "Check file invalid and try again"
+        },
+        "duration_too_long": {
+          "message": "Voice duration exceeds the limit",
+          "reason": "duration too long occurred in voice file to text",
+          "action": "Check duration too long and try again"
+        },
+        "file_too_large": {
+          "message": "Voice file is too large",
+          "reason": "file too large occurred in voice file to text",
+          "action": "Check file too large and try again"
+        },
+        "service_not_enabled": {
+          "message": "Voice-to-text service is not enabled",
+          "reason": "service not enabled occurred in voice file to text",
+          "action": "Check service not enabled and try again"
+        },
+        "service_limit_exceeded": {
+          "message": "Service limit exceeded",
+          "reason": "Voice-to-text usage limit reached",
+          "action": "Check service limit exceeded and try again"
+        },
+        "voice_to_text_failed": {
+          "message": "Voice-to-text failed",
+          "reason": "voice to text failed occurred in voice file to text",
+          "action": "Check voice to text failed and try again"
+        }
+      }
+    }
+  }
+}

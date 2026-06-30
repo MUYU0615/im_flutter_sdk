@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: Session List Sync Contract
+  version: 0.1.0
+  description: |
+    035 会话列表同步与 SessionItem 的 SDK 逻辑契约。
+    该文件主要描述 SDK-facing 的公开能力与 session-list WSS 协议映射，
+    不是服务端完整 upstream 文档。
+
+paths:
+  /sdk/chat-manager/session-list:
+    get:
+      summary: 读取当前 session-list 缓存
+      operationId: getSessionList
+      description: |
+        纯读取本地 session-list 缓存，不触发网络请求。
+      responses:
+        '200':
+          description: 当前缓存中的 SessionItem 列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionItemList'
+
+  /sdk/chat-manager/session-list:refresh:
+    post:
+      summary: 主动刷新 session-list
+      operationId: refreshSessionList
+      description: |
+        主动触发新会话列表同步。若当前登录周期已确认 unsupported/unconfigured，
+        则直接回退旧逻辑并返回映射后的 SessionItem 列表。
+      responses:
+        '200':
+          description: 刷新完成后的 SessionItem 列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionItemList'
+        '409':
+          description: 已存在在途刷新任务；SDK 内部应复用同一个 Promise，而非向调用方抛错
+
+  /sdk/chat-manager/session-list/events:
+    get:
+      summary: session-list 同步事件语义
+      operationId: sessionListSyncEvents
+      description: |
+        说明通过 ChatManager.addEventHandler/removeEventHandler 暴露的同步事件字段：
+        onSyncDataStart / onSyncDataFinished。
+      responses:
+        '200':
+          description: 事件签名说明
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  onSyncDataStart:
+                    type: string
+                    example: "() => void"
+                  onSyncDataFinished:
+                    type: string
+                    example: "(error?: SDKError) => void"
+
+  /wss/gateway/session-list/request:
+    post:
+      summary: session-list WSS 请求帧
+      operationId: getSessionListRequest
+      description: |
+        对应 gateway.proto 中的 GetSessionListRequest。
+        该条目为逻辑契约描述，实际传输走 WSS protobuf。
+      responses:
+        '200':
+          description: 请求结构说明
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListSyncRequest'
+
+  /wss/gateway/session-list/response:
+    post:
+      summary: session-list WSS 响应帧
+      operationId: getSessionListResponse
+      description: |
+        对应 gateway.proto 中的 GetSessionListResponse。
+        SDK 需按 request_id + batchSequence 去重，并在最后一批成功后推进 checkpoint。
+      responses:
+        '200':
+          description: 响应结构说明
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListSyncBatch'
+
+components:
+  schemas:
+    SessionItemList:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionItem'
+
+    SessionItem:
+      type: object
+      required:
+        - conversationId
+        - conversationType
+        - unreadCount
+        - marks
+        - remindType
+        - conversationName
+      properties:
+        conversationId:
+          type: string
+          description: 会话主键，来自协议 session_id
+        conversationType:
+          type: string
+          enum: [singleChat, groupChat, chatRoom]
+        unreadCount:
+          type: integer
+          minimum: 0
+        lastMessage:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SessionMessageSnippet'
+        lastMessageAt:
+          type: integer
+          format: int64
+        isPinned:
+          type: boolean
+        pinnedTimestamp:
+          type: integer
+          format: int64
+        marks:
+          type: array
+          items:
+            type: integer
+        readAt:
+          type: integer
+          format: int64
+        remindType:
+          $ref: '#/components/schemas/SessionListRemindType'
+        conversationName:
+          type: string
+        conversationAvatar:
+          type: string
+
+    SessionMessageSnippet:
+      type: object
+      required:
+        - msgServerId
+        - from
+        - to
+        - sender
+        - timestamp
+        - body
+      properties:
+        msgServerId:
+          type: string
+          description: 服务端消息 ID，与公开 Message.msgServerId 对齐
+        from:
+          type: string
+          description: userId；当服务端返回 from.name 时取 '_' 后面的内容
+        to:
+          type: string
+          description: userId、群 id 或聊天室 id；服务端缺省时由 conversationId 与当前用户推断
+        conversationId:
+          type: string
+          description: 会话 ID；链路可提供时写入
+        conversationType:
+          type: string
+          enum: [singleChat, groupChat, chatRoom]
+          description: 会话类型；链路可提供时写入
+        type:
+          type: string
+          description: 消息类型；链路可提供时写入
+        status:
+          type: string
+          enum: [sending, sent, failed, delivered, read]
+          description: 消息状态；仅在链路可可靠提供时写入
+        direct:
+          type: string
+          enum: [SEND, RECEIVE]
+          description: 消息方向；链路可提供时写入
+        sender:
+          type: object
+          required:
+            - userId
+          properties:
+            userId:
+              type: string
+              description: 发送者 userId，与 from 使用同一归一化规则
+            nickname:
+              type: string
+              description: 发送者昵称，来自联系人资料或订阅用户资料
+            avatarUrl:
+              type: string
+              description: 发送者头像地址，来自联系人资料或订阅用户资料
+        timestamp:
+          type: integer
+          format: int64
+        body:
+          type: object
+          description: 当前消息 body 结构；不得包含 type 字段
+          additionalProperties: true
+
+    SessionListRemindType:
+      type: string
+      enum: [DEFAULT, ALL, AT, NONE]
+
+    SessionListSyncRequest:
+      type: object
+      required:
+        - requestId
+        - resource
+        - org
+        - app
+        - username
+        - lastSyncTime
+      properties:
+        requestId:
+          type: string
+        resource:
+          type: string
+        protocolVersion:
+          type: string
+        org:
+          type: string
+        app:
+          type: string
+        username:
+          type: string
+        lastSyncTime:
+          type: integer
+          format: int64
+
+    SessionListSyncBatch:
+      type: object
+      required:
+        - requestId
+        - sessions
+        - isLastBatch
+      properties:
+        requestId:
+          type: string
+        batchSequence:
+          type: integer
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionListProtocolItem'
+        isLastBatch:
+          type: boolean
+        lastSyncFinishedTs:
+          type: integer
+          format: int64
+
+    SessionListProtocolItem:
+      type: object
+      required:
+        - session_id
+        - session_type
+        - updated_at
+        - unread_count
+      properties:
+        session_id:
+          type: string
+        session_type:
+          type: integer
+          enum: [0, 1, 2]
+        last_message:
+          type: object
+          additionalProperties: true
+        updated_at:
+          type: integer
+          format: int64
+        pinned_time:
+          type: integer
+          format: int64
+        unread_count:
+          type: integer
+        marks:
+          type: array
+          items:
+            type: integer
+        read_receipt:
+          type: integer
+          format: int64
+        remindType:
+          type: integer
+          enum: [0, 1, 2]
+        group_name:
+          type: string
+        group_avatar:
+          type: string
+        metadata:
+          type: string

@@ -1,15 +1,15 @@
 # WebSocket Bridge（与 Cases 通讯）
 
-cases 与 im_flutter_sdk **均连接同一 WebSocket 服务**，通过该服务收发请求/响应。
+cases 与 `im_flutter_test` **均连接同一 WebSocket 服务**，通过该服务收发请求/响应。
 
-默认连接：`ws://140.143.132.6:2000/iov/websocket/dual?topic=adc`。可通过 `start(topic: ...)` 自定义 topic，或通过 `start(url: ...)` 指定完整 URL。
+默认连接：`ws://127.0.0.1:2000/iov/websocket/dual?topic=adc`。可通过 `start(topic: ...)` 自定义 topic，或通过 `start(url: ...)` 指定完整 URL。
 
 ## 使用方式（Flutter 侧）
 
-1. 初始化 SDK 后连接桥接（例如在 `EMClient.getInstance.init(options)` 之后）：
+1. 通过 interface JSON 初始化平台插件后连接桥接：
 
 ```dart
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+await Client.instance.callNativeMethod('init', optionsJson);
 
 // 使用默认地址连接（topic 默认为 adc）
 await IMWebSocketBridge.instance.start();
@@ -19,7 +19,7 @@ await IMWebSocketBridge.instance.start(topic: 'my_topic');
 
 // 指定完整 URL
 await IMWebSocketBridge.instance.start(
-  url: 'ws://140.143.132.6:2000/iov/websocket/dual?topic=adc',
+  url: 'ws://127.0.0.1:2000/iov/websocket/dual?topic=adc',
 );
 ```
 
@@ -31,16 +31,17 @@ await IMWebSocketBridge.instance.stop();
 
 3. 常量（如需引用）：`kDefaultBridgeWebSocketBaseUrl`、`kDefaultBridgeWebSocketTopic`
 
-## 请求格式（Cases → 服务 → im_flutter_sdk）
+## 请求格式（Cases → 服务 → im_flutter_test）
 
-Cases 向同一 WebSocket 服务发送的 JSON 消息，会由服务转发到 im_flutter_sdk。格式例如：
+Cases 向同一 WebSocket 服务发送的 JSON 消息，会由服务转发到 `im_flutter_test`。
+格式例如：
 
 ```json
 {
   "id": "req-1",
   "manager": "Client",
-  "method": "login",
-  "args": {
+  "cmd": "login",
+  "info": {
     "userId": "user1",
     "pwdOrToken": "password_or_token",
     "isPassword": true
@@ -52,8 +53,8 @@ Cases 向同一 WebSocket 服务发送的 JSON 消息，会由服务转发到 im
 |----------|--------|------|------|
 | id       | string | 否   | 请求 ID，原样带回响应，便于对账 |
 | manager  | string | 是   | 管理器名称，见下表 |
-| method   | string | 是   | 方法名，与 ChatMethodKeys 等一致 |
-| args     | object | 否   | 方法参数，无参可省略或 `{}` |
+| cmd      | string | 是   | 方法名，与平台插件 `callNativeMethod` 的 method 字符串一致 |
+| info     | object | 否   | 方法参数，无参可省略或 `{}` |
 
 ### manager 取值
 
@@ -69,7 +70,7 @@ Cases 向同一 WebSocket 服务发送的 JSON 消息，会由服务转发到 im
 - `ConversationManager`：会话对象上的操作
 - `MessageManager`：消息相关
 
-## 响应格式（im_flutter_sdk → 服务 → Cases）
+## 响应格式（im_flutter_test → 服务 → Cases）
 
 成功：
 
@@ -106,8 +107,8 @@ import json
 import urllib.parse
 import websockets
 
-# 与 im_flutter_sdk 使用同一 WebSocket 服务；topic 需与 Flutter 端 start(topic='...') 一致
-BASE = "ws://140.143.132.6:2000/iov/websocket/dual"
+# 与 im_flutter_test 使用同一 WebSocket 服务；topic 需与 Flutter 端 start(topic='...') 一致
+BASE = "ws://127.0.0.1:2000/iov/websocket/dual"
 TOPIC = "adc"  # 可自定义，与 Flutter 端一致即可
 BRIDGE_WS_URL = f"{BASE}?topic={urllib.parse.quote(TOPIC)}"
 
@@ -116,8 +117,8 @@ async def call_sdk():
         req = {
             "id": "1",
             "manager": "Client",
-            "method": "login",
-            "args": {"userId": "user1", "pwdOrToken": "pwd", "isPassword": True},
+            "cmd": "login",
+            "info": {"userId": "user1", "pwdOrToken": "pwd", "isPassword": True},
         }
         await ws.send(json.dumps(req))
         resp = json.loads(await ws.recv())

@@ -1,22 +1,18 @@
 ---
 name: im-contact-flow
 description: |
-  High-level contact flows (friendship, block list) built on the WebSocket client.
-  Use to orchestrate multi-step contact scenarios across devices/topics using DeviceConnection and ContactTestFlow.
-  基于 WebSocket 的联系人业务流（加好友/同意/删除、拉黑/取消拉黑等）。
+  Legacy contact-flow helper entry for native-auto-test. Use when an existing prompt or workflow
+  specifically mentions im-contact-flow; otherwise use native-auto-test-framework.
 ---
 
 # IM Contact Flow
 
-- Prerequisites
-  - Devices logged in on their topics; configure `topics.*` in `config.yaml`.
-  - For user provisioning, see `im-rest-users`.
-- Quick Use
-  - Establish friends: `scripts/contact_flow.py establish-friends --initiator-device device_a --peer-device device_b --user-a A --user-b B`
-  - Delete a friend: `scripts/contact_flow.py delete-friend --initiator-device device_a --friend-user-id B`
-  - Block / Unblock: `scripts/contact_flow.py block --device device_a --user-id B`
+This skill has been merged into `native-auto-test-framework`.
 
-## References
-- `src/test_flow/model_test_flow.py` (ContactTestFlow)
-- `src/tools/ws_client.py` (DeviceConnection)
-- Assertions: `src/tools/assertions.py`
+Read:
+
+- `../native-auto-test-framework/SKILL.md`
+- `../native-auto-test-framework/references/case-design-assertions.md`
+- `../native-auto-test-framework/references/ws-usage.md`
+
+The `scripts/contact_flow.py` helper remains available for contact setup flows.

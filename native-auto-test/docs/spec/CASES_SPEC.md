@@ -37,9 +37,9 @@ style_reference: tests/test_contact.py
 
 ## 拓扑与连接
 - 双设备：
-  - deviceA → topic=adc（Android，被 Cursor 启动）
-  - deviceB → topic=adc01（iOS，被 Xcode 启动）
-- WebSocket 基础配置：见 `config.yaml.websocket`（base_url、default_topic、topics）。
+  - deviceA → `{topic_prefix}-{run_id}-deviceA`（Android）
+  - deviceB → `{topic_prefix}-{run_id}-deviceB`（iOS）
+- WebSocket 基础配置：见 `config.yaml.websocket`（base_url、default_topic、topic_prefix），topic 默认按 device 动态生成。
 - 测试层使用：
   - `DeviceConnection`（单连接双工）：同一连接上发请求和收回调，避免漏回调。
   - `MessageListener`（纯被动监听）：仅用于嗅探，不参与断言。
@@ -243,7 +243,7 @@ style_reference: tests/test_contact.py
 
 ## 一致性与参考
 - 代码与断言风格以 **`tests/test_contact.py`** 为准。
-- **配置**：`config.yaml`；敏感 token 使用环境变量 `REST_AUTH_TOKEN`。
-- **与 Flutter demo**：`topics` 等需与 demo 一致，否则多端用例不稳定。
+- **配置**：`config.yaml`；REST 配置 host 前缀和 app_key，鉴权可配置 `auth_token`，或配置 `client_id/client_secret` 自动获取 token。
+- **与 Flutter demo**：topic 按 `topic_prefix/run_id/device` 动态生成，启动 URL 与控制端需使用同一 run id。
 - 若被测端返回 `MissingPluginException` 等桥接异常：**直接暴露**为失败（属被测端问题），不要在用例里规避。
 > 重要：本文件已退役（仅供参考）。唯一权威规范请查看：`docs/agents/AGENTS.zh.md`。

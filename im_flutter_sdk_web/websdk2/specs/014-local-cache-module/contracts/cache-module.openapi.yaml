@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: 本地缓存模块接口契约
+  version: 1.0.0
+  description: 供 SDK 内部调用的缓存读写接口描述（用于规格与任务拆解）。
+paths:
+  /cache/conversations:
+    get:
+      summary: 获取会话缓存
+      parameters:
+        - in: query
+          name: conversationIds
+          schema:
+            type: array
+            items:
+              type: string
+          required: false
+      responses:
+        "200":
+          description: 会话摘要列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationSummary"
+    put:
+      summary: 批量写入会话缓存
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConversationSummary"
+      responses:
+        "200":
+          description: 写入成功
+        "409":
+          description: 容量不足或被淘汰
+  /cache/users:
+    get:
+      summary: 批量获取用户信息缓存
+      parameters:
+        - in: query
+          name: userIds
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+      responses:
+        "200":
+          description: 用户信息摘要列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserInfoSummary"
+    put:
+      summary: 批量写入用户信息缓存
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/UserInfoSummary"
+      responses:
+        "200":
+          description: 写入成功
+        "409":
+          description: 容量不足或被淘汰
+    delete:
+      summary: 批量删除用户信息缓存
+      parameters:
+        - in: query
+          name: userIds
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+      responses:
+        "200":
+          description: 删除成功
+  /cache/metadata:
+    get:
+      summary: 获取缓存元信息
+      responses:
+        "200":
+          description: 缓存元信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CacheMetadata"
+components:
+  schemas:
+    ConversationSummary:
+      type: object
+      properties:
+        conversationId:
+          type: string
+        type:
+          type: string
+        subType:
+          type: string
+        lastMessage:
+          $ref: "#/components/schemas/MessageSnippet"
+        unreadCount:
+          type: integer
+        userProfile:
+          $ref: "#/components/schemas/UserInfoSummary"
+        groupProfile:
+          type: object
+        lastAccess:
+          type: integer
+        lastUpdate:
+          type: integer
+      required:
+        - conversationId
+        - type
+        - lastAccess
+        - lastUpdate
+    MessageSnippet:
+      type: object
+      properties:
+        msgId:
+          type: string
+        type:
+          type: string
+        body:
+          type: object
+        timestamp:
+          type: integer
+      required:
+        - msgId
+        - type
+        - timestamp
+    UserInfoSummary:
+      type: object
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        lastAccess:
+          type: integer
+        lastUpdate:
+          type: integer
+      required:
+        - userId
+        - lastAccess
+        - lastUpdate
+    CacheMetadata:
+      type: object
+      properties:
+        schemaVersion:
+          type: integer
+        lastFlush:
+          type: integer
+      required:
+        - schemaVersion
+        - lastFlush

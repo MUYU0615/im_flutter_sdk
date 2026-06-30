@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 
-import 'bridge/event_bridge_handler.dart';
 import 'bridge/im_websocket_bridge.dart';
 
 /// WebSocket 桥接配置页：配置 URL/topic、手动连接/断开、查看与清空请求响应列表。
 class WebSocketConfigPage extends StatefulWidget {
-  const WebSocketConfigPage({super.key});
+  const WebSocketConfigPage({
+    super.key,
+    this.initialUri,
+    this.bridgeStarter,
+    this.eventRegistrar,
+  });
+
+  final Uri? initialUri;
+  final Future<void> Function(BridgeStartRequest request)? bridgeStarter;
+  final VoidCallback? eventRegistrar;
 
   @override
   State<WebSocketConfigPage> createState() => _WebSocketConfigPageState();
+}
+
+class BridgeStartRequest {
+  const BridgeStartRequest({required this.url, required this.deviceName});
+
+  final String url;
+  final String? deviceName;
 }
 
 class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
@@ -22,10 +37,18 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
   @override
   void initState() {
     super.initState();
-    _urlController.text = kDefaultBridgeWebSocketBaseUrl;
-    _topicController.text = kDefaultBridgeWebSocketTopic;
-    _deviceController.text = 'deviceA';
+    final params = (widget.initialUri ?? Uri.base).queryParameters;
+    _urlController.text = params['bridgeUrl'] ?? kDefaultBridgeWebSocketBaseUrl;
+    _topicController.text = params['topic'] ?? kDefaultBridgeWebSocketTopic;
+    _deviceController.text = params['device'] ?? 'deviceA';
     IMWebSocketBridge.instance.onLog = _onLog;
+    if (_boolParam(params['autoconnect'])) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _connect();
+        }
+      });
+    }
   }
 
   @override
@@ -41,11 +64,13 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
   void _onLog(String request, String response) {
     if (!mounted) return;
     setState(() {
-      _logs.add(BridgeLogItem(
-        time: DateTime.now(),
-        request: request,
-        response: response,
-      ));
+      _logs.add(
+        BridgeLogItem(
+          time: DateTime.now(),
+          request: request,
+          response: response,
+        ),
+      );
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -67,13 +92,21 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
       final String connectUrl = url.contains('?')
           ? url
           : (topic.isEmpty ? url : '$url?topic=${Uri.encodeComponent(topic)}');
-      await IMWebSocketBridge.instance.start(
+      final request = BridgeStartRequest(
         url: connectUrl,
         deviceName: deviceName.isEmpty ? null : deviceName,
       );
-      // Register event handlers to forward events to WebSocket
-      EventBridgeHandler.instance.registerAllHandlers();
-      if (mounted) _showSnack('已连接并注册事件处理器');
+      final starter = widget.bridgeStarter;
+      if (starter == null) {
+        await IMWebSocketBridge.instance.start(
+          url: request.url,
+          deviceName: request.deviceName,
+        );
+      } else {
+        await starter(request);
+      }
+      widget.eventRegistrar?.call();
+      if (mounted) _showSnack('已连接');
     } catch (e) {
       if (mounted) _showSnack('连接失败: $e');
     } finally {
@@ -81,13 +114,16 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
     }
   }
 
+  bool _boolParam(String? value) {
+    if (value == null) return false;
+    return value == '1' || value.toLowerCase() == 'true';
+  }
+
   Future<void> _disconnect() async {
     setState(() => _connecting = true);
     try {
-      // Unregister event handlers
-      EventBridgeHandler.instance.unregisterAllHandlers();
       await IMWebSocketBridge.instance.stop();
-      if (mounted) _showSnack('已断开并取消注册事件处理器');
+      if (mounted) _showSnack('已断开');
     } finally {
       if (mounted) setState(() => _connecting = false);
     }
@@ -107,9 +143,7 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
   Widget build(BuildContext context) {
     final connected = IMWebSocketBridge.instance.isConnected;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('WebSocket 桥接配置'),
-      ),
+      appBar: AppBar(title: const Text('WebSocket 桥接配置')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -159,7 +193,8 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _connecting || !connected ? null : _disconnect,
+                        onPressed:
+                            _connecting || !connected ? null : _disconnect,
                         child: const Text('断开'),
                       ),
                     ),
@@ -254,10 +289,7 @@ class _LogTileState extends State<_LogTile> {
             children: [
               Row(
                 children: [
-                  Text(
-                    timeStr,
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
+                  Text(timeStr, style: Theme.of(context).textTheme.labelSmall),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -272,13 +304,19 @@ class _LogTileState extends State<_LogTile> {
               ),
               if (_expanded) ...[
                 const SizedBox(height: 8),
-                const Text('请求:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  '请求:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 SelectableText(
                   item.request,
                   style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
                 ),
                 const SizedBox(height: 4),
-                const Text('响应:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  '响应:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 SelectableText(
                   item.response,
                   style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),

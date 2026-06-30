@@ -12,14 +12,11 @@ import urllib.request
 import ssl
 from typing import Any
 
-from ..tools.config import get_rest_auth_token, get_rest_base_url, get_rest_verify_ssl
+from ..tools.config import get_rest_authorization_header, get_rest_base_url, get_rest_verify_ssl
 
 
 def _authorization_header() -> str:
-    token = get_rest_auth_token()
-    if not token:
-        return ""
-    return token if token.lower().startswith("bearer ") else f"Bearer {token}"
+    return get_rest_authorization_header()
 
 
 def _urlopen(req: urllib.request.Request, timeout: float = 30):
@@ -44,7 +41,7 @@ def get_user_contacts(
     base = get_rest_base_url().rstrip("/")
     auth = _authorization_header()
     if not base or not auth:
-        raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
+        raise RuntimeError("rest_api.base_url、app_key 与 auth_token 或 client_id/client_secret 需在 config.yaml 的 rest_api 中配置")
 
     user_enc = urllib.parse.quote(username, safe="")
     path = f"{base}/users/{user_enc}/contacts/users"

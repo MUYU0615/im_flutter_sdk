@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: IM SDK UserInfoManager Contract
+  version: 0.1.0
+  description: |
+    026 UserInfoManager 逻辑契约。
+    既描述 SDK 对外的 UserInfoManager 方法语义，也保留已确认的服务端 envelope 结构，供 fixture 与契约测试复用。
+servers:
+  - url: https://sdk.local
+paths:
+  /sdk/user-info/users:
+    post:
+      summary: 按用户 ID 查询默认字段
+      operationId: fetchUserInfoByUserId
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/metadata/user/get
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchUserInfoByUserIdRequest'
+      responses:
+        200:
+          description: 返回标准化后的用户资料数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+  /sdk/user-info/users/attributes:
+    post:
+      summary: 按用户 ID 和属性集查询资料
+      operationId: fetchUserInfoByAttribute
+      x-upstream:
+        method: POST
+        path: /{org}/{app}/metadata/user/get
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchUserInfoByAttributeRequest'
+      responses:
+        200:
+          description: 返回标准化后的用户资料数组
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+  /sdk/user-info/self:
+    put:
+      summary: 整体更新当前用户资料
+      operationId: updateOwnInfo
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/metadata/user/{userId}
+        contentType: application/x-www-form-urlencoded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOwnInfoRequest'
+      responses:
+        200:
+          description: 返回标准化后的当前用户资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+  /sdk/user-info/self/attributes:
+    put:
+      summary: 更新当前用户单个资料属性
+      operationId: updateOwnInfoByAttribute
+      x-upstream:
+        method: PUT
+        path: /{org}/{app}/metadata/user/{userId}
+        contentType: application/x-www-form-urlencoded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOwnInfoByAttributeRequest'
+      responses:
+        200:
+          description: 返回标准化后的当前用户资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        400:
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SDKError'
+
+components:
+  schemas:
+    UserInfo:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    UserInfoAttribute:
+      type: string
+      enum:
+        - nickname
+        - avatarUrl
+        - mail
+        - phone
+        - gender
+        - sign
+        - birth
+        - ext
+
+    FetchUserInfoByUserIdRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    FetchUserInfoByAttributeRequest:
+      type: object
+      required:
+        - userIds
+        - attributes
+      properties:
+        userIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        attributes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/UserInfoAttribute'
+
+    UpdateOwnInfoRequest:
+      type: object
+      minProperties: 1
+      properties:
+        nickname:
+          type: string
+        avatarUrl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    UpdateOwnInfoByAttributeRequest:
+      type: object
+      required:
+        - attribute
+        - value
+      properties:
+        attribute:
+          $ref: '#/components/schemas/UserInfoAttribute'
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+
+    UserInfoFetchResponseEnvelope:
+      type: object
+      required:
+        - timestamp
+        - data
+        - lastModified
+        - duration
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ServerUserInfoAttributes'
+        lastModified:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        duration:
+          type: integer
+
+    UserInfoUpdateResponseEnvelope:
+      type: object
+      required:
+        - timestamp
+        - data
+        - lastModified
+        - duration
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+        data:
+          $ref: '#/components/schemas/ServerUserInfoAttributes'
+        lastModified:
+          type: integer
+          format: int64
+        duration:
+          type: integer
+
+    ServerUserInfoAttributes:
+      type: object
+      properties:
+        nickname:
+          type: string
+        avatarurl:
+          type: string
+        mail:
+          type: string
+        phone:
+          type: string
+        gender:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        sign:
+          type: string
+        birth:
+          type: string
+        ext:
+          type: string
+
+    SDKError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

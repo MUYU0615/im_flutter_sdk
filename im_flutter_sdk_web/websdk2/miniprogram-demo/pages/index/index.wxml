@@ -1,0 +1,180 @@
+<scroll-view class="page-shell" scroll-y>
+  <view class="page">
+    <view class="hero">
+      <text class="hero-title">WebSDK2 微信小程序 Demo</text>
+      <text class="hero-subtitle">初始化、登录、登出、8 类消息发送</text>
+      <view class="hero-meta">
+        <text class="meta-chip">SDK: {{sdkMode}}</text>
+        <text class="meta-chip">状态: {{connectionState}}</text>
+        <text class="meta-chip">用户: {{currentUserId || '未登录'}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">初始化</view>
+      <view class="field">
+        <text class="label">AppKey</text>
+        <input class="input" value="{{initForm.appKey}}" data-path="initForm.appKey" bindinput="handleInput" placeholder="请输入 AppKey" />
+      </view>
+      <view class="field">
+        <text class="label">REST 地址</text>
+        <input class="input" value="{{initForm.restApiUrl}}" data-path="initForm.restApiUrl" bindinput="handleInput" placeholder="https://a1-hsb.easemob.com" />
+      </view>
+      <view class="field">
+        <text class="label">WebSocket 地址</text>
+        <input class="input" value="{{initForm.wsUrl}}" data-path="initForm.wsUrl" bindinput="handleInput" placeholder="wss://im-api-new-hsb.easemob.com/websocket" />
+      </view>
+      <button class="primary-btn" loading="{{busy}}" disabled="{{busy}}" bindtap="initSdk">
+        {{initialized ? '重复初始化' : '初始化 SDK'}}
+      </button>
+      <text class="hint">初始化固定使用 REST / WebSocket 地址，并关闭自动联系人同步。</text>
+    </view>
+
+    <view class="card">
+      <view class="card-title">登录 / 登出</view>
+      <view class="field">
+        <text class="label">用户 ID</text>
+        <input class="input" value="{{loginForm.userId}}" data-path="loginForm.userId" bindinput="handleInput" placeholder="请输入用户 ID" />
+      </view>
+      <view class="field">
+        <text class="label">Token</text>
+        <input class="input" value="{{loginForm.token}}" data-path="loginForm.token" bindinput="handleInput" placeholder="请输入 Token" />
+      </view>
+      <view class="button-row">
+        <button class="primary-btn half-btn" loading="{{busy}}" disabled="{{busy || !initialized}}" bindtap="login">登录</button>
+        <button class="ghost-btn half-btn" loading="{{busy}}" disabled="{{busy || !initialized}}" bindtap="logout">登出</button>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">发送消息</view>
+      <view class="field">
+        <text class="label">会话类型</text>
+        <picker mode="selector" range="{{channelTypeOptions}}" value="{{channelTypeIndex}}" bindchange="handleChannelTypeChange">
+          <view class="picker">{{channelTypeOptions[channelTypeIndex]}}</view>
+        </picker>
+      </view>
+      <view class="field">
+        <text class="label">目标 ID</text>
+        <input class="input" value="{{draft.targetId}}" data-path="draft.targetId" bindinput="handleInput" placeholder="请输入单聊 / 群组 / 聊天室 ID" />
+      </view>
+      <view class="field">
+        <text class="label">消息类型</text>
+        <picker mode="selector" range="{{messageTypeOptions}}" value="{{messageTypeIndex}}" bindchange="handleMessageTypeChange">
+          <view class="picker">{{messageTypeOptions[messageTypeIndex]}}</view>
+        </picker>
+      </view>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'text'}}">
+        <view class="field">
+          <text class="label">文本内容</text>
+          <textarea class="textarea" value="{{draft.textMessage}}" data-path="draft.textMessage" bindinput="handleInput" placeholder="请输入消息内容" />
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'image'}}">
+        <view class="field">
+          <text class="label">图片素材</text>
+          <view class="button-row">
+            <button class="ghost-btn half-btn" bindtap="chooseImage">选择图片</button>
+            <button class="ghost-btn half-btn" data-path="draft.imageSelection" bindtap="clearAttachment">清空</button>
+          </view>
+          <text class="selection">{{draft.imageSelection ? draft.imageSelection.name : '未选择图片'}}</text>
+        </view>
+        <view class="switch-row">
+          <text class="label">发送原图</text>
+          <switch checked="{{draft.imageSendOriginal}}" data-path="draft.imageSendOriginal" bindchange="handleSwitch" />
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'voice'}}">
+        <view class="field">
+          <text class="label">语音素材</text>
+          <view class="button-row">
+            <button class="ghost-btn half-btn" bindtap="chooseVoice">选择语音</button>
+            <button class="ghost-btn half-btn" data-path="draft.voiceSelection" bindtap="clearAttachment">清空</button>
+          </view>
+          <text class="selection">{{draft.voiceSelection ? draft.voiceSelection.name : '未选择语音'}}</text>
+        </view>
+        <view class="field">
+          <text class="label">语音时长（秒）</text>
+          <input class="input" type="digit" value="{{draft.voiceDuration}}" data-path="draft.voiceDuration" bindinput="handleInput" placeholder="例如 3.5" />
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'video'}}">
+        <view class="field">
+          <text class="label">视频素材</text>
+          <view class="button-row">
+            <button class="ghost-btn half-btn" bindtap="chooseVideo">选择视频</button>
+            <button class="ghost-btn half-btn" data-path="draft.videoSelection" bindtap="clearAttachment">清空</button>
+          </view>
+          <text class="selection">{{draft.videoSelection ? draft.videoSelection.name : '未选择视频'}}</text>
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'file'}}">
+        <view class="field">
+          <text class="label">文件素材</text>
+          <view class="button-row">
+            <button class="ghost-btn half-btn" bindtap="chooseFile">选择文件</button>
+            <button class="ghost-btn half-btn" data-path="draft.fileSelection" bindtap="clearAttachment">清空</button>
+          </view>
+          <text class="selection">{{draft.fileSelection ? draft.fileSelection.name : '未选择文件'}}</text>
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'location'}}">
+        <view class="field">
+          <text class="label">纬度</text>
+          <input class="input" type="digit" value="{{draft.locationLatitude}}" data-path="draft.locationLatitude" bindinput="handleInput" placeholder="请输入纬度" />
+        </view>
+        <view class="field">
+          <text class="label">经度</text>
+          <input class="input" type="digit" value="{{draft.locationLongitude}}" data-path="draft.locationLongitude" bindinput="handleInput" placeholder="请输入经度" />
+        </view>
+        <view class="field">
+          <text class="label">地址</text>
+          <input class="input" value="{{draft.locationAddress}}" data-path="draft.locationAddress" bindinput="handleInput" placeholder="可选" />
+        </view>
+        <view class="field">
+          <text class="label">建筑名称</text>
+          <input class="input" value="{{draft.locationBuildingName}}" data-path="draft.locationBuildingName" bindinput="handleInput" placeholder="可选" />
+        </view>
+        <button class="ghost-btn" bindtap="pickLocation">从地图选择</button>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'cmd'}}">
+        <view class="field">
+          <text class="label">命令动作</text>
+          <input class="input" value="{{draft.cmdAction}}" data-path="draft.cmdAction" bindinput="handleInput" placeholder="例如 sync_roster" />
+        </view>
+      </block>
+
+      <block wx:if="{{messageTypeOptions[messageTypeIndex] === 'custom'}}">
+        <view class="field">
+          <text class="label">自定义事件</text>
+          <input class="input" value="{{draft.customEvent}}" data-path="draft.customEvent" bindinput="handleInput" placeholder="例如 order_changed" />
+        </view>
+        <view class="field">
+          <text class="label">自定义参数 JSON</text>
+          <textarea class="textarea" value="{{draft.customParamsJson}}" data-path="draft.customParamsJson" bindinput="handleInput" placeholder='例如 {"bizId":"10001"}' />
+        </view>
+      </block>
+
+      <button class="primary-btn" loading="{{sending}}" disabled="{{sending || !initialized}}" bindtap="sendCurrentMessage">
+        发送当前消息
+      </button>
+    </view>
+
+    <view class="card">
+      <view class="card-title">运行日志</view>
+      <view wx:if="{{!logs.length}}" class="empty-log">暂无日志</view>
+      <view wx:for="{{logs}}" wx:key="id" class="log-item log-{{item.level}}">
+        <text class="log-time">{{item.time}}</text>
+        <text class="log-level">{{item.level}}</text>
+        <text class="log-message">{{item.message}}</text>
+      </view>
+    </view>
+  </view>
+</scroll-view>

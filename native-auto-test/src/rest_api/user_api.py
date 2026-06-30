@@ -14,15 +14,17 @@ import ssl
 import shlex
 from typing import Any
 
-from ..tools.config import get_rest_base_url, get_rest_auth_token, get_rest_verify_ssl
+from ..tools.config import (
+    get_rest_authorization_header,
+    get_rest_base_url,
+    get_rest_user_access_token,
+    get_rest_verify_ssl,
+)
 import urllib.parse
 
 
 def _authorization_header() -> str:
-    token = get_rest_auth_token()
-    if not token:
-        return ""
-    return token if str(token).lower().startswith("bearer ") else f"Bearer {token}"
+    return get_rest_authorization_header()
 
 
 def _urlopen(req: urllib.request.Request, timeout: float = 30):
@@ -132,7 +134,7 @@ def update_user_metadata(username: str, form_fields: dict[str, str]) -> dict:
     base = get_rest_base_url().rstrip("/")
     auth = _authorization_header()
     if not base or not auth:
-        raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
+        raise RuntimeError("rest_api.base_url、app_key 与 auth_token 或 client_id/client_secret 需在 config.yaml 的 rest_api 中配置")
 
     user_enc = urllib.parse.quote(username, safe="")
     url = f"{base}/metadata/user/{user_enc}"
@@ -163,9 +165,9 @@ def create_users(users: list[dict[str, str]]) -> dict:
     失败时不抛异常，打印错误后返回 {"error": ...}。
     """
     base = get_rest_base_url().rstrip("/")
-    token = get_rest_auth_token()
+    token = _authorization_header()
     if not base or not token:
-        err = "rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置"
+        err = "rest_api.base_url、app_key 与 auth_token 或 client_id/client_secret 需在 config.yaml 的 rest_api 中配置"
         print(f"[create_users] {err}", file=sys.stderr, flush=True)
         return {"error": err, "url": base}
     url = f"{base}/users"
@@ -274,12 +276,17 @@ def create_users(users: list[dict[str, str]]) -> dict:
         }
 
 
+def get_user_access_token(username: str, password: str) -> str:
+    """获取指定测试用户的 IM access_token。"""
+    return get_rest_user_access_token(username, password)
+
+
 def delete_user(username: str) -> None:
     """删除指定用户。"""
     base = get_rest_base_url().rstrip("/")
-    token = get_rest_auth_token()
+    token = _authorization_header()
     if not base or not token:
-        raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
+        raise RuntimeError("rest_api.base_url、app_key 与 auth_token 或 client_id/client_secret 需在 config.yaml 的 rest_api 中配置")
     url = f"{base}/users/{urllib.request.quote(username, safe='')}"
     req = urllib.request.Request(
         url,

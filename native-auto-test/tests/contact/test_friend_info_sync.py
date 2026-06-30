@@ -87,7 +87,7 @@ def test_friend_info_sync_on_peer_metadata_change(device_a, device_b, assert_api
     device_a.drain_events(timeout=1.0)
 
     # 通过 REST 修改设备 B 的用户元数据（示例：nickname）。
-    # 若未配置 REST token/base_url，此调用会抛错并由测试框架报告配置问题。
+    # 若未配置 REST 鉴权/base_url，此调用会抛错并由测试框架报告配置问题。
     new_nick = f"nick-{int(time.time())}"
     update_user_metadata(user_b, {"nickname": new_nick})
 

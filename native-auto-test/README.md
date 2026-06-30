@@ -25,7 +25,41 @@
 `cp config.yaml.template config.yaml`
 - `websocket.base_url`：WS 服务地址（与 Flutter 端一致）。
 - `websocket.default_topic`：默认 topic（与 Flutter 端 `IMWebSocketBridge.instance.start(topic: '...')` 一致）。
-- 多端测试时可在 `topics` 下为不同 device 配置不同 topic。
+- 设置 `NATIVE_AUTO_TEST_RUN_ID` 后，topic 会按 `{topic_prefix}-{run_id}-{device}` 动态生成，
+  适合长期回归和 CI 并发。
+- 未设置 `NATIVE_AUTO_TEST_RUN_ID` 时，run id 固定为 `local`，topic 默认按
+  `{topic_prefix}-local-{device}` 生成。
+
+## 本地 WebSocket Relay
+
+长期回归使用本地 topic relay：
+
+```bash
+python -m src.tools.local_ws_relay --host 127.0.0.1 --port 2000
+```
+
+配置：
+
+```yaml
+websocket:
+  base_url: "ws://127.0.0.1:2000/iov/websocket/dual"
+```
+
+动态 topic 示例：
+
+```bash
+export NATIVE_AUTO_TEST_RUN_ID="$(date +%Y%m%d-%H%M%S)"
+python -m src.tools.web_launch_urls \
+  --app-url http://localhost:8080 \
+  --bridge-url ws://127.0.0.1:2000/iov/websocket/dual
+```
+
+输出会包含 `webA` / `webB` 各自的启动 URL。两个 Flutter Web 测试端分别用对应
+URL 打开后，再运行：
+
+```bash
+pytest tests/web --target-platform web -m web -v
+```
 
 ## 运行用例
 
@@ -39,7 +73,7 @@ pytest -m client
 # 生成 HTML 报告
 pytest --html=out/report.html --self-contained-html
 
-# 指定 topic（覆盖 config 中的 default_topic 需在代码里通过 fixture 或环境变量扩展，当前以 config 为准）
+# 使用当前动态 topic 规则运行 Client 用例
 pytest tests/test_client.py -v
 ```
 
@@ -58,8 +92,125 @@ pytest tests/test_client.py -v
 
 ## 多端测试（多 topic）
 
-- 在 `config.yaml` 中配置 `topics.device_1`、`topics.device_2` 等。
-- 在 `conftest.py` 中为不同测试或参数化提供不同 `ws_device`（或重写 `ws_topic` fixture），即可在不同 topic 上跑同一套用例，实现多端测试。
+- 框架按 `device` 自动生成 topic，例如 `im-auto-local-deviceA`、`im-auto-local-deviceB`。
+- 设置 `NATIVE_AUTO_TEST_RUN_ID` 可让每次运行生成独立 topic，避免并发或历史连接串消息。
+
+## Flutter Web Regression
+
+Web 平台长期通过 `im_flutter_test` 测试 App 接入，不在 `im_flutter_sdk` 中新增
+Web 平台包，也不使用一次性 Node driver。Web 端目标行为与 Android/iOS 一致：
+`webA/webB` 作为设备对参与 session 自动登录、清回调、`startCallback`、case
+执行和 logout。
+
+推荐使用一键编排命令。它会启动本地 relay、`im_flutter_test` Flutter web-server、
+两个 headless Chrome 端，并在 pytest 结束后清理进程：
+
+```bash
+make web-e2e ARGS="-- tests/web --target-platform web -v"
+```
+
+一键编排命令默认会生成 pytest HTML 报告，输出目录固定为：
+
+```text
+/Users/dujiepeng/work/qa/hub_all/im_flutter_sdk/native-auto-test/out
+```
+
+默认报告文件名使用 run id，例如：
+
+```text
+out/web-20260629-150639.html
+```
+
+如果 pytest 参数里已经显式传入 `--html` 或 `--html=...`，则使用调用方指定的 HTML 路径，不再追加默认报告参数。
+pytest 执行结束后，无论用例通过或失败，都会重新扫描当前代码和覆盖配置，并刷新：
+
+```text
+out/platform-api-support.html
+out/platform-api-support.csv
+```
+
+需要固定 run id 时：
+
+```bash
+make web-e2e ARGS="--run-id web-local-smoke -- tests/web --target-platform web -v"
+```
+
+等价 Python module 命令：
+
+```bash
+python -m src.tools.web_e2e_runner -- tests/web --target-platform web -v
+```
+
+Web API 覆盖报告可用下面命令刷新：
+
+```bash
+make web-coverage-report
+```
+
+Web real E2E 审计文档可用下面命令刷新：
+
+```bash
+python -m src.tools.web_real_e2e_no_real_api_audit \
+  --output docs/agents/web/WEB_REAL_E2E_NO_REAL_API_AUDIT.md
+```
+
+推荐统一刷新 real Web 文档：
+
+```bash
+make web-real-docs
+```
+
+该命令会同时刷新 matrix、coverage report、no-real-api audit，并对审计分类执行严格校验。
+
+当前推荐的全量 real Web 基线执行入口：
+
+```bash
+make web-real-full-baseline
+```
+
+等价命令：
+
+```bash
+python -m src.tools.web_e2e_runner \
+  --run-id web-real-full-baseline \
+  --web-sdk-mode real_sdk \
+  --headless-startup-wait 150 \
+  --startup-timeout 240 \
+  --flutter-timeout 300 \
+  -- tests/web_real --target-platform web -q
+```
+
+2026-06-23 当前基线结果：
+- `63 passed`
+- `1 warning`
+- 耗时约 `205.51s`
+
+排障时也可以继续使用手动流程：
+
+1. 启动 WebSocket 服务，保持 `websocket.base_url` 与 Flutter Web 端一致。
+2. 设置 `NATIVE_AUTO_TEST_RUN_ID` 并用 `python -m src.tools.web_launch_urls` 输出
+   `webA` / `webB` 两个启动 URL。
+3. 启动两个 Flutter Web 测试端，分别打开对应 URL。
+4. 运行 Web regression：
+
+```bash
+pytest tests/web --target-platform web -m web -v
+```
+
+只做离线 fixture/capability 测试时可跳过 session 登录：
+
+```bash
+pytest tests/web/test_web_fixture.py tests/web/test_capabilities.py --skip-global-login -q
+```
+
+Web E2E 默认使用 `real_sdk`，即通过 `im_flutter_sdk_web` 调用真实 Web IM SDK / 真实 IM 服务端。只有明确做 wrapper JSON 映射验证时，才手动指定 Web 兼容模式 `local_adapter`。
+
+API 能力差异由 `config/web_capabilities.yaml` 表达：
+
+- `supported`：正常执行并断言成功。
+- `unsupported`：运行并断言稳定 unsupported/error。
+- `pending`：跳过，不计入失败。
+- `different`：运行 Web 专属期望。
 
 ## 项目结构
 
@@ -154,14 +305,14 @@ assert_api.assert_response_matches(
 
 This repository includes Codex skills under `skills/` following the create-skill guidelines:
 
-- `skills/im-ws` — WebSocket request/response and event listening helpers.
-  - Scripts: `scripts/ws_call.py`, `scripts/ws_wait.py`
-- `skills/im-rest-users` — REST user provisioning helpers.
-  - Scripts: `scripts/create_users.py`, `scripts/delete_user.py`
-- `skills/im-contact-flow` — High-level contact flows built on WS.
-  - Scripts: `scripts/contact_flow.py`
+- `skills/native-auto-test-framework` — primary entry for SDK API coverage, Web/Android/iOS parity, case design, WebSocket calls, REST user setup, release-note mapping, and report rules.
+- Legacy helper entries remain for old prompts and scripts:
+  - `skills/im-ws` — WebSocket request/response and event listening scripts.
+  - `skills/im-rest-users` — REST user provisioning scripts.
+  - `skills/im-contact-flow` — contact flow setup script.
+  - `skills/release-note-case-mapping` — release-note mapping compatibility entry.
 
-Usage examples can be found in each skill's `SKILL.md`. Make sure `config.yaml` is configured before using them.
+Start with `skills/native-auto-test-framework/SKILL.md`; read its `references/` files only for the task-specific details you need. Make sure `config.yaml` is configured before using helper scripts.
 
 ## Make Tasks
 
@@ -182,7 +333,7 @@ Usage examples can be found in each skill's `SKILL.md`. Make sure `config.yaml` 
 
 Tips
 - JSON 参数请用单引号包裹（避免 shell 转义）。
-- 运行前确保 `config.yaml` 配置正确；REST 需 `rest_api.base_url` 与 `rest_api.auth_token`。
+- 运行前确保 `config.yaml` 配置正确；REST 需 `rest_api.base_url`、`rest_api.app_key`，以及 `rest_api.auth_token` 或 `rest_api.client_id/client_secret`。
 - 校验技能目录：`make skills-validate`。
 
 pytest -q tests -s --alluredir=out/allure-results

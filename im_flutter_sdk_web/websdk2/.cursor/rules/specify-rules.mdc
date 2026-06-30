@@ -1,0 +1,32 @@
+# websdk2 Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-01-20
+
+## Active Technologies
+- TypeScript 5.x（strict） + zod、protobufjs/minimal、vitest、vite、eslin (019-combine-message)
+- N/A（沿用现有消息缓存与附件资源访问模型） (019-combine-message)
+
+- TypeScript 5.0+ (strict mode) (001-im-sdk-refactor)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+npm test && npm run lint
+
+## Code Style
+
+TypeScript 5.0+ (strict mode): Follow standard conventions
+
+## Recent Changes
+- 019-combine-message: Added TypeScript 5.x（strict） + zod、protobufjs/minimal、vitest、vite、eslin
+
+- 001-im-sdk-refactor: Added TypeScript 5.0+ (strict mode)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
