@@ -68,7 +68,7 @@ native_api_review:
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 getConversationsByType 已由 Flutter ChatManager.getConversationsByType 同名暴露，自动化覆盖发送消息后按会话类型查询与非法 type 参数。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
+    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: getReactionDetail
     action: direct_e2e_case

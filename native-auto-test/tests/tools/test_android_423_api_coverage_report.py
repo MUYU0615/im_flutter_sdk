@@ -32,6 +32,9 @@ def test_chat_manager_p1_equivalent_native_apis_are_not_wrapper_missing():
         assert row["automation_covered"] == "yes"
         assert wrapper in row["covered_by_wrapper_api"]
 
+    row = rows[("ChatManager", "getConversationsByType", "native_android_api")]
+    assert row["target_case"] == "native-auto-test/tests/chat/test_chat_s1_local_conversation.py"
+
 
 def test_chat_manager_unimplemented_native_conversation_load_apis_stay_wrapper_missing():
     rows = {
