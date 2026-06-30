@@ -84,6 +84,32 @@ def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
     _assert_push_config_update_result(assert_api, style_resp, cmd=Cmd.updateImPushStyle.value)
 
 
+def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_api):
+    """reportPushAction：上报点击行为参数到 Android SDK；厂商推送环境不稳定时只冻结 SDK-call 响应形态。"""
+    resp = device_a.call(
+        "PushManager",
+        Cmd.reportPushAction.value,
+        info={
+            "action": "CLICK",
+            "data": {
+                "messageId": "native-auto-test-push-action",
+                "notifierName": "default",
+            },
+        },
+    )
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "PushManager",
+            "cmd": Cmd.reportPushAction.value,
+            "device": "deviceA",
+        },
+        ignore_keys={"sequence", "result"},
+    )
+    result = resp.get("result")
+    assert result is None or result is True or isinstance(result, dict)
+
+
 def test_push_global_silent_mode_flow(device_a, assert_api):
     """setSilentModeForAll / fetchSilentModeForAll：设置全局离线推送提醒类型，并拉取全局设置。"""
     set_resp = device_a.call(

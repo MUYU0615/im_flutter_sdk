@@ -19,6 +19,22 @@ P1_EQUIVALENT_APIS = {
     "removeReaction": "ChatManager.removeReaction",
 }
 
+TASK5_EQUIVALENT_APIS = {
+    ("ContactManager", "asyncAcceptInvitation"): "ContactManager.acceptInvitation",
+    ("ContactManager", "asyncAddContact"): "ContactManager.addContact",
+    ("ContactManager", "asyncAddUserToBlackList"): "ContactManager.addUserToBlockList",
+    ("ContactManager", "asyncDeclineInvitation"): "ContactManager.declineInvitation",
+    ("ContactManager", "asyncDeleteContact"): "ContactManager.deleteContact",
+    ("ContactManager", "asyncGetAllContactsFromServer"): "ContactManager.getAllContactsFromServer",
+    ("ContactManager", "asyncGetBlackListFromServer"): "ContactManager.getBlockListFromServer",
+    ("ContactManager", "asyncGetSelfIdsOnOtherPlatform"): "ContactManager.getSelfIdsOnOtherPlatform",
+    ("ContactManager", "asyncRemoveUserFromBlackList"): "ContactManager.removeUserFromBlockList",
+    ("PushManager", "updatePushDisplayStyle"): "PushManager.updateImPushStyle",
+    ("PushManager", "updatePushNickname"): "PushManager.updatePushNickname",
+    ("UserInfoManager", "getUserInfoWithUserId"): "UserInfoManager.fetchUserInfoById",
+    ("UserInfoManager", "getUserInfoWithUserIds"): "UserInfoManager.fetchUserInfoById",
+}
+
 
 class _FakeItem:
     def __init__(self, marked: bool):
@@ -68,3 +84,50 @@ def test_chat_manager_unimplemented_native_conversation_load_apis_stay_wrapper_m
         assert row["coverage_conclusion"] == "wrapper_missing"
         assert row["android_covered"] == "no"
         assert row["review_action"] == "expose_wrapper"
+
+
+def test_task5_equivalent_native_apis_are_not_wrapper_missing():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "ContactManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK5_EQUIVALENT_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+    for key in (
+        ("ContactManager", "asyncSaveBlackList"),
+        ("ContactManager", "saveBlackList"),
+        ("UserInfoManager", "fetchSubscribedUsers"),
+        ("UserInfoManager", "subscribeUsersInfo"),
+        ("UserInfoManager", "unsubscribeUsersInfo"),
+    ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "wrapper_missing"
+        assert row["android_covered"] == "no"
+        assert row["review_action"] == "expose_wrapper"
+
+
+def test_task5_listener_lifecycle_reviews_are_indirect_not_wrapper_gaps():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "PresenceManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in (
+        ("ContactManager", "setContactListener"),
+        ("PresenceManager", "clearListeners"),
+    ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["review_action"] == "listener_registration_internal"
+        assert row["native_test_requirement"] == "indirect_e2e"
+        assert row["coverage_conclusion"] == "indirect_covered_by_case"
+        assert row["automation_covered"] == "yes"

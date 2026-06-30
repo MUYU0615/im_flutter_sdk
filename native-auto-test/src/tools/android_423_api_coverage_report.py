@@ -216,6 +216,69 @@ INDIRECT_COVERAGE_RULES = {
 }
 
 NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("ContactManager", "asyncAcceptInvitation"): [
+        {
+            "manager": "ContactManager",
+            "api": "acceptInvitation",
+            "reason_zh": "Flutter wrapper 的 acceptInvitation 在后台线程调用 Android acceptInvitation；等价覆盖 4.23 asyncAcceptInvitation 的好友邀请接受能力。",
+        }
+    ],
+    ("ContactManager", "asyncAddContact"): [
+        {
+            "manager": "ContactManager",
+            "api": "addContact",
+            "reason_zh": "Flutter wrapper 的 addContact 在后台线程调用 Android addContact；等价覆盖 4.23 asyncAddContact 的添加联系人能力。",
+        }
+    ],
+    ("ContactManager", "asyncAddUserToBlackList"): [
+        {
+            "manager": "ContactManager",
+            "api": "addUserToBlockList",
+            "reason_zh": "Flutter wrapper 使用 BlockList 命名，但 Android 实现调用 addUserToBlackList；等价覆盖 4.23 asyncAddUserToBlackList 的拉黑能力。",
+        }
+    ],
+    ("ContactManager", "asyncDeclineInvitation"): [
+        {
+            "manager": "ContactManager",
+            "api": "declineInvitation",
+            "reason_zh": "Flutter wrapper 的 declineInvitation 在后台线程调用 Android declineInvitation；等价覆盖 4.23 asyncDeclineInvitation 的好友邀请拒绝能力。",
+        }
+    ],
+    ("ContactManager", "asyncDeleteContact"): [
+        {
+            "manager": "ContactManager",
+            "api": "deleteContact",
+            "reason_zh": "Flutter wrapper 的 deleteContact 在后台线程调用 Android deleteContact；等价覆盖 4.23 asyncDeleteContact 的删除联系人能力。",
+        }
+    ],
+    ("ContactManager", "asyncGetAllContactsFromServer"): [
+        {
+            "manager": "ContactManager",
+            "api": "getAllContactsFromServer",
+            "reason_zh": "Flutter wrapper 的 getAllContactsFromServer 在后台线程调用 Android getAllContactsFromServer；等价覆盖 4.23 asyncGetAllContactsFromServer 的服务端联系人列表能力。",
+        }
+    ],
+    ("ContactManager", "asyncGetBlackListFromServer"): [
+        {
+            "manager": "ContactManager",
+            "api": "getBlockListFromServer",
+            "reason_zh": "Flutter wrapper 使用 BlockList 命名，但 Android 实现调用 getBlackListFromServer；等价覆盖 4.23 asyncGetBlackListFromServer 的服务端黑名单列表能力。",
+        }
+    ],
+    ("ContactManager", "asyncGetSelfIdsOnOtherPlatform"): [
+        {
+            "manager": "ContactManager",
+            "api": "getSelfIdsOnOtherPlatform",
+            "reason_zh": "Flutter wrapper 的 getSelfIdsOnOtherPlatform 在后台线程调用 Android getSelfIdsOnOtherPlatform；等价覆盖 4.23 asyncGetSelfIdsOnOtherPlatform 的其它平台登录 ID 查询能力。",
+        }
+    ],
+    ("ContactManager", "asyncRemoveUserFromBlackList"): [
+        {
+            "manager": "ContactManager",
+            "api": "removeUserFromBlockList",
+            "reason_zh": "Flutter wrapper 使用 BlockList 命名，但 Android 实现调用 removeUserFromBlackList；等价覆盖 4.23 asyncRemoveUserFromBlackList 的移出黑名单能力。",
+        }
+    ],
     ("ChatManager", "addReaction"): [
         {
             "manager": "ChatManager",
@@ -263,6 +326,34 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "manager": "ChatManager",
             "api": "removeReaction",
             "reason_zh": "Flutter wrapper 使用同名命令调用 Android asyncRemoveReaction；覆盖 Android 4.23 同步 removeReaction 的用户可见能力。",
+        }
+    ],
+    ("PushManager", "updatePushDisplayStyle"): [
+        {
+            "manager": "PushManager",
+            "api": "updateImPushStyle",
+            "reason_zh": "Flutter Dart API updatePushDisplayStyle 通过 updateImPushStyle method key 调用 Android asyncUpdatePushDisplayStyle；等价覆盖 4.23 updatePushDisplayStyle 的推送展示样式能力。",
+        }
+    ],
+    ("PushManager", "updatePushNickname"): [
+        {
+            "manager": "PushManager",
+            "api": "updatePushNickname",
+            "reason_zh": "Flutter wrapper 的 updatePushNickname 调用 Android asyncUpdatePushNickname；等价覆盖 4.23 updatePushNickname 的推送昵称设置能力。",
+        }
+    ],
+    ("UserInfoManager", "getUserInfoWithUserId"): [
+        {
+            "manager": "UserInfoManager",
+            "api": "fetchUserInfoById",
+            "reason_zh": "Flutter wrapper 的 fetchUserInfoById 调用 Android fetchUserInfoByUserId 批量拉取用户属性；用单元素 userIds 等价覆盖 getUserInfoWithUserId 的按用户 ID 查询能力。",
+        }
+    ],
+    ("UserInfoManager", "getUserInfoWithUserIds"): [
+        {
+            "manager": "UserInfoManager",
+            "api": "fetchUserInfoById",
+            "reason_zh": "Flutter wrapper 的 fetchUserInfoById 调用 Android fetchUserInfoByUserId 批量拉取用户属性；等价覆盖 getUserInfoWithUserIds 的批量用户属性查询能力。",
         }
     ],
 }
@@ -867,6 +958,13 @@ def build_rows() -> list[dict[str, str]]:
                 **assessment,
                 "native_test_requirement": "direct_e2e",
                 "coverage_conclusion": conclusion,
+            }
+        elif review.get("action") == "listener_registration_internal":
+            assessment = {
+                **assessment,
+                "native_test_requirement": "indirect_e2e",
+                "coverage_semantics_group": "listener",
+                "coverage_conclusion": "indirect_covered_by_case",
             }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})

@@ -456,80 +456,80 @@ native_api_review:
     target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
   - manager: ContactManager
     api: asyncAcceptInvitation
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncAcceptInvitation 已由 Flutter ContactManager.acceptInvitation 等价覆盖；Android wrapper 在后台线程调用 acceptInvitation，自动化覆盖接受好友邀请与事件。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncAddContact
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncAddContact 已由 Flutter ContactManager.addContact 等价覆盖；Android wrapper 在后台线程调用 addContact，自动化覆盖加好友请求链路。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncAddUserToBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncAddUserToBlackList 已由 Flutter ContactManager.addUserToBlockList 等价覆盖；Flutter 使用 BlockList 命名，Android wrapper 调用 addUserToBlackList。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncDeclineInvitation
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncDeclineInvitation 已由 Flutter ContactManager.declineInvitation 等价覆盖；Android wrapper 在后台线程调用 declineInvitation，自动化覆盖拒绝好友邀请与事件。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncDeleteContact
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncDeleteContact 已由 Flutter ContactManager.deleteContact 等价覆盖；Android wrapper 在后台线程调用 deleteContact，自动化覆盖删除联系人链路。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncGetAllContactsFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncGetAllContactsFromServer 已由 Flutter ContactManager.getAllContactsFromServer/fetchAllContactIds 等价覆盖；自动化覆盖服务端好友列表。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncGetBlackListFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncGetBlackListFromServer 已由 Flutter ContactManager.getBlockListFromServer/fetchBlockIds 等价覆盖；Flutter 使用 BlockList 命名，Android wrapper 调用 getBlackListFromServer。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncGetSelfIdsOnOtherPlatform
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncGetSelfIdsOnOtherPlatform 已由 Flutter ContactManager.getSelfIdsOnOtherPlatform 等价覆盖；自动化覆盖单设备登录返回空列表语义。"
     target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
   - manager: ContactManager
     api: asyncRemoveUserFromBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRemoveUserFromBlackList 已由 Flutter ContactManager.removeUserFromBlockList 等价覆盖；Flutter 使用 BlockList 命名，Android wrapper 调用 removeUserFromBlackList。"
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncSaveBlackList
     action: expose_wrapper
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncSaveBlackList 是批量保存黑名单能力；当前 Flutter ContactManager 仅暴露单用户 addUserToBlockList/removeUserFromBlockList 与查询能力，未扫描到批量保存 wrapper。"
     target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
   - manager: ContactManager
     api: saveBlackList
     action: expose_wrapper
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 SDK 提供联系人业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 saveBlackList 是批量保存黑名单能力；当前 Flutter ContactManager 仅暴露单用户 addUserToBlockList/removeUserFromBlockList 与查询能力，未扫描到批量保存 wrapper。"
     target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
   - manager: ContactManager
     api: setContactListener
@@ -1079,24 +1079,24 @@ native_api_review:
     target_case: native-auto-test/tests/presence/test_presence.py
   - manager: PushManager
     api: reportPushAction
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: push_p1
-    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    reason_zh: "Android 原生 reportPushAction 已由 Flutter PushManager.reportPushAction method key 暴露，Android wrapper 调用真实 SDK reportPushAction；厂商推送环境可能限制完整到达/点击 E2E，只做参数/SDK-call 覆盖。"
     target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
   - manager: PushManager
     api: updatePushDisplayStyle
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: push_p1
-    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    reason_zh: "Android 原生 updatePushDisplayStyle 已由 Flutter EMPushManager.updatePushDisplayStyle 等价覆盖；Dart 通过 updateImPushStyle key 调用 Android asyncUpdatePushDisplayStyle。"
     target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
   - manager: PushManager
     api: updatePushNickname
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: push_p1
-    reason_zh: "Android 原生 SDK 提供 push 配置或行为上报能力，属于 App 可用能力，需要补 Flutter wrapper 并补 E2E/能力验证。"
+    reason_zh: "Android 原生 updatePushNickname 已由 Flutter EMPushManager.updatePushNickname 等价覆盖；Android wrapper 调用 asyncUpdatePushNickname，自动化覆盖配置更新响应。"
     target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
   - manager: UserInfoManager
     api: fetchSubscribedUsers
@@ -1107,17 +1107,17 @@ native_api_review:
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: getUserInfoWithUserId
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: user_info_p1
-    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 getUserInfoWithUserId 已由 Flutter UserInfoManager.fetchUserInfoById 单元素 userIds 等价覆盖；自动化覆盖更新后按 ID 拉取用户属性。"
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: getUserInfoWithUserIds
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: user_info_p1
-    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 getUserInfoWithUserIds 已由 Flutter UserInfoManager.fetchUserInfoById 批量 userIds 等价覆盖；自动化覆盖多用户属性查询和参数边界。"
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: subscribeUsersInfo

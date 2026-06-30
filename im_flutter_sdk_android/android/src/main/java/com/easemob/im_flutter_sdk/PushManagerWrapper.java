@@ -4,6 +4,7 @@ import com.hyphenate.EMError;
 import com.hyphenate.chat.EMClient;
 import com.hyphenate.chat.EMConversation;
 import com.hyphenate.chat.EMPushConfigs;
+import com.hyphenate.chat.EMPushManager.EMPushAction;
 import com.hyphenate.chat.EMPushManager.DisplayStyle;
 import com.hyphenate.chat.EMSilentModeParam;
 import com.hyphenate.chat.EMSilentModeResult;
@@ -152,7 +153,49 @@ public class PushManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void reportPushAction(JSONObject params, String channelName, Result result) throws JSONException {
+        JSONObject reportData = params.optJSONObject("data");
+        if (reportData == null) {
+            reportData = params.optJSONObject("reportData");
+        }
+        if (reportData == null) {
+            reportData = params.optJSONObject("payload");
+        }
+        if (reportData == null) {
+            reportData = new JSONObject(params.toString());
+            reportData.remove("action");
+            reportData.remove("pushAction");
+            reportData.remove("actionType");
+            reportData.remove("data");
+            reportData.remove("reportData");
+            reportData.remove("payload");
+        }
 
+        EMPushAction action = pushActionFromJson(params);
+        EMClient.getInstance().pushManager().reportPushAction(reportData, action, new EMWrapperCallBack(result, channelName, null));
+    }
+
+    private EMPushAction pushActionFromJson(JSONObject params) throws JSONException {
+        Object rawAction;
+        if (params.has("action")) {
+            rawAction = params.get("action");
+        } else if (params.has("pushAction")) {
+            rawAction = params.get("pushAction");
+        } else if (params.has("actionType")) {
+            rawAction = params.get("actionType");
+        } else {
+            return EMPushAction.CLICK;
+        }
+
+        if (rawAction instanceof Number) {
+            int index = ((Number) rawAction).intValue();
+            return index == 0 ? EMPushAction.ARRIVE : EMPushAction.CLICK;
+        }
+
+        String value = String.valueOf(rawAction).trim();
+        if ("0".equals(value) || "arrive".equalsIgnoreCase(value)) {
+            return EMPushAction.ARRIVE;
+        }
+        return EMPushAction.CLICK;
     }
 
     private void setConversationSilentMode(JSONObject params, String channelName, Result result) throws JSONException {
