@@ -46,6 +46,25 @@ def _assert_push_config_update_result(assert_api, resp: dict, *, cmd: str):
     }
 
 
+def _assert_push_action_result(assert_api, resp: dict):
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "PushManager",
+            "cmd": Cmd.reportPushAction.value,
+            "device": "deviceA",
+        },
+        ignore_keys={"sequence", "result"},
+    )
+    result = resp.get("result")
+    if result in (None, True):
+        return
+    assert result == {
+        "code": 209,
+        "description": "Failed to update push configurations",
+    }
+
+
 def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
     """fetchPushConfigsFromServer / updatePushNickname / updatePushDisplayStyle：拉取推送配置并更新昵称和展示样式。"""
     configs_resp = device_a.call("PushManager", Cmd.getImPushConfigFromServer.value, info={})
@@ -85,7 +104,7 @@ def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
 
 
 def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_api):
-    """reportPushAction：上报点击行为参数到 Android SDK；厂商推送环境不稳定时只冻结 SDK-call 响应形态。"""
+    """reportPushAction：上报点击行为参数到 Android SDK；厂商推送环境不稳定时允许已知环境失败。"""
     resp = device_a.call(
         "PushManager",
         Cmd.reportPushAction.value,
@@ -97,17 +116,31 @@ def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_a
             },
         },
     )
-    assert_api.assert_response_matches(
-        resp,
-        expected={
-            "manager": "PushManager",
-            "cmd": Cmd.reportPushAction.value,
-            "device": "deviceA",
-        },
-        ignore_keys={"sequence", "result"},
+    _assert_push_action_result(assert_api, resp)
+
+
+def test_push_report_push_action_requires_action(device_a, assert_api):
+    """reportPushAction：缺少 action 时返回参数错误，不默认按 CLICK 上报。"""
+    resp = device_a.call(
+        "PushManager",
+        Cmd.reportPushAction.value,
+        info={"data": {"messageId": "native-auto-test-push-action"}},
     )
-    result = resp.get("result")
-    assert result is None or result is True or isinstance(result, dict)
+    assert_api.assert_error(resp, code=110, description="'action' can not be null")
+
+
+@pytest.mark.parametrize("action", ["ARRIVED", "foo", 2, -1])
+def test_push_report_push_action_rejects_invalid_action(device_a, assert_api, action):
+    """reportPushAction：未知 action 字符串和不支持的数字值返回参数错误。"""
+    resp = device_a.call(
+        "PushManager",
+        Cmd.reportPushAction.value,
+        info={
+            "action": action,
+            "data": {"messageId": "native-auto-test-push-action"},
+        },
+    )
+    assert_api.assert_error(resp, code=110, description="'action' is invalid")
 
 
 def test_push_global_silent_mode_flow(device_a, assert_api):

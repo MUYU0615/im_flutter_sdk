@@ -25,6 +25,7 @@ import io.flutter.plugin.common.MethodChannel.Result;
 
 
 public class PushManagerWrapper extends Wrapper implements MethodCallHandler {
+    private static final int INVALID_PARAM = 110;
 
     PushManagerWrapper(FlutterPlugin.FlutterPluginBinding flutterPluginBinding, String channelName) {
         super(flutterPluginBinding, channelName);
@@ -153,6 +154,17 @@ public class PushManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void reportPushAction(JSONObject params, String channelName, Result result) throws JSONException {
+        if (!params.has("action") || params.isNull("action")) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'action' can not be null"));
+            return;
+        }
+
+        EMPushAction action = parsePushAction(params.get("action"));
+        if (action == null) {
+            onError(result, new HyphenateException(INVALID_PARAM, "'action' is invalid"));
+            return;
+        }
+
         JSONObject reportData = params.optJSONObject("data");
         if (reportData == null) {
             reportData = params.optJSONObject("reportData");
@@ -170,32 +182,29 @@ public class PushManagerWrapper extends Wrapper implements MethodCallHandler {
             reportData.remove("payload");
         }
 
-        EMPushAction action = pushActionFromJson(params);
         EMClient.getInstance().pushManager().reportPushAction(reportData, action, new EMWrapperCallBack(result, channelName, null));
     }
 
-    private EMPushAction pushActionFromJson(JSONObject params) throws JSONException {
-        Object rawAction;
-        if (params.has("action")) {
-            rawAction = params.get("action");
-        } else if (params.has("pushAction")) {
-            rawAction = params.get("pushAction");
-        } else if (params.has("actionType")) {
-            rawAction = params.get("actionType");
-        } else {
-            return EMPushAction.CLICK;
-        }
-
+    private EMPushAction parsePushAction(Object rawAction) {
         if (rawAction instanceof Number) {
-            int index = ((Number) rawAction).intValue();
-            return index == 0 ? EMPushAction.ARRIVE : EMPushAction.CLICK;
+            double index = ((Number) rawAction).doubleValue();
+            if (index == 0D) {
+                return EMPushAction.ARRIVE;
+            }
+            if (index == 1D) {
+                return EMPushAction.CLICK;
+            }
+            return null;
         }
 
         String value = String.valueOf(rawAction).trim();
-        if ("0".equals(value) || "arrive".equalsIgnoreCase(value)) {
+        if ("0".equals(value) || "ARRIVE".equalsIgnoreCase(value)) {
             return EMPushAction.ARRIVE;
         }
-        return EMPushAction.CLICK;
+        if ("1".equals(value) || "CLICK".equalsIgnoreCase(value)) {
+            return EMPushAction.CLICK;
+        }
+        return null;
     }
 
     private void setConversationSilentMode(JSONObject params, String channelName, Result result) throws JSONException {
