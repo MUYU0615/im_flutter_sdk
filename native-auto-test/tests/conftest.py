@@ -491,7 +491,10 @@ def global_login_logout(request):
     - setup：用 created_test_users 的两人在 device_a/device_b 上登录并清空回调。
     - teardown：登出两设备。用户删除由 created_test_users 的 teardown 负责。
     """
-    if bool(request.config.getoption("--skip-global-login")):
+    if bool(request.config.getoption("--skip-global-login")) or any(
+        item.get_closest_marker("no_global_login")
+        for item in request.session.items
+    ):
         yield
         return
     device_a = request.getfixturevalue("primary_device")
@@ -718,6 +721,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "fixture: config, manifest, tool, or fixture tests that do not prove SDK capability")
     config.addinivalue_line("markers", "capability: capability matrix and platform support status tests")
     config.addinivalue_line("markers", "unit: pure unit tests for scripts/helpers")
+    config.addinivalue_line("markers", "no_global_login: tests that must not start device/login session fixtures")
     config.addinivalue_line("markers", "web: Flutter Web test app cases")
     config.addinivalue_line("markers", "android: Android target platform cases")
     config.addinivalue_line("markers", "ios: iOS target platform cases")

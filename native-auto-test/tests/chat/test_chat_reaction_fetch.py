@@ -116,7 +116,7 @@ def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
 
 
 def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
-    """fetchReactionList 传入非法 chatType；当前实现返回空 reaction 列表映射。"""
+    """fetchReactionList 传入非法 chatType；wrapper 返回本地参数错误。"""
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": -1}
     resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
@@ -125,7 +125,7 @@ def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionList.value,
             "device": "deviceA",
-            "result": {"__invalid_msg_id__": []},
+            "result": {"code": 110, "description": "'chatType' is invalid"},
         },
         ignore_keys={"sequence"},
     )

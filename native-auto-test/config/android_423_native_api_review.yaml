@@ -19,7 +19,7 @@ native_api_review:
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 asyncFetchHistoryMessage 已由 Flutter ChatManager.fetchHistoryMessages 等价覆盖，自动化覆盖发送后拉取历史消息与非法参数。"
-    target_case: native-auto-test/tests/chat/test_chat_s2_server_ops.py
+    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: asyncFilterConversationsFromDB
     action: expose_wrapper
@@ -54,13 +54,13 @@ native_api_review:
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 fetchGroupReadAcks 已由 Flutter ChatManager.asyncFetchGroupAcks 等价覆盖，自动化覆盖群消息回执分页查询链路。"
-    target_case: native-auto-test/tests/chat/test_chat_ack_read_strict.py
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: getAllConversations
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 getAllConversations 已由 Flutter ChatManager.loadAllConversations 等价覆盖，自动化覆盖发送消息后的本地会话列表。"
+    reason_zh: "Android 原生 getAllConversations 尚未被 Flutter Android wrapper 真实调用；当前 loadAllConversations wrapper 调用的是 getAllConversationsBySort，不能作为该原生 API 的直接覆盖证据。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: getConversationsByType
@@ -85,10 +85,10 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: loadAllConversations
-    action: direct_e2e_case
+    action: expose_wrapper
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 loadAllConversations 已由 Flutter ChatManager.loadAllConversations 等价覆盖，自动化覆盖本地会话加载和排序。"
+    reason_zh: "Android 原生 loadAllConversations 尚未被 Flutter Android wrapper 真实调用；当前同名 wrapper 返回 getAllConversationsBySort 结果，不能作为该原生 API 的直接覆盖证据。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: removeReaction

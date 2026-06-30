@@ -244,13 +244,6 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter wrapper 的 asyncFetchGroupAcks 调用 Android asyncFetchGroupReadAcks；覆盖 fetchGroupReadAcks 的群消息已读回执分页能力。",
         }
     ],
-    ("ChatManager", "getAllConversations"): [
-        {
-            "manager": "ChatManager",
-            "api": "loadAllConversations",
-            "reason_zh": "Flutter wrapper 的 loadAllConversations 返回本地全部会话列表；Android 当前通过 getAllConversationsBySort 暴露排序后的全部会话，等价覆盖 App 侧获取全部会话列表需求。",
-        }
-    ],
     ("ChatManager", "getReactionDetail"): [
         {
             "manager": "ChatManager",
@@ -263,13 +256,6 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "manager": "ChatManager",
             "api": "fetchReactionList",
             "reason_zh": "Flutter wrapper 的 fetchReactionList 调用 Android asyncGetReactionList；等价覆盖 getReactionList 的批量 reaction 列表能力。",
-        }
-    ],
-    ("ChatManager", "loadAllConversations"): [
-        {
-            "manager": "ChatManager",
-            "api": "loadAllConversations",
-            "reason_zh": "Flutter wrapper 使用 loadAllConversations 命令暴露本地会话加载与列表返回能力；Android 实现返回 getAllConversationsBySort 的会话结果。",
         }
     ],
     ("ChatManager", "removeReaction"): [

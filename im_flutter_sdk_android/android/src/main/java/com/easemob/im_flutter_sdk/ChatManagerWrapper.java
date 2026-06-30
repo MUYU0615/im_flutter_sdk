@@ -1006,7 +1006,8 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         } else if(iType == 1) {
             type = EMMessage.ChatType.GroupChat;
         } else {
-            type = EMMessage.ChatType.ChatRoom;
+            onError(result, new HyphenateException(INVALID_PARAM, "'chatType' is invalid"));
+            return;
         }
         EMClient.getInstance().chatManager().asyncGetReactionList(msgIds, type, groupId, new EMValueWrapperCallBack<Map<String, List<EMMessageReaction>>>(result, channelName){
             @Override
