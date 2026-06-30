@@ -1,6 +1,6 @@
 import pytest
 
-from src.tools.android_423_api_coverage_report import build_rows
+from src.tools.android_423_api_coverage_report import build_rows, summarize
 from tests.conftest import _all_items_marked_no_global_login
 
 
@@ -33,6 +33,34 @@ TASK5_EQUIVALENT_APIS = {
     ("PushManager", "updatePushNickname"): "PushManager.updatePushNickname",
     ("UserInfoManager", "getUserInfoWithUserId"): "UserInfoManager.fetchUserInfoById",
     ("UserInfoManager", "getUserInfoWithUserIds"): "UserInfoManager.fetchUserInfoById",
+}
+
+TASK6_CHATROOM_EQUIVALENT_APIS = {
+    ("ChatRoomManager", "asyncAddChatRoomAdmin"): "ChatRoomManager.addChatRoomAdmin",
+    ("ChatRoomManager", "asyncBlockChatroomMembers"): "ChatRoomManager.blockChatRoomMembers",
+    ("ChatRoomManager", "asyncChangeChatRoomSubject"): "ChatRoomManager.changeChatRoomSubject",
+    ("ChatRoomManager", "asyncChangeChatroomDescription"): "ChatRoomManager.changeChatRoomDescription",
+    ("ChatRoomManager", "asyncChangeOwner"): "ChatRoomManager.changeChatRoomOwner",
+    ("ChatRoomManager", "asyncCreateChatRoom"): "ChatRoomManager.createChatRoom",
+    ("ChatRoomManager", "asyncDestroyChatRoom"): "ChatRoomManager.destroyChatRoom",
+    ("ChatRoomManager", "asyncFetchChatRoomAllAttributesFromServer"): "ChatRoomManager.fetchChatRoomAttributes",
+    ("ChatRoomManager", "asyncFetchChatRoomAnnouncement"): "ChatRoomManager.fetchChatRoomAnnouncement",
+    ("ChatRoomManager", "asyncFetchChatRoomBlackList"): "ChatRoomManager.fetchChatRoomBlockList",
+    ("ChatRoomManager", "asyncFetchChatRoomFromServer"): "ChatRoomManager.fetchChatRoomInfoFromServer",
+    ("ChatRoomManager", "asyncFetchChatRoomMembers"): "ChatRoomManager.fetchChatRoomMembers",
+    ("ChatRoomManager", "asyncFetchChatRoomMuteList"): "ChatRoomManager.fetchChatRoomMuteList",
+    ("ChatRoomManager", "asyncMuteChatRoomMembers"): "ChatRoomManager.muteChatRoomMembers",
+    ("ChatRoomManager", "asyncRemoveChatRoomAdmin"): "ChatRoomManager.removeChatRoomAdmin",
+    ("ChatRoomManager", "asyncRemoveChatRoomAttributeFromServer"): "ChatRoomManager.removeChatRoomAttributes",
+    ("ChatRoomManager", "asyncRemoveChatRoomAttributeFromServerForced"): "ChatRoomManager.removeChatRoomAttributes",
+    ("ChatRoomManager", "asyncRemoveChatRoomMembers"): "ChatRoomManager.removeChatRoomMembers",
+    ("ChatRoomManager", "asyncSetChatroomAttribute"): "ChatRoomManager.setChatRoomAttributes",
+    ("ChatRoomManager", "asyncSetChatroomAttributeForced"): "ChatRoomManager.setChatRoomAttributes",
+    ("ChatRoomManager", "asyncUnBlockChatRoomMembers"): "ChatRoomManager.unBlockChatRoomMembers",
+    ("ChatRoomManager", "asyncUnMuteChatRoomMembers"): "ChatRoomManager.unMuteChatRoomMembers",
+    ("ChatRoomManager", "asyncUpdateChatRoomAnnouncement"): "ChatRoomManager.updateChatRoomAnnouncement",
+    ("ChatRoomManager", "fetchChatRoomMembers"): "ChatRoomManager.fetchChatRoomMembers",
+    ("ChatRoomManager", "fetchPublicChatRoomsFromServer"): "ChatRoomManager.fetchPublicChatRoomsFromServer",
 }
 
 
@@ -131,3 +159,33 @@ def test_task5_listener_lifecycle_reviews_are_indirect_not_wrapper_gaps():
         assert row["native_test_requirement"] == "indirect_e2e"
         assert row["coverage_conclusion"] == "indirect_covered_by_case"
         assert row["automation_covered"] == "yes"
+
+
+def test_task6_chatroom_equivalent_native_apis_are_not_wrapper_missing():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "ChatRoomManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK6_CHATROOM_EQUIVALENT_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():
+    rows = build_rows()
+    if not any(row["row_kind"] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    summary = summarize(rows)
+    expected = {}
+    for row in rows:
+        if row["row_kind"] == "native_android_api" and row["coverage_conclusion"] == "wrapper_missing":
+            expected[row["manager"]] = expected.get(row["manager"], 0) + 1
+
+    assert summary["missing_native_android_wrapper_by_manager"] == expected

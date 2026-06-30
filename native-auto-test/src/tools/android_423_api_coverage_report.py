@@ -216,6 +216,181 @@ INDIRECT_COVERAGE_RULES = {
 }
 
 NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("ChatRoomManager", "asyncAddChatRoomAdmin"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "addChatRoomAdmin",
+            "reason_zh": "Flutter ChatRoomManager.addChatRoomAdmin 在后台线程调用 Android addChatRoomAdmin；等价覆盖 4.23 asyncAddChatRoomAdmin 的管理员添加能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncBlockChatroomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "blockChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.blockChatRoomMembers 调用 Android blockChatroomMembers；等价覆盖 4.23 asyncBlockChatroomMembers 的聊天室拉黑能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncChangeChatRoomSubject"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "changeChatRoomSubject",
+            "reason_zh": "Flutter ChatRoomManager.changeChatRoomSubject 在后台线程调用 Android changeChatRoomSubject；等价覆盖 4.23 asyncChangeChatRoomSubject 的聊天室名称修改能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncChangeChatroomDescription"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "changeChatRoomDescription",
+            "reason_zh": "Flutter ChatRoomManager.changeChatRoomDescription 在后台线程调用 Android changeChatroomDescription；等价覆盖 4.23 asyncChangeChatroomDescription 的聊天室描述修改能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncChangeOwner"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "changeChatRoomOwner",
+            "reason_zh": "Flutter ChatRoomManager.changeChatRoomOwner 在后台线程调用 Android changeOwner；等价覆盖 4.23 asyncChangeOwner 的聊天室 owner 转让能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncCreateChatRoom"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "createChatRoom",
+            "reason_zh": "Flutter ChatRoomManager.createChatRoom 在后台线程调用 Android createChatRoom；等价覆盖 4.23 asyncCreateChatRoom 的聊天室创建能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncDestroyChatRoom"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "destroyChatRoom",
+            "reason_zh": "Flutter ChatRoomManager.destroyChatRoom 在后台线程调用 Android destroyChatRoom；等价覆盖 4.23 asyncDestroyChatRoom 的聊天室销毁能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomAllAttributesFromServer"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomAttributes",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomAttributes 调用 Android asyncFetchChatroomAttributesFromServer；不传 keys 时覆盖 4.23 asyncFetchChatRoomAllAttributesFromServer 的全量属性拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomAnnouncement"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomAnnouncement",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomAnnouncement 在后台线程调用 Android fetchChatRoomAnnouncement；等价覆盖 4.23 asyncFetchChatRoomAnnouncement 的公告拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomBlackList"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomBlockList",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomBlockList 在后台线程调用 Android fetchChatRoomBlackList；等价覆盖 4.23 asyncFetchChatRoomBlackList 的黑名单分页拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomFromServer"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomInfoFromServer",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomInfoFromServer 在后台线程调用 Android fetchChatRoomFromServer；等价覆盖 4.23 asyncFetchChatRoomFromServer 的聊天室详情拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomMembers 在后台线程调用 Android fetchChatRoomMembers；等价覆盖 4.23 asyncFetchChatRoomMembers 的成员分页拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncFetchChatRoomMuteList"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomMuteList",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomMuteList 在后台线程调用 Android fetchChatRoomMuteList；等价覆盖 4.23 asyncFetchChatRoomMuteList 的禁言列表分页拉取能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncMuteChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "muteChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.muteChatRoomMembers 在后台线程调用 Android muteChatRoomMembers；等价覆盖 4.23 asyncMuteChatRoomMembers 的成员禁言能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncRemoveChatRoomAdmin"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "removeChatRoomAdmin",
+            "reason_zh": "Flutter ChatRoomManager.removeChatRoomAdmin 在后台线程调用 Android removeChatRoomAdmin；等价覆盖 4.23 asyncRemoveChatRoomAdmin 的管理员移除能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncRemoveChatRoomAttributeFromServer"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "removeChatRoomAttributes",
+            "reason_zh": "Flutter ChatRoomManager.removeChatRoomAttributes 调用 Android asyncRemoveChatRoomAttributesFromServer；单元素 keys 等价覆盖 4.23 asyncRemoveChatRoomAttributeFromServer。",
+        }
+    ],
+    ("ChatRoomManager", "asyncRemoveChatRoomAttributeFromServerForced"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "removeChatRoomAttributes",
+            "reason_zh": "Flutter ChatRoomManager.removeChatRoomAttributes 在 forced=true 时调用 Android asyncRemoveChatRoomAttributesFromServerForced；单元素 keys 等价覆盖 4.23 asyncRemoveChatRoomAttributeFromServerForced。",
+        }
+    ],
+    ("ChatRoomManager", "asyncRemoveChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "removeChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.removeChatRoomMembers 在后台线程调用 Android removeChatRoomMembers；等价覆盖 4.23 asyncRemoveChatRoomMembers 的踢出成员能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncSetChatroomAttribute"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "setChatRoomAttributes",
+            "reason_zh": "Flutter ChatRoomManager.setChatRoomAttributes 调用 Android asyncSetChatroomAttributes；单键 attributes 等价覆盖 4.23 asyncSetChatroomAttribute。",
+        }
+    ],
+    ("ChatRoomManager", "asyncSetChatroomAttributeForced"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "setChatRoomAttributes",
+            "reason_zh": "Flutter ChatRoomManager.setChatRoomAttributes 在 forced=true 时调用 Android asyncSetChatroomAttributesForced；单键 attributes 等价覆盖 4.23 asyncSetChatroomAttributeForced。",
+        }
+    ],
+    ("ChatRoomManager", "asyncUnBlockChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "unBlockChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.unBlockChatRoomMembers 在后台线程调用 Android unblockChatRoomMembers；等价覆盖 4.23 asyncUnBlockChatRoomMembers 的解除拉黑能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncUnMuteChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "unMuteChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.unMuteChatRoomMembers 在后台线程调用 Android unMuteChatRoomMembers；等价覆盖 4.23 asyncUnMuteChatRoomMembers 的解除禁言能力。",
+        }
+    ],
+    ("ChatRoomManager", "asyncUpdateChatRoomAnnouncement"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "updateChatRoomAnnouncement",
+            "reason_zh": "Flutter ChatRoomManager.updateChatRoomAnnouncement 在后台线程调用 Android updateChatRoomAnnouncement；等价覆盖 4.23 asyncUpdateChatRoomAnnouncement 的公告更新能力。",
+        }
+    ],
+    ("ChatRoomManager", "fetchChatRoomMembers"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchChatRoomMembers",
+            "reason_zh": "Flutter ChatRoomManager.fetchChatRoomMembers 已暴露同名分页成员拉取能力；Android wrapper 在后台线程调用同步 fetchChatRoomMembers。",
+        }
+    ],
+    ("ChatRoomManager", "fetchPublicChatRoomsFromServer"): [
+        {
+            "manager": "ChatRoomManager",
+            "api": "fetchPublicChatRoomsFromServer",
+            "reason_zh": "Flutter ChatRoomManager.fetchPublicChatRoomsFromServer 调用 Android asyncFetchPublicChatRoomsFromServer；等价覆盖 4.23 同步 fetchPublicChatRoomsFromServer 的公开聊天室分页能力。",
+        }
+    ],
     ("ContactManager", "asyncAcceptInvitation"): [
         {
             "manager": "ContactManager",
@@ -1050,7 +1225,9 @@ def summarize(rows: list[dict[str, str]]) -> dict[str, Any]:
         "missing_automation_by_manager": dict(
             Counter(row["manager"] for row in wrapper_rows if row["android_covered"] == "yes" and row["automation_covered"] == "no")
         ),
-        "missing_native_android_wrapper_by_manager": dict(Counter(row["manager"] for row in native_rows if row["android_covered"] == "no")),
+        "missing_native_android_wrapper_by_manager": dict(
+            Counter(row["manager"] for row in native_rows if row["coverage_conclusion"] == "wrapper_missing")
+        ),
         "missing_native_android_automation_by_manager": dict(Counter(row["manager"] for row in native_rows if row["automation_covered"] == "no")),
     }
 

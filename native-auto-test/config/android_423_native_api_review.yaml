@@ -141,178 +141,178 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: ChatRoomManager
     api: asyncAddChatRoomAdmin
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncAddChatRoomAdmin 已由 Flutter ChatRoomManager.addChatRoomAdmin 等价覆盖；Android wrapper 在后台线程调用 addChatRoomAdmin。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncBlockChatroomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncBlockChatroomMembers 已由 Flutter ChatRoomManager.blockChatRoomMembers 等价覆盖；Android wrapper 调用 blockChatroomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncChangeChatRoomSubject
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncChangeChatRoomSubject 已由 Flutter ChatRoomManager.changeChatRoomSubject 等价覆盖；Android wrapper 在后台线程调用 changeChatRoomSubject。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncChangeChatroomDescription
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncChangeChatroomDescription 已由 Flutter ChatRoomManager.changeChatRoomDescription 等价覆盖；Android wrapper 调用 changeChatroomDescription。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncChangeOwner
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncChangeOwner 已由 Flutter ChatRoomManager.changeChatRoomOwner 等价覆盖；Android wrapper 在后台线程调用 changeOwner。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncCreateChatRoom
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncCreateChatRoom 已由 Flutter ChatRoomManager.createChatRoom 等价覆盖；Android wrapper 在后台线程调用 createChatRoom。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncDestroyChatRoom
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncDestroyChatRoom 已由 Flutter ChatRoomManager.destroyChatRoom 等价覆盖；Android wrapper 在后台线程调用 destroyChatRoom。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomAllAttributesFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomAllAttributesFromServer 已由 Flutter ChatRoomManager.fetchChatRoomAttributes 等价覆盖；不传 keys 时拉取全量属性。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomAnnouncement
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomAnnouncement 已由 Flutter ChatRoomManager.fetchChatRoomAnnouncement 等价覆盖；Android wrapper 在后台线程调用 fetchChatRoomAnnouncement。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomBlackList 已由 Flutter ChatRoomManager.fetchChatRoomBlockList 等价覆盖；Android wrapper 调用 fetchChatRoomBlackList。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomFromServer 已由 Flutter ChatRoomManager.fetchChatRoomInfoFromServer 等价覆盖；Android wrapper 调用 fetchChatRoomFromServer。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomMembers 已由 Flutter ChatRoomManager.fetchChatRoomMembers 等价覆盖；Android wrapper 在后台线程调用 fetchChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_member_basics.py
   - manager: ChatRoomManager
     api: asyncFetchChatRoomMuteList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncFetchChatRoomMuteList 已由 Flutter ChatRoomManager.fetchChatRoomMuteList 等价覆盖；Android wrapper 在后台线程调用 fetchChatRoomMuteList。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncMuteChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncMuteChatRoomMembers 已由 Flutter ChatRoomManager.muteChatRoomMembers 等价覆盖；Android wrapper 在后台线程调用 muteChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomAdmin
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRemoveChatRoomAdmin 已由 Flutter ChatRoomManager.removeChatRoomAdmin 等价覆盖；Android wrapper 在后台线程调用 removeChatRoomAdmin。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomAttributeFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRemoveChatRoomAttributeFromServer 已由 Flutter ChatRoomManager.removeChatRoomAttributes 等价覆盖；单元素 keys 覆盖单属性移除。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomAttributeFromServerForced
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRemoveChatRoomAttributeFromServerForced 已由 Flutter ChatRoomManager.removeChatRoomAttributes 等价覆盖；forced=true 时调用强制移除批量 API，单元素 keys 覆盖单属性强制移除。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncRemoveChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncRemoveChatRoomMembers 已由 Flutter ChatRoomManager.removeChatRoomMembers 等价覆盖；Android wrapper 在后台线程调用 removeChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncSetChatroomAttribute
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncSetChatroomAttribute 已由 Flutter ChatRoomManager.setChatRoomAttributes 等价覆盖；单键 attributes 覆盖单属性设置。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncSetChatroomAttributeForced
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncSetChatroomAttributeForced 已由 Flutter ChatRoomManager.setChatRoomAttributes 等价覆盖；forced=true 时调用强制设置批量 API，单键 attributes 覆盖单属性强制设置。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: asyncUnBlockChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncUnBlockChatRoomMembers 已由 Flutter ChatRoomManager.unBlockChatRoomMembers 等价覆盖；Android wrapper 调用 unblockChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncUnMuteChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncUnMuteChatRoomMembers 已由 Flutter ChatRoomManager.unMuteChatRoomMembers 等价覆盖；Android wrapper 在后台线程调用 unMuteChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncUpdateChatRoomAnnouncement
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供聊天室管理能力，属于 App 可用业务能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 asyncUpdateChatRoomAnnouncement 已由 Flutter ChatRoomManager.updateChatRoomAnnouncement 等价覆盖；Android wrapper 在后台线程调用 updateChatRoomAnnouncement。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_server_state.py
   - manager: ChatRoomManager
     api: fetchChatRoomMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供该聊天室业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 fetchChatRoomMembers 已由 Flutter ChatRoomManager.fetchChatRoomMembers 同名覆盖；Android wrapper 在后台线程调用同步 fetchChatRoomMembers。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_member_basics.py
   - manager: ChatRoomManager
     api: fetchPublicChatRoomsFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 SDK 提供该聊天室业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 fetchPublicChatRoomsFromServer 已由 Flutter ChatRoomManager.fetchPublicChatRoomsFromServer 等价覆盖；Android wrapper 调用 asyncFetchPublicChatRoomsFromServer 返回同一分页能力。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: Client
     api: asyncGetRTCTokenInfoWithChannelName
