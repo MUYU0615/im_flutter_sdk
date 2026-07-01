@@ -297,6 +297,21 @@ def test_task7a_group_target_cases_point_to_files_that_call_the_wrapper_commands
         assert target_case in row["automation_files"]
 
 
+def test_task7a_group_join_leave_target_case_is_not_error_only():
+    text = Path("tests/group/test_group_members.py").read_text(encoding="utf-8")
+    start = text.index("def test_group_join_and_leave_public_group")
+    end = text.index("def test_group_members_batch_join_exit_new_events", start)
+    block = text[start:end]
+
+    assert "style=3" in block
+    assert "Cmd.joinPublicGroup.value" in block
+    assert "Cmd.leaveGroup.value" in block
+    assert '"cmd": Cmd.joinPublicGroup.value' in block
+    assert '"cmd": Cmd.leaveGroup.value' in block
+    assert 'assert_api.assert_error(resp_join' not in block
+    assert 'assert_api.assert_error(resp_leave' not in block
+
+
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():
     rows = build_rows()
     if not any(row["row_kind"] == "native_android_api" for row in rows):

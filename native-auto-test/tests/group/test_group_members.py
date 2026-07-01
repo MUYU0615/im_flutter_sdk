@@ -157,9 +157,11 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
 def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_a, user_b):
     """
     joinPublicGroup + leaveGroup：
-    - A 创建公开群（style=1）
-    - B 加入公开群
-    - B 退群
+    - A 创建允许自由加入的公开群（style=3 / PublicOpenJoin）
+    - B 成功加入公开群
+    - 服务端确认 B 已入群
+    - B 成功退群
+    - 服务端确认 B 已离开
     """
     group_name = new_group_name("public")
     group_id = ""
@@ -170,20 +172,106 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             owner=user_a,
             group_name=group_name,
             invite_members=[],
-            style=1,
+            style=3,
         )
 
         resp_join = device_b.call("GroupManager", Cmd.joinPublicGroup.value, info={"groupId": group_id})
-        # 该环境 joinPublicGroup 对公开群返回业务错误体（result dict），按实际冻结
-        assert_api.assert_error(resp_join, code=603, description="group member permission is required")
+        assert_api.assert_response_matches(
+            resp_join,
+            expected={
+                "manager": "GroupManager",
+                "cmd": Cmd.joinPublicGroup.value,
+                "device": "deviceB",
+                "result": None,
+            },
+            ignore_keys={"sequence"},
+        )
 
-        # join 失败时不再要求 join 回调
+        expected_join_events = {
+            GroupChangeEvent.ON_MEMBER_JOINED.value,
+            "onMemberJoinedFromGroup",
+        }
+        join_events = collect_group_events(
+            device_a,
+            expected_event_types=expected_join_events,
+            group_id=group_id,
+            required_all_event_types={"onMemberJoinedFromGroup"},
+            timeout=10.0,
+        )
+        assert_group_events(
+            assert_api,
+            join_events,
+            expected_event_types=expected_join_events,
+            group_id=group_id,
+            required_all_event_types={"onMemberJoinedFromGroup"},
+            expected_member=user_b,
+        )
 
-        # join 失败后 leave 也会失败（未入群），按错误链路断言
+        resp_after_join = device_a.call(
+            "GroupManager",
+            Cmd.getGroupSpecificationFromServer.value,
+            info={"groupId": group_id, "fetchMembers": True},
+        )
+        assert_group_snapshot(
+            assert_api,
+            resp_after_join,
+            cmd=Cmd.getGroupSpecificationFromServer.value,
+            group_id=group_id,
+            group_name=group_name,
+            owner=user_a,
+            member_count_value=2,
+        )
+        assert member_count(resp_after_join) == 2, f"joinPublicGroup 后 memberCount 预期 2: {resp_after_join}"
+        assert_group_members_exact(resp_after_join, [user_b], err_prefix="joinPublicGroup 后")
+
         resp_leave = device_b.call("GroupManager", Cmd.leaveGroup.value, info={"groupId": group_id})
-        assert_api.assert_error(resp_leave, code=603, description="group member permission is required")
+        assert_api.assert_response_matches(
+            resp_leave,
+            expected={
+                "manager": "GroupManager",
+                "cmd": Cmd.leaveGroup.value,
+                "device": "deviceB",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
 
-        # 未入群的 leave 不再强制要求移除回调
+        expected_leave_events = {
+            GroupChangeEvent.ON_MEMBER_EXITED.value,
+            "onMemberExitedFromGroup",
+        }
+        leave_events = collect_group_events(
+            device_a,
+            expected_event_types=expected_leave_events,
+            group_id=group_id,
+            required_all_event_types={"onMemberExitedFromGroup"},
+            timeout=10.0,
+        )
+        assert_group_events(
+            assert_api,
+            leave_events,
+            expected_event_types=expected_leave_events,
+            group_id=group_id,
+            required_all_event_types={"onMemberExitedFromGroup"},
+            expected_member=user_b,
+        )
+
+        resp_after_leave = device_a.call(
+            "GroupManager",
+            Cmd.getGroupSpecificationFromServer.value,
+            info={"groupId": group_id, "fetchMembers": True},
+        )
+        assert_group_snapshot(
+            assert_api,
+            resp_after_leave,
+            cmd=Cmd.getGroupSpecificationFromServer.value,
+            group_id=group_id,
+            group_name=group_name,
+            owner=user_a,
+            member_count_value=1,
+        )
+        assert member_count(resp_after_leave) == 1, f"leaveGroup 后 memberCount 预期 1: {resp_after_leave}"
+        assert_group_members_exact(resp_after_leave, [], err_prefix="leaveGroup 后")
     finally:
         if group_id:
             destroy_group(device_a, assert_api, group_id)
