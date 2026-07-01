@@ -111,3 +111,51 @@ def test_group_set_and_fetch_member_attributes_success(device_a, device_b, asser
     finally:
         if group_id:
             destroy_group(device_a, assert_api, group_id)
+
+
+def test_group_update_and_get_namecard_success(device_a, assert_api, user_a):
+    group_id = ""
+    namecard = f"card_{user_a}"
+    try:
+        group_id, _ = create_group(
+            device_a,
+            assert_api,
+            owner=user_a,
+            group_name=new_group_name("namecard"),
+            invite_members=[],
+        )
+
+        resp_update = device_a.call(
+            "GroupManager",
+            Cmd.updateGroupNamecard.value,
+            info={"groupId": group_id, "namecard": namecard},
+        )
+        assert_api.assert_response_matches(
+            resp_update,
+            expected={
+                "manager": "GroupManager",
+                "cmd": Cmd.updateGroupNamecard.value,
+                "device": "deviceA",
+                "result": None,
+            },
+            ignore_keys={"sequence"},
+        )
+
+        resp_get = device_a.call(
+            "GroupManager",
+            Cmd.getGroupNamecard.value,
+            info={"groupId": group_id, "userId": user_a},
+        )
+        assert_api.assert_response_matches(
+            resp_get,
+            expected={
+                "manager": "GroupManager",
+                "cmd": Cmd.getGroupNamecard.value,
+                "device": "deviceA",
+                "result": namecard,
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        if group_id:
+            destroy_group(device_a, assert_api, group_id)

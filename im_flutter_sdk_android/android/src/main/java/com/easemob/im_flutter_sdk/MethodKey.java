@@ -204,6 +204,7 @@ public class MethodKey {
     /// EMGroupManager
     static final String getGroupWithId = "getGroupWithId";
     static final String getJoinedGroups = "getJoinedGroups";
+    static final String loadAllGroups = "loadAllGroups";
     static final String getJoinedGroupsFromServer = "getJoinedGroupsFromServer";
     static final String getPublicGroupsFromServer = "getPublicGroupsFromServer";
     static final String createGroup = "createGroup";
@@ -246,6 +247,8 @@ public class MethodKey {
     static final String declineJoinApplication = "declineJoinApplication";
     static final String acceptInvitationFromGroup = "acceptInvitationFromGroup";
     static final String declineInvitationFromGroup = "declineInvitationFromGroup";
+    static final String updateGroupNamecard = "updateGroupNamecard";
+    static final String getGroupNamecard = "getGroupNamecard";
     static final String setMemberAttributesFromGroup = "setMemberAttributesFromGroup";
     static final String removeMemberAttributesFromGroup = "removeMemberAttributesFromGroup";
     static final String fetchMemberAttributesFromGroup = "fetchMemberAttributesFromGroup";

@@ -49,6 +49,8 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 getGroupWithId(param, call.method, result);
             } else if (MethodKey.getJoinedGroups.equals(call.method)) {
                 getJoinedGroups(param, call.method, result);
+            } else if (MethodKey.loadAllGroups.equals(call.method)) {
+                loadAllGroups(param, call.method, result);
             } else if (MethodKey.getJoinedGroupsFromServer.equals(call.method)) {
                 getJoinedGroupsFromServer(param, call.method, result);
             } else if (MethodKey.getPublicGroupsFromServer.equals(call.method)) {
@@ -133,6 +135,10 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 acceptInvitationFromGroup(param, call.method, result);
             } else if (MethodKey.declineInvitationFromGroup.equals(call.method)) {
                 declineInvitationFromGroup(param, call.method, result);
+            } else if (MethodKey.updateGroupNamecard.equals(call.method)) {
+                updateGroupNamecard(param, call.method, result);
+            } else if (MethodKey.getGroupNamecard.equals(call.method)) {
+                getGroupNamecard(param, call.method, result);
             } else if (MethodKey.setMemberAttributesFromGroup.equals(call.method)) {
                 setMemberAttributes(param, call.method, result);
             } else if (MethodKey.removeMemberAttributesFromGroup.equals(call.method)) {
@@ -187,6 +193,13 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 groupList.add(GroupHelper.toJson(group));
             }
             onSuccess(result, channelName, groupList);
+        });
+    }
+
+    private void loadAllGroups(JSONObject param, String channelName, Result result) throws JSONException {
+        asyncRunnable(() -> {
+            boolean loaded = EMClient.getInstance().groupManager().loadAllGroups();
+            onSuccess(result, channelName, loaded);
         });
     }
 
@@ -857,6 +870,25 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
         }
 
         EMClient.getInstance().groupManager().asyncDeclineInvitation(groupId, username, reason, new EMWrapperCallBack(result, channelName, null));
+    }
+
+    private void updateGroupNamecard(JSONObject param, String channelName, Result result) throws JSONException {
+        String groupId = param.getString("groupId");
+        String namecard = param.getString("namecard");
+        EMClient.getInstance().groupManager().asyncUpdateGroupNamecard(groupId, namecard, new EMWrapperCallBack(result, channelName, null));
+    }
+
+    private void getGroupNamecard(JSONObject param, String channelName, Result result) throws JSONException {
+        String groupId = param.getString("groupId");
+        String userId = param.optString("userId");
+        if (userId.length() == 0) {
+            userId = EMClient.getInstance().getCurrentUser();
+        }
+        String finalUserId = userId;
+        asyncRunnable(() -> {
+            String namecard = EMClient.getInstance().groupManager().getGroupNamecard(groupId, finalUserId);
+            onSuccess(result, channelName, namecard);
+        });
     }
 
     private void setMemberAttributes(JSONObject param, String channelName, Result result) throws JSONException {

@@ -561,7 +561,7 @@ def test_task8a_shared_file_native_apis_are_covered_by_positive_case():
         assert wrapper in row["covered_by_wrapper_api"]
 
 
-def test_task7c_namecard_and_load_all_groups_stay_honest_wrapper_gaps():
+def test_task7c_namecard_and_load_all_groups_are_covered_by_positive_case():
     rows = {
         (row["manager"], row["api"], row["row_kind"]): row
         for row in build_rows()
@@ -569,17 +569,20 @@ def test_task7c_namecard_and_load_all_groups_stay_honest_wrapper_gaps():
     if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
         pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
 
-    for key in (
-        ("GroupManager", "asyncUpdateGroupNamecard"),
-        ("GroupManager", "getGroupNamecard"),
-        ("GroupManager", "loadAllGroups"),
-    ):
+    expected_wrappers = {
+        ("GroupManager", "asyncUpdateGroupNamecard"): "GroupManager.updateGroupNamecard",
+        ("GroupManager", "getGroupNamecard"): "GroupManager.getGroupNamecard",
+        ("GroupManager", "loadAllGroups"): "GroupManager.loadAllGroups",
+    }
+    for key, wrapper in expected_wrappers.items():
         row = rows[(key[0], key[1], "native_android_api")]
-        assert row["coverage_conclusion"] == "wrapper_missing"
-        assert row["android_covered"] == "no"
-        assert row["automation_covered"] == "no"
-        assert row["review_action"] == "expose_wrapper"
-        assert row["covered_by_wrapper_api"] == ""
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert wrapper in row["covered_by_wrapper_api"]
 
 
 def test_task7c_group_target_cases_point_to_runnable_pytest_files():

@@ -240,6 +240,7 @@ class ChatMethodKeys {
   /// EMGroupManager
   static const String getGroupWithId = "getGroupWithId";
   static const String getJoinedGroups = "getJoinedGroups";
+  static const String loadAllGroups = "loadAllGroups";
   static const String getJoinedGroupsFromServer = "getJoinedGroupsFromServer";
   static const String getPublicGroupsFromServer = "getPublicGroupsFromServer";
   static const String createGroup = "createGroup";
@@ -288,6 +289,8 @@ class ChatMethodKeys {
   static const String declineJoinApplication = "declineJoinApplication";
   static const String acceptInvitationFromGroup = "acceptInvitationFromGroup";
   static const String declineInvitationFromGroup = "declineInvitationFromGroup";
+  static const String updateGroupNamecard = "updateGroupNamecard";
+  static const String getGroupNamecard = "getGroupNamecard";
   static const String setMemberAttributesFromGroup =
       "setMemberAttributesFromGroup";
   static const String removeMemberAttributesFromGroup =

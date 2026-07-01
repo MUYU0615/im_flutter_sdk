@@ -221,6 +221,13 @@ INDIRECT_COVERAGE_RULES = {
 }
 
 NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("GroupManager", "asyncUpdateGroupNamecard"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateGroupNamecard",
+            "reason_zh": "Flutter GroupManager.updateGroupNamecard 调用 Android asyncUpdateGroupNamecard；等价覆盖 4.23 群名片更新能力。",
+        }
+    ],
     ("ChatRoomManager", "asyncAddChatRoomAdmin"): [
         {
             "manager": "ChatRoomManager",

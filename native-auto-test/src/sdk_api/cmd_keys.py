@@ -200,6 +200,7 @@ class Cmd(str, Enum):
     # ----- EMGroupManager -----
     getGroupWithId = "getGroupWithId"
     getJoinedGroups = "getJoinedGroups"
+    loadAllGroups = "loadAllGroups"
     getJoinedGroupsFromServer = "getJoinedGroupsFromServer"
     getPublicGroupsFromServer = "getPublicGroupsFromServer"
     createGroup = "createGroup"
@@ -242,6 +243,8 @@ class Cmd(str, Enum):
     declineJoinApplication = "declineJoinApplication"
     acceptInvitationFromGroup = "acceptInvitationFromGroup"
     declineInvitationFromGroup = "declineInvitationFromGroup"
+    updateGroupNamecard = "updateGroupNamecard"
+    getGroupNamecard = "getGroupNamecard"
     setMemberAttributesFromGroup = "setMemberAttributesFromGroup"
     removeMemberAttributesFromGroup = "removeMemberAttributesFromGroup"
     fetchMemberAttributesFromGroup = "fetchMemberAttributesFromGroup"

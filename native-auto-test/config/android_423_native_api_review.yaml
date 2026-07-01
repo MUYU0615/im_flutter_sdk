@@ -666,10 +666,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: asyncUpdateGroupNamecard
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 4.23 原生 asyncUpdateGroupNamecard 是独立群名片更新 API；当前 Flutter wrapper 只有群成员自定义属性 asyncSetGroupMemberAttributes，不等价于 namecard 专用接口，需补真实 wrapper 与双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 4.23 原生 asyncUpdateGroupNamecard 已由 Flutter GroupManager.updateGroupNamecard 等价覆盖；Android wrapper 调用真实 asyncUpdateGroupNamecard，现有 E2E 新建群后更新当前用户群名片并读回断言。"
     target_case: native-auto-test/tests/group/test_group_member_attributes.py
   - manager: GroupManager
     api: blockGroupMessage
@@ -817,10 +818,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: getGroupNamecard
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 4.23 原生 getGroupNamecard 是按 groupId/userId 读取群名片的专用本地 API；当前 Flutter wrapper 只有群成员自定义属性读取，不等价于 namecard 专用接口，需补真实 wrapper 与 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 4.23 原生 getGroupNamecard 已由 Flutter GroupManager.getGroupNamecard 覆盖；Android wrapper 调用真实 getGroupNamecard，现有 E2E 在 updateGroupNamecard 后按 groupId/userId 读回并断言群名片。"
     target_case: native-auto-test/tests/group/test_group_member_attributes.py
   - manager: GroupManager
     api: getJoinedGroupsFromServer
@@ -854,10 +856,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: loadAllGroups
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 loadAllGroups 返回 boolean，用于加载/同步本地群缓存；当前 Flutter getJoinedGroups wrapper 调用 getAllGroups 读取本地缓存列表，语义不是同一 API，不能硬映射，需按真实缺口评估是否暴露。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 loadAllGroups 返回 boolean，用于加载/同步本地群缓存；Android wrapper 已暴露真实 loadAllGroups，现有 E2E 新建群后调用 loadAllGroups 并用 getJoinedGroups 断言本地缓存包含该群。"
     target_case: native-auto-test/tests/group/test_group_joined_groups.py
   - manager: GroupManager
     api: muteGroupMembers
