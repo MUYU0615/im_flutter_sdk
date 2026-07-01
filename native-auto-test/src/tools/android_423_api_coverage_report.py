@@ -1158,7 +1158,7 @@ def _automation_evidence_kind(block: str, cmd: str) -> str:
         return "positive"
     if has_error_for_cmd:
         return "error_only"
-    return "positive"
+    return "unknown"
 
 
 def _record_automation_ref(

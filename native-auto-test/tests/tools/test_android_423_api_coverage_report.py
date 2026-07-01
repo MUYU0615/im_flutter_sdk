@@ -115,8 +115,8 @@ TASK7A_GROUP_EQUIVALENT_APIS = {
 }
 
 TASK7A_GROUP_TARGET_CASES = {
-    ("GroupManager", "createGroup"): "native-auto-test/tests/group/group_helpers.py",
-    ("GroupManager", "destroyGroup"): "native-auto-test/tests/group/group_helpers.py",
+    ("GroupManager", "createGroup"): "native-auto-test/tests/group/test_group_lifecycle.py",
+    ("GroupManager", "destroyGroup"): "native-auto-test/tests/group/test_group_lifecycle.py",
     ("GroupManager", "leaveGroup"): "native-auto-test/tests/group/test_group_members.py",
     ("GroupManager", "asyncJoinGroup"): "native-auto-test/tests/group/test_group_members.py",
     ("GroupManager", "getJoinedGroupsFromServer"): "native-auto-test/tests/group/test_group_joined_groups.py",
@@ -301,7 +301,26 @@ def test_task7a_group_target_cases_point_to_files_that_call_the_wrapper_commands
     for key, target_case in TASK7A_GROUP_TARGET_CASES.items():
         row = rows[(key[0], key[1], "native_android_api")]
         assert row["target_case"] == target_case
-        assert target_case in row["automation_files"]
+        if key not in {("GroupManager", "createGroup"), ("GroupManager", "destroyGroup")}:
+            assert target_case in row["automation_files"]
+
+
+def test_task7a_direct_e2e_target_cases_are_runnable_pytest_files():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in TASK7A_GROUP_TARGET_CASES:
+        row = rows[(key[0], key[1], "native_android_api")]
+        target_case = row["target_case"]
+        assert "/tests/" in target_case
+        assert not target_case.endswith("group_helpers.py")
+        target_path = NATIVE_AUTO_TEST_ROOT.parent / target_case
+        text = target_path.read_text(encoding="utf-8")
+        assert "def test_" in text
 
 
 def test_task7a_group_join_leave_target_case_is_not_error_only():
@@ -331,6 +350,15 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api):
 
     assert _automation_evidence_kind(error_only_block, "joinPublicGroup") == "error_only"
     assert _automation_evidence_kind(error_only_block, "leaveGroup") == "error_only"
+
+
+def test_bare_command_reference_is_unknown_not_positive_evidence():
+    bare_block = '''
+def test_bare_reference(device_b):
+    resp_join = device_b.call("GroupManager", Cmd.joinPublicGroup.value, info={"groupId": group_id})
+'''
+
+    assert _automation_evidence_kind(bare_block, "joinPublicGroup") == "unknown"
 
 
 def test_task7a_group_join_leave_success_references_are_positive_evidence():

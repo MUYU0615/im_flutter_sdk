@@ -719,8 +719,8 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 createGroup 已由 Flutter GroupManager.createGroup 等价覆盖；Android wrapper 调用 asyncCreateGroup，现有群组 helper 直接调用该命令并被多条生命周期/成员 E2E 复用。"
-    target_case: native-auto-test/tests/group/group_helpers.py
+    reason_zh: "Android 原生 createGroup 已由 Flutter GroupManager.createGroup 等价覆盖；Android wrapper 调用 asyncCreateGroup，现有生命周期 E2E 通过可运行 pytest 用例创建群组。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: declineApplication
     action: direct_e2e_case
@@ -747,8 +747,8 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 destroyGroup 已由 Flutter GroupManager.destroyGroup 等价覆盖；Android wrapper 调用 asyncDestroyGroup，现有群组 helper 直接调用该命令并被多条生命周期/清理 E2E 复用。"
-    target_case: native-auto-test/tests/group/group_helpers.py
+    reason_zh: "Android 原生 destroyGroup 已由 Flutter GroupManager.destroyGroup 等价覆盖；Android wrapper 调用 asyncDestroyGroup，现有生命周期 E2E 通过可运行 pytest 用例清理/销毁群组。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: downloadGroupSharedFile
     action: expose_wrapper
