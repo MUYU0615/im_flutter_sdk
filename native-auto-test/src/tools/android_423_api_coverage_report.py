@@ -634,6 +634,76 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter GroupManager.unblockGroup 使用 unblockGroup method key 调用 Android asyncUnblockGroupMessage；等价覆盖 4.23 unblockGroupMessage 的解除屏蔽群消息能力。",
         }
     ],
+    ("GroupManager", "deleteGroupSharedFile"): [
+        {
+            "manager": "GroupManager",
+            "api": "removeGroupSharedFile",
+            "reason_zh": "Flutter GroupManager.removeGroupSharedFile 使用 removeGroupSharedFile method key 调用 Android asyncDeleteGroupSharedFile；等价覆盖 4.23 deleteGroupSharedFile 的共享文件删除能力。",
+        }
+    ],
+    ("GroupManager", "downloadGroupSharedFile"): [
+        {
+            "manager": "GroupManager",
+            "api": "downloadGroupSharedFile",
+            "reason_zh": "Flutter GroupManager.downloadGroupSharedFile 使用 downloadGroupSharedFile method key 调用 Android asyncDownloadGroupSharedFile；等价覆盖 4.23 downloadGroupSharedFile 的共享文件下载能力。",
+        }
+    ],
+    ("GroupManager", "fetchGroupAnnouncement"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupAnnouncementFromServer",
+            "reason_zh": "Flutter GroupManager.fetchAnnouncementFromServer 使用 getGroupAnnouncementFromServer method key 调用 Android asyncFetchGroupAnnouncement；等价覆盖 4.23 fetchGroupAnnouncement 的公告拉取能力。",
+        }
+    ],
+    ("GroupManager", "fetchGroupBlackList"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupBlockListFromServer",
+            "reason_zh": "Flutter GroupManager.fetchBlockListFromServer 使用 getGroupBlockListFromServer method key 调用 Android asyncGetBlockedUsers；等价覆盖 4.23 fetchGroupBlackList 的黑名单分页拉取能力。",
+        }
+    ],
+    ("GroupManager", "fetchGroupMembers"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupMemberListFromServer",
+            "reason_zh": "Flutter GroupManager.fetchMemberListFromServer 使用 getGroupMemberListFromServer method key 调用 Android asyncFetchGroupMembers；等价覆盖 4.23 fetchGroupMembers 的成员分页拉取能力。",
+        }
+    ],
+    ("GroupManager", "fetchGroupMuteList"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupMuteListFromServer",
+            "reason_zh": "Flutter GroupManager.fetchMuteListFromServer 使用 getGroupMuteListFromServer method key 调用 Android asyncFetchGroupMuteList；等价覆盖 4.23 fetchGroupMuteList 的禁言列表分页拉取能力。",
+        }
+    ],
+    ("GroupManager", "fetchGroupSharedFileList"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupFileListFromServer",
+            "reason_zh": "Flutter GroupManager.fetchGroupFileListFromServer 使用 getGroupFileListFromServer method key 调用 Android asyncFetchGroupSharedFileList；等价覆盖 4.23 fetchGroupSharedFileList 的共享文件列表能力。",
+        }
+    ],
+    ("GroupManager", "inviteUser"): [
+        {
+            "manager": "GroupManager",
+            "api": "inviterUser",
+            "reason_zh": "Flutter GroupManager.inviterUser 使用 inviterUser method key 调用 Android asyncInviteUser；等价覆盖 4.23 inviteUser 的群邀请能力，不与直接加人 addMembers 混用。",
+        }
+    ],
+    ("GroupManager", "updateGroupAnnouncement"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateGroupAnnouncement",
+            "reason_zh": "Flutter GroupManager.updateGroupAnnouncement 使用 updateGroupAnnouncement method key 调用 Android asyncUpdateGroupAnnouncement；等价覆盖 4.23 updateGroupAnnouncement 的公告更新能力。",
+        }
+    ],
+    ("GroupManager", "uploadGroupSharedFile"): [
+        {
+            "manager": "GroupManager",
+            "api": "uploadGroupSharedFile",
+            "reason_zh": "Flutter GroupManager.uploadGroupSharedFile 使用 uploadGroupSharedFile method key 调用 Android asyncUploadGroupSharedFile；等价覆盖 4.23 uploadGroupSharedFile 的共享文件上传能力。",
+        }
+    ],
     ("ContactManager", "asyncAcceptInvitation"): [
         {
             "manager": "ContactManager",
@@ -1244,6 +1314,9 @@ def _is_automation_scan_excluded(path: Path) -> bool:
 def _automation_evidence_kind(block: str, cmd: str) -> str:
     if cmd not in block:
         return "unknown"
+    lowered = block.lower()
+    if any(token in lowered for token in ("nonexistent", "invalid", "error", "exception")):
+        return "error_only"
     cmd_pos = block.find(cmd)
     prefix = block[max(0, cmd_pos - 120) : cmd_pos]
     response_var = ""

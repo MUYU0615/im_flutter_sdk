@@ -175,6 +175,38 @@ TASK7B_GROUP_TARGET_CASES = {
     ("GroupManager", "unblockGroupMessage"): "native-auto-test/tests/group/test_group_exceptions_blocking.py",
 }
 
+TASK7C_GROUP_EQUIVALENT_APIS = {
+    ("GroupManager", "fetchGroupAnnouncement"): "GroupManager.getGroupAnnouncementFromServer",
+    ("GroupManager", "fetchGroupBlackList"): "GroupManager.getGroupBlockListFromServer",
+    ("GroupManager", "fetchGroupMembers"): "GroupManager.getGroupMemberListFromServer",
+    ("GroupManager", "fetchGroupMuteList"): "GroupManager.getGroupMuteListFromServer",
+    ("GroupManager", "fetchGroupSharedFileList"): "GroupManager.getGroupFileListFromServer",
+    ("GroupManager", "inviteUser"): "GroupManager.inviterUser",
+    ("GroupManager", "updateGroupAnnouncement"): "GroupManager.updateGroupAnnouncement",
+}
+
+TASK7C_GROUP_CASE_REQUIRED_APIS = {
+    ("GroupManager", "deleteGroupSharedFile"): "GroupManager.removeGroupSharedFile",
+    ("GroupManager", "downloadGroupSharedFile"): "GroupManager.downloadGroupSharedFile",
+    ("GroupManager", "uploadGroupSharedFile"): "GroupManager.uploadGroupSharedFile",
+}
+
+TASK7C_GROUP_TARGET_CASES = {
+    ("GroupManager", "fetchGroupAnnouncement"): "native-auto-test/tests/group/test_group_announcement.py",
+    ("GroupManager", "fetchGroupBlackList"): "native-auto-test/tests/group/test_group_server_state_lists.py",
+    ("GroupManager", "fetchGroupMembers"): "native-auto-test/tests/group/test_group_member_list.py",
+    ("GroupManager", "fetchGroupMuteList"): "native-auto-test/tests/group/test_group_server_state_lists.py",
+    ("GroupManager", "fetchGroupSharedFileList"): "native-auto-test/tests/group/test_group_file_list.py",
+    ("GroupManager", "inviteUser"): "native-auto-test/tests/group/test_group_inviter.py",
+    ("GroupManager", "updateGroupAnnouncement"): "native-auto-test/tests/group/test_group_announcement.py",
+    ("GroupManager", "deleteGroupSharedFile"): "native-auto-test/tests/group/test_group_shared_files.py",
+    ("GroupManager", "downloadGroupSharedFile"): "native-auto-test/tests/group/test_group_shared_files.py",
+    ("GroupManager", "uploadGroupSharedFile"): "native-auto-test/tests/group/test_group_shared_files.py",
+    ("GroupManager", "asyncUpdateGroupNamecard"): "native-auto-test/tests/group/test_group_member_attributes.py",
+    ("GroupManager", "getGroupNamecard"): "native-auto-test/tests/group/test_group_member_attributes.py",
+    ("GroupManager", "loadAllGroups"): "native-auto-test/tests/group/test_group_joined_groups.py",
+}
+
 
 class _FakeItem:
     def __init__(self, marked: bool):
@@ -481,6 +513,99 @@ def test_task7b_group_member_role_block_mute_rows_require_positive_evidence():
         assert row["automation_positive_refs"] != "0"
         assert row["automation_covered"] == "yes"
         assert row["coverage_conclusion"] == "covered_by_case"
+
+
+def test_task7c_group_announcement_lists_and_invite_native_apis_are_not_wrapper_missing():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK7C_GROUP_EQUIVALENT_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_task7c_shared_file_native_apis_have_wrappers_but_still_need_positive_cases():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK7C_GROUP_CASE_REQUIRED_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "case_required"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "no"
+        assert row["review_action"] == "direct_e2e_case"
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] == "0"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_task7c_namecard_and_load_all_groups_stay_honest_wrapper_gaps():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in (
+        ("GroupManager", "asyncUpdateGroupNamecard"),
+        ("GroupManager", "getGroupNamecard"),
+        ("GroupManager", "loadAllGroups"),
+    ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "wrapper_missing"
+        assert row["android_covered"] == "no"
+        assert row["automation_covered"] == "no"
+        assert row["review_action"] == "expose_wrapper"
+        assert row["covered_by_wrapper_api"] == ""
+
+
+def test_task7c_group_target_cases_point_to_runnable_pytest_files():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, target_case in TASK7C_GROUP_TARGET_CASES.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["target_case"] == target_case
+        target_path = NATIVE_AUTO_TEST_ROOT.parent / target_case
+        text = target_path.read_text(encoding="utf-8")
+        assert "def test_" in text
+        assert not target_case.endswith("group_helpers.py")
+
+
+def test_task7c_shared_file_invalid_or_nonexistent_cases_are_not_positive_evidence():
+    invalid_block = '''
+def test_group_download_shared_file_nonexistent_group_current_behavior(device_a, assert_api):
+    resp = device_a.call(
+        "GroupManager",
+        Cmd.downloadGroupSharedFile.value,
+        info={"groupId": _NONEXISTENT_GROUP_ID, "fileId": "1", "savePath": "/private/tmp"},
+    )
+    assert_api.assert_response_matches(
+        resp,
+        expected={"manager": "GroupManager", "cmd": Cmd.downloadGroupSharedFile.value, "result": True},
+    )
+'''
+
+    assert _automation_evidence_kind(invalid_block, "downloadGroupSharedFile") == "error_only"
 
 
 def test_positive_required_direct_case_with_only_error_refs_is_not_covered():

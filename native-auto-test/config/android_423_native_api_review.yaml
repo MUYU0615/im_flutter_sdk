@@ -669,8 +669,8 @@ native_api_review:
     action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_member_info.py
+    reason_zh: "Android 4.23 原生 asyncUpdateGroupNamecard 是独立群名片更新 API；当前 Flutter wrapper 只有群成员自定义属性 asyncSetGroupMemberAttributes，不等价于 namecard 专用接口，需补真实 wrapper 与双端 E2E。"
+    target_case: native-auto-test/tests/group/test_group_member_attributes.py
   - manager: GroupManager
     api: blockGroupMessage
     action: direct_e2e_case
@@ -746,10 +746,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: deleteGroupSharedFile
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 deleteGroupSharedFile 已由 Flutter GroupManager.removeGroupSharedFile 等价覆盖；Android wrapper 调用 asyncDeleteGroupSharedFile，但当前共享文件用例只有不存在群/异常路径，需要补真实上传后删除成功链路。"
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: GroupManager
     api: destroyGroup
@@ -760,45 +761,51 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: downloadGroupSharedFile
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 downloadGroupSharedFile 已由 Flutter GroupManager.downloadGroupSharedFile 等价覆盖；Android wrapper 调用 asyncDownloadGroupSharedFile，但当前用例未证明真实共享文件下载成功，需要补上传后下载成功链路。"
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: GroupManager
     api: fetchGroupAnnouncement
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 fetchGroupAnnouncement 已由 Flutter GroupManager.fetchAnnouncementFromServer 等价覆盖；Android wrapper 调用 asyncFetchGroupAnnouncement，现有公告 E2E 先 update 再 fetch 并断言公告内容一致。"
     target_case: native-auto-test/tests/group/test_group_announcement.py
   - manager: GroupManager
     api: fetchGroupBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 fetchGroupBlackList 已由 Flutter GroupManager.fetchBlockListFromServer 等价覆盖；Android wrapper 调用 asyncGetBlockedUsers，现有服务端状态列表 E2E 在新建群上正向拉取并断言空列表。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: fetchGroupMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 fetchGroupMembers 已由 Flutter GroupManager.fetchMemberListFromServer 等价覆盖；Android wrapper 调用 asyncFetchGroupMembers，现有成员列表 E2E 创建含成员群并断言分页结果包含受邀成员。"
     target_case: native-auto-test/tests/group/test_group_member_list.py
   - manager: GroupManager
     api: fetchGroupMuteList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 fetchGroupMuteList 已由 Flutter GroupManager.fetchMuteListFromServer 等价覆盖；Android wrapper 调用 asyncFetchGroupMuteList，现有服务端状态列表 E2E 在新建群上正向拉取并断言空列表。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: fetchGroupSharedFileList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 fetchGroupSharedFileList 已由 Flutter GroupManager.fetchGroupFileListFromServer 等价覆盖；Android wrapper 调用 asyncFetchGroupSharedFileList，现有共享文件列表 E2E 在新建群上正向拉取并断言空列表。"
     target_case: native-auto-test/tests/group/test_group_file_list.py
   - manager: GroupManager
     api: getBlockedUsers
@@ -813,8 +820,8 @@ native_api_review:
     action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/group/test_group_member_info.py
+    reason_zh: "Android 4.23 原生 getGroupNamecard 是按 groupId/userId 读取群名片的专用本地 API；当前 Flutter wrapper 只有群成员自定义属性读取，不等价于 namecard 专用接口，需补真实 wrapper 与 E2E。"
+    target_case: native-auto-test/tests/group/test_group_member_attributes.py
   - manager: GroupManager
     api: getJoinedGroupsFromServer
     action: direct_e2e_case
@@ -831,10 +838,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_public_groups_count.py
   - manager: GroupManager
     api: inviteUser
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 inviteUser 已由 Flutter GroupManager.inviterUser 等价覆盖；Android wrapper 调用 asyncInviteUser，不与 addMembers 直接加人语义混用，现有 inviter E2E 走真实邀请正向路径并断言成员状态。"
     target_case: native-auto-test/tests/group/test_group_inviter.py
   - manager: GroupManager
     api: leaveGroup
@@ -849,8 +857,8 @@ native_api_review:
     action: expose_wrapper
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/group/test_group_remaining_api_coverage.py
+    reason_zh: "Android 原生 loadAllGroups 返回 boolean，用于加载/同步本地群缓存；当前 Flutter getJoinedGroups wrapper 调用 getAllGroups 读取本地缓存列表，语义不是同一 API，不能硬映射，需按真实缺口评估是否暴露。"
+    target_case: native-auto-test/tests/group/test_group_joined_groups.py
   - manager: GroupManager
     api: muteGroupMembers
     action: direct_e2e_case
@@ -917,17 +925,19 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: updateGroupAnnouncement
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 updateGroupAnnouncement 已由 Flutter GroupManager.updateGroupAnnouncement 等价覆盖；Android wrapper 调用 asyncUpdateGroupAnnouncement，现有公告 E2E 正向更新后再 fetch 验证内容。"
     target_case: native-auto-test/tests/group/test_group_announcement.py
   - manager: GroupManager
     api: uploadGroupSharedFile
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 uploadGroupSharedFile 已由 Flutter GroupManager.uploadGroupSharedFile 等价覆盖；Android wrapper 调用 asyncUploadGroupSharedFile，但当前共享文件用例只有无效文件/不存在群异常路径，需要补真实上传成功链路。"
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: MessageManager
     api: addBody
