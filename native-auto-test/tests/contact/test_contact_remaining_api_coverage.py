@@ -7,6 +7,8 @@ getSelfIdsOnOtherPlatform、saveBlackList。每个 case 都先通过真实 SDK �
 """
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from src import Cmd
@@ -102,47 +104,67 @@ def test_contact_get_block_list_from_db_after_server_sync(
     flow.delete_friend(device_a, user_b)
 
 
+@pytest.mark.android
+@pytest.mark.real_e2e
+@pytest.mark.skipif(
+    "config.getoption('--target-platform') != 'android'",
+    reason="ContactManager.saveBlackList Android wrapper is only implemented on Android",
+)
 def test_contact_save_black_list_then_fetch_from_server(
     device_a, device_b, assert_api, user_a, user_b
 ):
     """saveBlackList：批量保存黑名单列表后，从服务端查询黑名单包含目标用户。"""
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="save_black_list")
+    friend_established = False
+    try:
+        flow.establish_friends(device_a, device_b, user_a, user_b, reason="save_black_list")
+        friend_established = True
 
-    save_resp = device_a.call(
-        "ContactManager",
-        Cmd.saveBlackList.value,
-        info={"userIds": [user_b]},
-    )
-    assert_api.assert_response_matches(
-        save_resp,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.saveBlackList.value,
-            "device": "deviceA",
-            "result": True,
-        },
-        ignore_keys={"sequence"},
-    )
+        save_resp = device_a.call(
+            "ContactManager",
+            Cmd.saveBlackList.value,
+            info={"userIds": [user_b]},
+        )
+        assert_api.assert_response_matches(
+            save_resp,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.saveBlackList.value,
+                "device": "deviceA",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
 
-    server_resp = device_a.call(
-        "ContactManager",
-        Cmd.getBlockListFromServer.value,
-        info={},
-    )
-    assert_api.assert_response_matches(
-        server_resp,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.getBlockListFromServer.value,
-            "device": "deviceA",
-            "result": [user_b],
-        },
-        ignore_keys={"sequence"},
-    )
-
-    assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
-    flow.delete_friend(device_a, user_b)
+        server_resp = device_a.call(
+            "ContactManager",
+            Cmd.getBlockListFromServer.value,
+            info={},
+        )
+        assert_api.assert_response_matches(
+            server_resp,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.getBlockListFromServer.value,
+                "device": "deviceA",
+                "result": [user_b],
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        original_exc_type = sys.exc_info()[0]
+        cleanup_errors = []
+        if friend_established:
+            try:
+                assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
+            except Exception as exc:
+                cleanup_errors.append(exc)
+            try:
+                flow.delete_friend(device_a, user_b)
+            except Exception as exc:
+                cleanup_errors.append(exc)
+        if cleanup_errors and original_exc_type is None:
+            raise cleanup_errors[0]
 
 
 def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_api):

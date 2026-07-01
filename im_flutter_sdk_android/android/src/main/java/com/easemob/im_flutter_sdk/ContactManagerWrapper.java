@@ -23,6 +23,7 @@ import io.flutter.plugin.common.MethodChannel.Result;
 public class ContactManagerWrapper extends Wrapper implements MethodCallHandler {
 
     private EMContactListener contactListener;
+    private static final int INVALID_PARAM = 110;
 
     ContactManagerWrapper(FlutterPlugin.FlutterPluginBinding flutterPluginBinding, String channelName) {
         super(flutterPluginBinding, channelName);
@@ -143,28 +144,28 @@ public class ContactManagerWrapper extends Wrapper implements MethodCallHandler 
 
     private void saveBlackList(JSONObject params, String channelName, Result result) throws JSONException {
         if (!params.has("userIds")) {
-            onError(result, 101, "userIds is required");
+            onError(result, new HyphenateException(INVALID_PARAM, "'userIds' can not be null"));
             return;
         }
         JSONArray array = params.optJSONArray("userIds");
         if (array == null) {
-            onError(result, 101, "userIds must be an array");
+            onError(result, new HyphenateException(INVALID_PARAM, "'userIds' must be an array"));
             return;
         }
         if (array.length() == 0) {
-            onError(result, 101, "userIds must not be empty");
+            onError(result, new HyphenateException(INVALID_PARAM, "'userIds' can not be null"));
             return;
         }
         List<String> userIds = new ArrayList<>();
         for (int i = 0; i < array.length(); i++) {
             Object value = array.opt(i);
             if (!(value instanceof String)) {
-                onError(result, 101, "userIds must contain only strings");
+                onError(result, new HyphenateException(INVALID_PARAM, "'userIds' must contain only strings"));
                 return;
             }
             String userId = (String) value;
             if (userId.trim().length() == 0) {
-                onError(result, 101, "userIds must not contain empty values");
+                onError(result, new HyphenateException(INVALID_PARAM, "'userIds' must not contain empty values"));
                 return;
             }
             userIds.add(userId);
@@ -173,14 +174,6 @@ public class ContactManagerWrapper extends Wrapper implements MethodCallHandler 
                 userIds,
                 new EMWrapperCallBack(result, channelName, true)
         );
-    }
-
-    private void onError(Result result, int code, String desc) {
-        post(() -> {
-            Map<String, Object> data = new HashMap<>();
-            data.put("error", ErrorHelper.toJson(code, desc));
-            result.success(data);
-        });
     }
 
     private void removeUserFromBlockList(JSONObject params, String channelName, Result result) throws JSONException {
