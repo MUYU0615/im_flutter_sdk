@@ -27,4 +27,3 @@ def test_download_group_shared_file_waits_for_sdk_callback_before_success():
     assert "public void onError(int code, String error)" in body
     assert "onError(result, e);" in body
     assert "post(()->" not in body
-

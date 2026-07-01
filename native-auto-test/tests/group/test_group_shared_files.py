@@ -19,12 +19,12 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
-def _run_adb(*args: str) -> subprocess.CompletedProcess[str]:
+def _run_adb(*args: str, text: bool = True) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(
             ["adb", *args],
             check=False,
-            text=True,
+            text=text,
             capture_output=True,
         )
     except FileNotFoundError:
@@ -45,18 +45,21 @@ def _push_android_shared_file(serial: str, local_file: Path, file_name: str) -> 
     remote_path = f"/sdcard/Download/{file_name}"
     pushed = _run_adb("-s", serial, "push", str(local_file), remote_path)
     if pushed.returncode != 0:
-        pytest.skip(f"adb push failed: {pushed.stderr.strip() or pushed.stdout.strip()}")
+        raise AssertionError(
+            f"adb push failed for explicit deviceA serial {serial}: "
+            f"stdout={pushed.stdout!r}, stderr={pushed.stderr!r}"
+        )
     return remote_path
 
 
 def _read_android_file(serial: str, remote_path: str) -> bytes:
-    completed = _run_adb("-s", serial, "exec-out", "cat", remote_path)
+    completed = _run_adb("-s", serial, "exec-out", "cat", remote_path, text=False)
     if completed.returncode != 0:
         raise AssertionError(
             f"下载文件不存在或不可读: path={remote_path}, "
             f"stdout={completed.stdout!r}, stderr={completed.stderr!r}"
         )
-    return completed.stdout.encode()
+    return completed.stdout
 
 
 def _group_file_list(device, assert_api, group_id: str) -> list[dict]:
