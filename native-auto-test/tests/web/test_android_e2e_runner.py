@@ -10,6 +10,9 @@ from src.tools.android_e2e_runner import (
 )
 
 
+pytestmark = pytest.mark.no_global_login
+
+
 def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
     commands = _build_commands(
         native_auto_test_dir=Path("/repo/native-auto-test"),
@@ -53,6 +56,7 @@ def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
     assert "--dart-define=IM_BRIDGE_DEVICE=deviceA" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceA" in commands.flutter_run[0]
     assert commands.env["NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"] == "90.0"
+    assert commands.env["NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA"] == "emulator-5554"
     assert commands.pytest == [
         "pytest",
         "tests/contact/test_contact.py",
@@ -80,6 +84,8 @@ def test_android_runner_builds_two_device_launch_commands():
     assert len(commands.flutter_run) == 2
     assert commands.flutter_run[0][:4] == ["flutter", "run", "-d", "emulator-5554"]
     assert commands.flutter_run[1][:4] == ["flutter", "run", "-d", "emulator-5556"]
+    assert commands.env["NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA"] == "emulator-5554"
+    assert commands.env["NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEB"] == "emulator-5556"
     assert "--dart-define=IM_BRIDGE_DEVICE=deviceA" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceA" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_DEVICE=deviceB" in commands.flutter_run[1]

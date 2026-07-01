@@ -712,29 +712,29 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
         if (param.has("savePath")) {
             savePath = param.getString("savePath");
         }
+        final String finalFileId = fileId;
+        final String finalSavePath = savePath;
 
-        EMClient.getInstance().groupManager().asyncDownloadGroupSharedFile(groupId, fileId, savePath,
-                new EMDownloadCallback(fileId, savePath){
+        EMClient.getInstance().groupManager().asyncDownloadGroupSharedFile(groupId, finalFileId, finalSavePath,
+                new EMDownloadCallback(finalFileId, finalSavePath){
                     @Override
                     public void onSuccess() {
-                        clientWrapper.progressManager.sendDownloadSuccessToFlutter(fileId, savePath);
+                        clientWrapper.progressManager.sendDownloadSuccessToFlutter(finalFileId, finalSavePath);
+                        GroupManagerWrapper.this.onSuccess(result, channelName, true);
                     }
 
                     @Override
                     public void onProgress(int progress, String status) {
-                        clientWrapper.progressManager.sendDownloadProgressToFlutter(fileId, progress);
+                        clientWrapper.progressManager.sendDownloadProgressToFlutter(finalFileId, progress);
                     }
 
                     @Override
                     public void onError(int code, String error) {
                         HyphenateException e = new HyphenateException(code, error);
-                        clientWrapper.progressManager.sendDownloadErrorToFlutter(fileId, e);
+                        clientWrapper.progressManager.sendDownloadErrorToFlutter(finalFileId, e);
+                        GroupManagerWrapper.this.onError(result, e);
                     }
                 });
-
-        post(()->{
-            onSuccess(result, channelName, true);
-        });
     }
 
     private void removeGroupSharedFile(JSONObject param, String channelName, Result result) throws JSONException {

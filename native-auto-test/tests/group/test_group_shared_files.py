@@ -31,27 +31,32 @@ def _run_adb(*args: str) -> subprocess.CompletedProcess[str]:
         pytest.skip("adb is not installed or not on PATH for Android shared-file staging")
 
 
-def _android_serial() -> str:
-    configured = os.getenv("ANDROID_SERIAL")
+def _android_serial_for_device_a() -> str:
+    configured = os.getenv("NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA") or os.getenv("ANDROID_SERIAL_DEVICEA")
     if configured:
         return configured
-    devices = _run_adb("devices")
-    if devices.returncode != 0:
-        pytest.skip(f"adb devices failed: {devices.stderr.strip() or devices.stdout.strip()}")
-    for line in devices.stdout.splitlines()[1:]:
-        parts = line.split()
-        if len(parts) >= 2 and parts[1] == "device":
-            return parts[0]
-    pytest.skip("No online Android device available for shared-file staging")
+    pytest.skip(
+        "Android shared-file positive flow requires an explicit deviceA serial "
+        "(NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA or ANDROID_SERIAL_DEVICEA)"
+    )
 
 
-def _push_android_shared_file(local_file: Path, file_name: str) -> str:
-    serial = _android_serial()
+def _push_android_shared_file(serial: str, local_file: Path, file_name: str) -> str:
     remote_path = f"/sdcard/Download/{file_name}"
     pushed = _run_adb("-s", serial, "push", str(local_file), remote_path)
     if pushed.returncode != 0:
         pytest.skip(f"adb push failed: {pushed.stderr.strip() or pushed.stdout.strip()}")
     return remote_path
+
+
+def _read_android_file(serial: str, remote_path: str) -> bytes:
+    completed = _run_adb("-s", serial, "exec-out", "cat", remote_path)
+    if completed.returncode != 0:
+        raise AssertionError(
+            f"下载文件不存在或不可读: path={remote_path}, "
+            f"stdout={completed.stdout!r}, stderr={completed.stderr!r}"
+        )
+    return completed.stdout.encode()
 
 
 def _group_file_list(device, assert_api, group_id: str) -> list[dict]:
@@ -100,7 +105,8 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
     local_file = tmp_path / file_name
     content = f"group-shared-file-content-{uuid.uuid4().hex}\n"
     local_file.write_text(content, encoding="utf-8")
-    remote_file_path = _push_android_shared_file(local_file, file_name)
+    android_serial = _android_serial_for_device_a()
+    remote_file_path = _push_android_shared_file(android_serial, local_file, file_name)
     download_path = f"/sdcard/Download/downloaded-{file_name}"
 
     try:
@@ -168,6 +174,10 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             },
             ignore_keys={"sequence"},
         )
+        downloaded_content = _read_android_file(android_serial, download_path)
+        assert downloaded_content == content.encode(), (
+            f"下载文件内容不匹配: savePath={download_path}, expected={content!r}, actual={downloaded_content!r}"
+        )
 
         resp_remove = device_a.call(
             "GroupManager",
@@ -229,22 +239,13 @@ def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
-def test_group_download_shared_file_nonexistent_group_current_behavior(device_a, assert_api):
+def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",
         Cmd.downloadGroupSharedFile.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "fileId": "1", "savePath": "/private/tmp"},
     )
-    assert_api.assert_response_matches(
-        resp,
-        expected={
-            "manager": "GroupManager",
-            "cmd": Cmd.downloadGroupSharedFile.value,
-            "device": "deviceA",
-            "result": True,
-        },
-        ignore_keys={"sequence"},
-    )
+    assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
 def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):

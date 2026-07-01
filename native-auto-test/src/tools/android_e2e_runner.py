@@ -51,6 +51,8 @@ def _build_commands(
     env.setdefault("NATIVE_AUTO_TEST_RESPONSE_TIMEOUT", "90.0")
     device_names = [f"device{chr(ord('A') + index)}" for index in range(len(device_ids))]
     topics = [f"{get_topic_prefix()}-{run_id}-{device_name}" for device_name in device_names]
+    for device_name, device_id in zip(device_names, device_ids):
+        env[f"NATIVE_AUTO_TEST_ANDROID_SERIAL_{device_name.upper()}"] = device_id
     return AndroidE2ECommands(
         env=env,
         relay=[
