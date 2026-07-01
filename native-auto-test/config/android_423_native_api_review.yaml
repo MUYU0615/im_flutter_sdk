@@ -641,6 +641,7 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
+    requires_positive_case: true
     reason_zh: "Android 原生 asyncJoinGroup 已由 Flutter GroupManager.joinPublicGroup 等价覆盖；Android wrapper 校验公开群后调用 joinGroup，现有成员 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
@@ -830,6 +831,7 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
+    requires_positive_case: true
     reason_zh: "Android 原生 leaveGroup 已由 Flutter GroupManager.leaveGroup 等价覆盖；Android wrapper 调用 asyncLeaveGroup，现有成员 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager

@@ -53,6 +53,8 @@ ALLOWED_REVIEW_ACTIONS = {
     "not_applicable",
 }
 
+AUTOMATION_EVIDENCE_KINDS = {"positive", "error_only", "unknown"}
+
 NATIVE_ANDROID_CLASSES = {
     "Client": "com.hyphenate.chat.EMClient",
     "ChatManager": "com.hyphenate.chat.EMChatManager",
@@ -1090,39 +1092,116 @@ def _infer_manager(path: Path, api_name: str) -> str | None:
     return None
 
 
+def _pytest_function_blocks(text: str) -> list[tuple[int, int, str]]:
+    matches = list(re.finditer(r"^def\s+test_[A-Za-z0-9_]+\s*\(", text, re.M))
+    if not matches:
+        return [(0, len(text), text)]
+    blocks: list[tuple[int, int, str]] = []
+    for index, match in enumerate(matches):
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        blocks.append((start, end, text[start:end]))
+    return blocks
+
+
+def _automation_evidence_kind(block: str, cmd: str) -> str:
+    if cmd not in block:
+        return "unknown"
+    cmd_pos = block.find(cmd)
+    prefix = block[max(0, cmd_pos - 120) : cmd_pos]
+    response_var = ""
+    assign_match = re.search(r"(\w+)\s*=\s*[^\n]{0,120}$", prefix)
+    if assign_match:
+        response_var = assign_match.group(1)
+
+    if response_var and re.search(rf"\bassert_api\.assert_error\(\s*{re.escape(response_var)}\b", block):
+        has_error_for_cmd = True
+    else:
+        has_error_for_cmd = bool(
+            re.search(
+                rf"assert_api\.assert_error\([\s\S]{{0,220}}(?:Cmd\.\w+\.value|['\"]){re.escape(cmd)}",
+                block,
+            )
+        )
+
+    has_success_for_cmd = False
+    if response_var:
+        success_patterns = (
+            rf"\bassert_api\.assert_response_matches\(\s*{re.escape(response_var)}\b",
+            rf"\bassert_group_snapshot\(\s*[^,\n]+,\s*{re.escape(response_var)}\b",
+            rf"\bassert_group_list_response\(\s*[^,\n]+,\s*{re.escape(response_var)}\b",
+            rf"\bassert_group_members_exact\(\s*{re.escape(response_var)}\b",
+            rf"\bmember_count\(\s*{re.escape(response_var)}\b",
+            rf"\b{re.escape(response_var)}\.get\(\s*['\"]result['\"]",
+        )
+        has_success_for_cmd = any(re.search(pattern, block) for pattern in success_patterns)
+
+    cmd_success_pattern = re.search(
+        rf"assert_response_matches\([\s\S]{{0,500}}['\"]cmd['\"]\s*:\s*(?:Cmd\.\w+\.value|['\"]{re.escape(cmd)}['\"])",
+        block,
+    )
+    if cmd_success_pattern:
+        has_success_for_cmd = True
+
+    if has_success_for_cmd:
+        return "positive"
+    if has_error_for_cmd:
+        return "error_only"
+    return "positive"
+
+
+def _record_automation_ref(
+    pairs: dict[tuple[str, str], dict[str, Any]],
+    manager: str,
+    cmd: str,
+    path: Path,
+    block: str,
+    count: int = 1,
+) -> None:
+    if count <= 0:
+        return
+    item = pairs[(manager, cmd)]
+    item["files"].add(str(path.relative_to(REPO_ROOT)))
+    item["refs"] += count
+    kind = _automation_evidence_kind(block, cmd)
+    if kind not in AUTOMATION_EVIDENCE_KINDS:
+        kind = "unknown"
+    item["evidence_kinds"][kind] += count
+
+
 def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
     cmd_values = _cmd_values()
-    pairs: dict[tuple[str, str], dict[str, Any]] = defaultdict(lambda: {"files": set(), "refs": 0})
+    pairs: dict[tuple[str, str], dict[str, Any]] = defaultdict(
+        lambda: {"files": set(), "refs": 0, "evidence_kinds": Counter()}
+    )
     for root in TEST_DIRS:
         for path in root.rglob("*.py"):
             if "__pycache__" in path.parts:
                 continue
             text = _read(path)
-            for match in re.finditer(
-                r"\.call\(\s*['\"]([^'\"]+)['\"]\s*,\s*(?:['\"]([^'\"]+)['\"]|Cmd\.(\w+)\.value)",
-                text,
-            ):
-                manager = match.group(1)
-                cmd = match.group(2) or cmd_values.get(match.group(3) or "")
-                if cmd:
-                    pairs[(manager, cmd)]["files"].add(str(path.relative_to(REPO_ROOT)))
-                    pairs[(manager, cmd)]["refs"] += 1
-            for match in re.finditer(
-                r"['\"]manager['\"]\s*:\s*['\"]([^'\"]+)['\"][\s\S]{0,260}?['\"]cmd['\"]\s*:\s*(?:['\"]([^'\"]+)['\"]|Cmd\.(\w+)\.value)",
-                text,
-            ):
-                manager = match.group(1)
-                cmd = match.group(2) or cmd_values.get(match.group(3) or "")
-                if cmd:
-                    pairs[(manager, cmd)]["files"].add(str(path.relative_to(REPO_ROOT)))
-                    pairs[(manager, cmd)]["refs"] += 1
-            for api_name, cmd in cmd_values.items():
-                count = text.count(f"Cmd.{api_name}.value")
-                if count:
-                    manager = _infer_manager(path, api_name)
-                    if manager:
-                        pairs[(manager, cmd)]["files"].add(str(path.relative_to(REPO_ROOT)))
-                        pairs[(manager, cmd)]["refs"] += count
+            for _, _, block in _pytest_function_blocks(text):
+                for match in re.finditer(
+                    r"\.call\(\s*['\"]([^'\"]+)['\"]\s*,\s*(?:['\"]([^'\"]+)['\"]|Cmd\.(\w+)\.value)",
+                    block,
+                ):
+                    manager = match.group(1)
+                    cmd = match.group(2) or cmd_values.get(match.group(3) or "")
+                    if cmd:
+                        _record_automation_ref(pairs, manager, cmd, path, block)
+                for match in re.finditer(
+                    r"['\"]manager['\"]\s*:\s*['\"]([^'\"]+)['\"][\s\S]{0,260}?['\"]cmd['\"]\s*:\s*(?:['\"]([^'\"]+)['\"]|Cmd\.(\w+)\.value)",
+                    block,
+                ):
+                    manager = match.group(1)
+                    cmd = match.group(2) or cmd_values.get(match.group(3) or "")
+                    if cmd:
+                        _record_automation_ref(pairs, manager, cmd, path, block)
+                for api_name, cmd in cmd_values.items():
+                    count = block.count(f"Cmd.{api_name}.value")
+                    if count:
+                        manager = _infer_manager(path, api_name)
+                        if manager:
+                            _record_automation_ref(pairs, manager, cmd, path, block, count)
     return pairs
 
 
@@ -1170,6 +1249,7 @@ def build_rows() -> list[dict[str, str]]:
         ios_info = ios.get((manager, api), {})
         web_info = web.get((manager, api), {})
         automation_info = automation.get((manager, api))
+        automation_evidence = automation_info.get("evidence_kinds", Counter()) if automation_info else Counter()
         rows.append(
             {
                 "manager": manager,
@@ -1182,6 +1262,7 @@ def build_rows() -> list[dict[str, str]]:
                 "review_action": "",
                 "review_priority": "",
                 "review_batch": "",
+                "review_requires_positive_case": "",
                 "target_case": "",
                 "covered_by_wrapper_api": f"{manager}.{api}" if android_info else "",
                 "native_android_api_exists": "yes" if (manager, api) in native_android else "no",
@@ -1208,6 +1289,9 @@ def build_rows() -> list[dict[str, str]]:
                 "web_evidence": web_info.get("web_evidence", "Web 未扫描到同 manager/api 可调入口。"),
                 "automation_covered": "yes" if automation_info else "no",
                 "automation_refs": str(automation_info["refs"]) if automation_info else "0",
+                "automation_positive_refs": str(automation_evidence.get("positive", 0)),
+                "automation_error_only_refs": str(automation_evidence.get("error_only", 0)),
+                "automation_unknown_refs": str(automation_evidence.get("unknown", 0)),
                 "automation_files": "; ".join(sorted(automation_info["files"])[:12]) if automation_info else "",
             }
         )
@@ -1220,6 +1304,9 @@ def build_rows() -> list[dict[str, str]]:
             for item in wrappers
             if (item["manager"], item["api"]) in automation
         ]
+        automation_positive_refs = sum(int(item.get("evidence_kinds", {}).get("positive", 0)) for item in automation_infos)
+        automation_error_only_refs = sum(int(item.get("evidence_kinds", {}).get("error_only", 0)) for item in automation_infos)
+        automation_unknown_refs = sum(int(item.get("evidence_kinds", {}).get("unknown", 0)) for item in automation_infos)
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
         equivalent_reasons = [
             item.get("equivalent_reason_zh", "")
@@ -1240,7 +1327,9 @@ def build_rows() -> list[dict[str, str]]:
             if review.get("reason_zh") and not equivalent_reasons:
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
         if review.get("action") == "direct_e2e_case" and wrappers:
-            conclusion = "covered_by_case" if automation_infos else "case_required"
+            requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
+            has_required_automation = automation_positive_refs > 0 if requires_positive_case else bool(automation_infos)
+            conclusion = "covered_by_case" if has_required_automation else "case_required"
             assessment = {
                 **assessment,
                 "native_test_requirement": "direct_e2e",
@@ -1266,6 +1355,7 @@ def build_rows() -> list[dict[str, str]]:
                 "review_action": review.get("action", ""),
                 "review_priority": review.get("priority", ""),
                 "review_batch": review.get("batch", ""),
+                "review_requires_positive_case": review.get("requires_positive_case", "").lower(),
                 "target_case": review.get("target_case", ""),
                 "covered_by_wrapper_api": "; ".join(wrapper_apis),
                 **native_android[(manager, method)],
@@ -1290,6 +1380,9 @@ def build_rows() -> list[dict[str, str]]:
                 "web_evidence": "原生 Android API 行不直接判断 Web；请看对应 wrapper_api 行做三端对齐。",
                 "automation_covered": "yes" if is_automation_covered else "no",
                 "automation_refs": str(automation_refs),
+                "automation_positive_refs": str(automation_positive_refs),
+                "automation_error_only_refs": str(automation_error_only_refs),
+                "automation_unknown_refs": str(automation_unknown_refs),
                 "automation_files": "; ".join(automation_files[:12]) or review.get("target_case", "") or indirect_files,
             }
         )
@@ -1355,6 +1448,7 @@ FIELDS = [
     "review_action",
     "review_priority",
     "review_batch",
+    "review_requires_positive_case",
     "target_case",
     "covered_by_wrapper_api",
     "native_android_api_exists",
@@ -1381,6 +1475,9 @@ FIELDS = [
     "web_evidence",
     "automation_covered",
     "automation_refs",
+    "automation_positive_refs",
+    "automation_error_only_refs",
+    "automation_unknown_refs",
     "automation_files",
 ]
 

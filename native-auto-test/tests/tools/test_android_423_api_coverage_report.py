@@ -1,7 +1,11 @@
 import pytest
 from pathlib import Path
 
-from src.tools.android_423_api_coverage_report import build_rows, summarize
+from src.tools.android_423_api_coverage_report import (
+    _automation_evidence_kind,
+    build_rows,
+    summarize,
+)
 from tests.conftest import _all_items_marked_no_global_login
 
 
@@ -310,6 +314,48 @@ def test_task7a_group_join_leave_target_case_is_not_error_only():
     assert '"cmd": Cmd.leaveGroup.value' in block
     assert 'assert_api.assert_error(resp_join' not in block
     assert 'assert_api.assert_error(resp_leave' not in block
+
+
+def test_task7a_group_join_leave_error_only_references_are_not_positive_evidence():
+    error_only_block = '''
+def test_group_join_and_leave_public_group(device_a, device_b, assert_api):
+    resp_join = device_b.call("GroupManager", Cmd.joinPublicGroup.value, info={"groupId": group_id})
+    assert_api.assert_error(resp_join, code=603, description="group member permission is required")
+
+    resp_leave = device_b.call("GroupManager", Cmd.leaveGroup.value, info={"groupId": group_id})
+    assert_api.assert_error(resp_leave, code=603, description="group member permission is required")
+'''
+
+    assert _automation_evidence_kind(error_only_block, "joinPublicGroup") == "error_only"
+    assert _automation_evidence_kind(error_only_block, "leaveGroup") == "error_only"
+
+
+def test_task7a_group_join_leave_success_references_are_positive_evidence():
+    text = Path("tests/group/test_group_members.py").read_text(encoding="utf-8")
+    start = text.index("def test_group_join_and_leave_public_group")
+    end = text.index("def test_group_members_batch_join_exit_new_events", start)
+    block = text[start:end]
+
+    assert _automation_evidence_kind(block, "joinPublicGroup") == "positive"
+    assert _automation_evidence_kind(block, "leaveGroup") == "positive"
+
+
+def test_task7a_group_join_leave_rows_require_positive_evidence():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in (
+        ("GroupManager", "asyncJoinGroup"),
+        ("GroupManager", "leaveGroup"),
+    ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert row["coverage_conclusion"] == "covered_by_case"
 
 
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():
