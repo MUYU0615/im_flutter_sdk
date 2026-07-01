@@ -582,17 +582,17 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
   - manager: GroupManager
     api: acceptApplication
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 acceptApplication 已由 Flutter GroupManager.acceptJoinApplication 等价覆盖；Android wrapper 调用 asyncAcceptApplication，现有入群申请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: acceptInvitation
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 acceptInvitation 已由 Flutter GroupManager.acceptInvitationFromGroup 等价覆盖；Android wrapper 调用 asyncAcceptInvitation，现有群邀请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: addGroupAdmin
@@ -603,10 +603,10 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_roles.py
   - manager: GroupManager
     api: applyJoinToGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 applyJoinToGroup 已由 Flutter GroupManager.requestToJoinPublicGroup 等价覆盖；Android wrapper 调用 asyncApplyJoinToGroup，现有入群申请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: asyncAddUsersToGroup
@@ -631,18 +631,18 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: asyncGetGroupFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_metadata.py
+    reason_zh: "Android 原生 asyncGetGroupFromServer 已由 Flutter GroupManager.fetchGroupInfoFromServer/getGroupSpecificationFromServer 等价覆盖；Android wrapper 调用 getGroupFromServer，现有生命周期 E2E 直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_lifecycle.py
   - manager: GroupManager
     api: asyncJoinGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+    reason_zh: "Android 原生 asyncJoinGroup 已由 Flutter GroupManager.joinPublicGroup 等价覆盖；Android wrapper 校验公开群后调用 joinGroup，现有成员 E2E 直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: asyncRemoveUserFromGroup
     action: expose_wrapper
@@ -687,52 +687,52 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_blocking.py
   - manager: GroupManager
     api: changeGroupAvatar
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_metadata.py
+    reason_zh: "Android 原生 changeGroupAvatar 已由 Flutter GroupManager.updateGroupAvatar 等价覆盖；Android wrapper 调用 asyncChangeGroupAvatar，现有剩余 API 覆盖 E2E 直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_remaining_api_coverage.py
   - manager: GroupManager
     api: changeGroupDescription
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 changeGroupDescription 已由 Flutter GroupManager.changeGroupDescription/updateGroupDesc 等价覆盖；Android wrapper 调用 asyncChangeGroupDescription，现有元数据 E2E 直接调用 updateDescription。"
     target_case: native-auto-test/tests/group/test_group_metadata.py
   - manager: GroupManager
     api: changeGroupName
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 changeGroupName 已由 Flutter GroupManager.changeGroupName/updateGroupName 等价覆盖；Android wrapper 调用 asyncChangeGroupName，现有元数据 E2E 直接调用 updateGroupSubject。"
     target_case: native-auto-test/tests/group/test_group_metadata.py
   - manager: GroupManager
     api: changeOwner
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 changeOwner 已由 Flutter GroupManager.changeOwner 等价覆盖；Android wrapper 调用 asyncChangeOwner，现有角色 E2E 直接调用 updateGroupOwner。"
     target_case: native-auto-test/tests/group/test_group_roles.py
   - manager: GroupManager
     api: createGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+    reason_zh: "Android 原生 createGroup 已由 Flutter GroupManager.createGroup 等价覆盖；Android wrapper 调用 asyncCreateGroup，现有群组 helper 直接调用该命令并被多条生命周期/成员 E2E 复用。"
+    target_case: native-auto-test/tests/group/group_helpers.py
   - manager: GroupManager
     api: declineApplication
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 declineApplication 已由 Flutter GroupManager.declineJoinApplication 等价覆盖；Android wrapper 调用 asyncDeclineApplication，现有入群申请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: declineInvitation
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 declineInvitation 已由 Flutter GroupManager.declineInvitationFromGroup 等价覆盖；Android wrapper 调用 asyncDeclineInvitation，现有群邀请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: deleteGroupSharedFile
@@ -743,11 +743,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_shared_files.py
   - manager: GroupManager
     api: destroyGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+    reason_zh: "Android 原生 destroyGroup 已由 Flutter GroupManager.destroyGroup 等价覆盖；Android wrapper 调用 asyncDestroyGroup，现有群组 helper 直接调用该命令并被多条生命周期/清理 E2E 复用。"
+    target_case: native-auto-test/tests/group/group_helpers.py
   - manager: GroupManager
     api: downloadGroupSharedFile
     action: expose_wrapper
@@ -806,17 +806,17 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_member_info.py
   - manager: GroupManager
     api: getJoinedGroupsFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 getJoinedGroupsFromServer 已由 Flutter GroupManager.fetchJoinedGroupsFromServer 等价覆盖；Android wrapper 调用 asyncGetJoinedGroupsFromServer，现有已加入群列表 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_joined_groups.py
   - manager: GroupManager
     api: getPublicGroupsFromServer
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    reason_zh: "Android 原生 getPublicGroupsFromServer 已由 Flutter GroupManager.fetchPublicGroupsFromServer 等价覆盖；Android wrapper 调用 asyncGetPublicGroupsFromServer，现有公开群分页 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_public_groups_count.py
   - manager: GroupManager
     api: inviteUser
@@ -827,11 +827,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_inviter.py
   - manager: GroupManager
     api: leaveGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供该群组业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/group/test_group_lifecycle.py
+    reason_zh: "Android 原生 leaveGroup 已由 Flutter GroupManager.leaveGroup 等价覆盖；Android wrapper 调用 asyncLeaveGroup，现有成员 E2E 直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: loadAllGroups
     action: expose_wrapper

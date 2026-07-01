@@ -88,6 +88,44 @@ TASK6_CHATROOM_TARGET_CASES = {
     ("ChatRoomManager", "fetchPublicChatRoomsFromServer"): "native-auto-test/tests/chatroom/test_chatroom_server_state.py",
 }
 
+TASK7A_GROUP_EQUIVALENT_APIS = {
+    ("GroupManager", "createGroup"): "GroupManager.createGroup",
+    ("GroupManager", "destroyGroup"): "GroupManager.destroyGroup",
+    ("GroupManager", "leaveGroup"): "GroupManager.leaveGroup",
+    ("GroupManager", "asyncJoinGroup"): "GroupManager.joinPublicGroup",
+    ("GroupManager", "getJoinedGroupsFromServer"): "GroupManager.getJoinedGroupsFromServer",
+    ("GroupManager", "getPublicGroupsFromServer"): "GroupManager.getPublicGroupsFromServer",
+    ("GroupManager", "asyncGetGroupFromServer"): "GroupManager.getGroupSpecificationFromServer",
+    ("GroupManager", "applyJoinToGroup"): "GroupManager.requestToJoinPublicGroup",
+    ("GroupManager", "acceptApplication"): "GroupManager.acceptJoinApplication",
+    ("GroupManager", "declineApplication"): "GroupManager.declineJoinApplication",
+    ("GroupManager", "acceptInvitation"): "GroupManager.acceptInvitationFromGroup",
+    ("GroupManager", "declineInvitation"): "GroupManager.declineInvitationFromGroup",
+    ("GroupManager", "changeGroupName"): "GroupManager.updateGroupSubject",
+    ("GroupManager", "changeGroupDescription"): "GroupManager.updateDescription",
+    ("GroupManager", "changeGroupAvatar"): "GroupManager.updateGroupAvatar",
+    ("GroupManager", "changeOwner"): "GroupManager.updateGroupOwner",
+}
+
+TASK7A_GROUP_TARGET_CASES = {
+    ("GroupManager", "createGroup"): "native-auto-test/tests/group/group_helpers.py",
+    ("GroupManager", "destroyGroup"): "native-auto-test/tests/group/group_helpers.py",
+    ("GroupManager", "leaveGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "asyncJoinGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "getJoinedGroupsFromServer"): "native-auto-test/tests/group/test_group_joined_groups.py",
+    ("GroupManager", "getPublicGroupsFromServer"): "native-auto-test/tests/group/test_group_public_groups_count.py",
+    ("GroupManager", "asyncGetGroupFromServer"): "native-auto-test/tests/group/test_group_lifecycle.py",
+    ("GroupManager", "applyJoinToGroup"): "native-auto-test/tests/group/test_group_join_requests_and_invitations.py",
+    ("GroupManager", "acceptApplication"): "native-auto-test/tests/group/test_group_join_requests_and_invitations.py",
+    ("GroupManager", "declineApplication"): "native-auto-test/tests/group/test_group_join_requests_and_invitations.py",
+    ("GroupManager", "acceptInvitation"): "native-auto-test/tests/group/test_group_join_requests_and_invitations.py",
+    ("GroupManager", "declineInvitation"): "native-auto-test/tests/group/test_group_join_requests_and_invitations.py",
+    ("GroupManager", "changeGroupName"): "native-auto-test/tests/group/test_group_metadata.py",
+    ("GroupManager", "changeGroupDescription"): "native-auto-test/tests/group/test_group_metadata.py",
+    ("GroupManager", "changeGroupAvatar"): "native-auto-test/tests/group/test_group_remaining_api_coverage.py",
+    ("GroupManager", "changeOwner"): "native-auto-test/tests/group/test_group_roles.py",
+}
+
 
 class _FakeItem:
     def __init__(self, marked: bool):
@@ -226,6 +264,37 @@ def test_task6_chatroom_attribute_cases_cover_non_forced_branches():
     assert '"forced": False' in set_block
     assert "Cmd.removeChatRoomAttributes.value" in remove_block
     assert '"forced": False' in remove_block
+
+
+def test_task7a_group_lifecycle_membership_metadata_native_apis_are_not_wrapper_missing():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK7A_GROUP_EQUIVALENT_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_task7a_group_target_cases_point_to_files_that_call_the_wrapper_commands():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, target_case in TASK7A_GROUP_TARGET_CASES.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["target_case"] == target_case
+        assert target_case in row["automation_files"]
 
 
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():

@@ -391,6 +391,118 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter ChatRoomManager.fetchPublicChatRoomsFromServer 调用 Android asyncFetchPublicChatRoomsFromServer；等价覆盖 4.23 同步 fetchPublicChatRoomsFromServer 的公开聊天室分页能力。",
         }
     ],
+    ("GroupManager", "createGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "createGroup",
+            "reason_zh": "Flutter GroupManager.createGroup 调用 Android asyncCreateGroup；等价覆盖 4.23 createGroup 的群创建能力。",
+        }
+    ],
+    ("GroupManager", "destroyGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "destroyGroup",
+            "reason_zh": "Flutter GroupManager.destroyGroup 调用 Android asyncDestroyGroup；等价覆盖 4.23 destroyGroup 的群销毁能力。",
+        }
+    ],
+    ("GroupManager", "leaveGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "leaveGroup",
+            "reason_zh": "Flutter GroupManager.leaveGroup 调用 Android asyncLeaveGroup；等价覆盖 4.23 leaveGroup 的退群能力。",
+        }
+    ],
+    ("GroupManager", "asyncJoinGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "joinPublicGroup",
+            "reason_zh": "Flutter GroupManager.joinPublicGroup 通过服务端群信息校验后调用 Android joinGroup；等价覆盖 4.23 asyncJoinGroup 的公开群加入能力。",
+        }
+    ],
+    ("GroupManager", "getJoinedGroupsFromServer"): [
+        {
+            "manager": "GroupManager",
+            "api": "getJoinedGroupsFromServer",
+            "reason_zh": "Flutter GroupManager.fetchJoinedGroupsFromServer 使用 getJoinedGroupsFromServer method key 调用 Android asyncGetJoinedGroupsFromServer；等价覆盖 4.23 getJoinedGroupsFromServer 的服务端已加入群列表能力。",
+        }
+    ],
+    ("GroupManager", "getPublicGroupsFromServer"): [
+        {
+            "manager": "GroupManager",
+            "api": "getPublicGroupsFromServer",
+            "reason_zh": "Flutter GroupManager.fetchPublicGroupsFromServer 使用 getPublicGroupsFromServer method key 调用 Android asyncGetPublicGroupsFromServer；等价覆盖 4.23 getPublicGroupsFromServer 的公开群分页能力。",
+        }
+    ],
+    ("GroupManager", "asyncGetGroupFromServer"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupSpecificationFromServer",
+            "reason_zh": "Flutter GroupManager.fetchGroupInfoFromServer 使用 getGroupSpecificationFromServer method key 调用 Android getGroupFromServer；等价覆盖 4.23 asyncGetGroupFromServer 的群详情拉取能力。",
+        }
+    ],
+    ("GroupManager", "applyJoinToGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "requestToJoinPublicGroup",
+            "reason_zh": "Flutter GroupManager.requestToJoinPublicGroup 调用 Android asyncApplyJoinToGroup；等价覆盖 4.23 applyJoinToGroup 的入群申请能力。",
+        }
+    ],
+    ("GroupManager", "acceptApplication"): [
+        {
+            "manager": "GroupManager",
+            "api": "acceptJoinApplication",
+            "reason_zh": "Flutter GroupManager.acceptJoinApplication 调用 Android asyncAcceptApplication；等价覆盖 4.23 acceptApplication 的入群申请同意能力。",
+        }
+    ],
+    ("GroupManager", "declineApplication"): [
+        {
+            "manager": "GroupManager",
+            "api": "declineJoinApplication",
+            "reason_zh": "Flutter GroupManager.declineJoinApplication 调用 Android asyncDeclineApplication；等价覆盖 4.23 declineApplication 的入群申请拒绝能力。",
+        }
+    ],
+    ("GroupManager", "acceptInvitation"): [
+        {
+            "manager": "GroupManager",
+            "api": "acceptInvitationFromGroup",
+            "reason_zh": "Flutter GroupManager.acceptInvitationFromGroup 调用 Android asyncAcceptInvitation；等价覆盖 4.23 acceptInvitation 的群邀请接受能力。",
+        }
+    ],
+    ("GroupManager", "declineInvitation"): [
+        {
+            "manager": "GroupManager",
+            "api": "declineInvitationFromGroup",
+            "reason_zh": "Flutter GroupManager.declineInvitationFromGroup 调用 Android asyncDeclineInvitation；等价覆盖 4.23 declineInvitation 的群邀请拒绝能力。",
+        }
+    ],
+    ("GroupManager", "changeGroupName"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateGroupSubject",
+            "reason_zh": "Flutter GroupManager.changeGroupName/updateGroupName 使用 updateGroupSubject method key 调用 Android asyncChangeGroupName；等价覆盖 4.23 changeGroupName 的群名称修改能力。",
+        }
+    ],
+    ("GroupManager", "changeGroupDescription"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateDescription",
+            "reason_zh": "Flutter GroupManager.changeGroupDescription/updateGroupDesc 使用 updateDescription method key 调用 Android asyncChangeGroupDescription；等价覆盖 4.23 changeGroupDescription 的群描述修改能力。",
+        }
+    ],
+    ("GroupManager", "changeGroupAvatar"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateGroupAvatar",
+            "reason_zh": "Flutter GroupManager.updateGroupAvatar 调用 Android asyncChangeGroupAvatar；等价覆盖 4.23 changeGroupAvatar 的群头像修改能力。",
+        }
+    ],
+    ("GroupManager", "changeOwner"): [
+        {
+            "manager": "GroupManager",
+            "api": "updateGroupOwner",
+            "reason_zh": "Flutter GroupManager.changeOwner 使用 updateGroupOwner method key 调用 Android asyncChangeOwner；等价覆盖 4.23 changeOwner 的群主转让能力。",
+        }
+    ],
     ("ContactManager", "asyncAcceptInvitation"): [
         {
             "manager": "ContactManager",
