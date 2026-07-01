@@ -2,7 +2,7 @@
 Contact 剩余 API 覆盖用例。
 
 本文件只补充方法级覆盖缺口：getAllContactsFromDB、getBlockListFromDB、
-getSelfIdsOnOtherPlatform。每个 case 都先通过真实 SDK 调用准备状态，再对
+getSelfIdsOnOtherPlatform、saveBlackList。每个 case 都先通过真实 SDK 调用准备状态，再对
 目标 cmd 的响应信封和业务字段做断言。
 """
 from __future__ import annotations
@@ -92,6 +92,49 @@ def test_contact_get_block_list_from_db_after_server_sync(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getBlockListFromDB.value,
+            "device": "deviceA",
+            "result": [user_b],
+        },
+        ignore_keys={"sequence"},
+    )
+
+    assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
+    flow.delete_friend(device_a, user_b)
+
+
+def test_contact_save_black_list_then_fetch_from_server(
+    device_a, device_b, assert_api, user_a, user_b
+):
+    """saveBlackList：批量保存黑名单列表后，从服务端查询黑名单包含目标用户。"""
+    flow = ContactTestFlow(assert_api)
+    flow.establish_friends(device_a, device_b, user_a, user_b, reason="save_black_list")
+
+    save_resp = device_a.call(
+        "ContactManager",
+        Cmd.saveBlackList.value,
+        info={"userIds": [user_b]},
+    )
+    assert_api.assert_response_matches(
+        save_resp,
+        expected={
+            "manager": "ContactManager",
+            "cmd": Cmd.saveBlackList.value,
+            "device": "deviceA",
+            "result": True,
+        },
+        ignore_keys={"sequence"},
+    )
+
+    server_resp = device_a.call(
+        "ContactManager",
+        Cmd.getBlockListFromServer.value,
+        info={},
+    )
+    assert_api.assert_response_matches(
+        server_resp,
+        expected={
+            "manager": "ContactManager",
+            "cmd": Cmd.getBlockListFromServer.value,
             "device": "deviceA",
             "result": [user_b],
         },

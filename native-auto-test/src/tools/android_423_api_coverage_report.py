@@ -767,6 +767,20 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter wrapper 使用 BlockList 命名，但 Android 实现调用 removeUserFromBlackList；等价覆盖 4.23 asyncRemoveUserFromBlackList 的移出黑名单能力。",
         }
     ],
+    ("ContactManager", "asyncSaveBlackList"): [
+        {
+            "manager": "ContactManager",
+            "api": "saveBlackList",
+            "reason_zh": "Android wrapper 新增 saveBlackList method key 并调用 asyncSaveBlackList；native-auto-test 通过 callNativeMethod 直接覆盖 4.23 批量保存黑名单列表能力，暂不作为跨端 Dart 公开 API。",
+        }
+    ],
+    ("ContactManager", "saveBlackList"): [
+        {
+            "manager": "ContactManager",
+            "api": "saveBlackList",
+            "reason_zh": "Android 4.23 saveBlackList 是同步阻塞形态；Android wrapper 使用同名 method key 调用 asyncSaveBlackList 覆盖同一批量保存黑名单列表能力，避免暴露同步阻塞调用。",
+        }
+    ],
     ("ChatManager", "addReaction"): [
         {
             "manager": "ChatManager",

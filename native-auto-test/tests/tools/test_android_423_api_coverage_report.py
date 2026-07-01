@@ -37,6 +37,7 @@ TASK5_EQUIVALENT_APIS = {
     ("ContactManager", "asyncGetBlackListFromServer"): "ContactManager.getBlockListFromServer",
     ("ContactManager", "asyncGetSelfIdsOnOtherPlatform"): "ContactManager.getSelfIdsOnOtherPlatform",
     ("ContactManager", "asyncRemoveUserFromBlackList"): "ContactManager.removeUserFromBlockList",
+    ("ContactManager", "asyncSaveBlackList"): "ContactManager.saveBlackList",
     ("PushManager", "updatePushDisplayStyle"): "PushManager.updateImPushStyle",
     ("PushManager", "updatePushNickname"): "PushManager.updatePushNickname",
     ("UserInfoManager", "getUserInfoWithUserId"): "UserInfoManager.fetchUserInfoById",
@@ -273,9 +274,14 @@ def test_task5_equivalent_native_apis_are_not_wrapper_missing():
         assert row["automation_covered"] == "yes"
         assert wrapper in row["covered_by_wrapper_api"]
 
+    row = rows[("ContactManager", "saveBlackList", "native_android_api")]
+    assert row["coverage_conclusion"] == "covered_by_case"
+    assert row["android_covered"] == "yes"
+    assert row["automation_covered"] == "yes"
+    assert row["review_action"] == "direct_e2e_case"
+    assert "ContactManager.saveBlackList" in row["covered_by_wrapper_api"]
+
     for key in (
-        ("ContactManager", "asyncSaveBlackList"),
-        ("ContactManager", "saveBlackList"),
         ("UserInfoManager", "fetchSubscribedUsers"),
         ("UserInfoManager", "subscribeUsersInfo"),
         ("UserInfoManager", "unsubscribeUsersInfo"),

@@ -519,17 +519,17 @@ native_api_review:
     target_case: native-auto-test/tests/contact/test_contact.py
   - manager: ContactManager
     api: asyncSaveBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 asyncSaveBlackList 是批量保存黑名单能力；当前 Flutter ContactManager 仅暴露单用户 addUserToBlockList/removeUserFromBlockList 与查询能力，未扫描到批量保存 wrapper。"
+    reason_zh: "Android 原生 asyncSaveBlackList 是 App 可见的批量保存黑名单列表能力；已新增 Android wrapper saveBlackList method key 调用 asyncSaveBlackList，native-auto-test 通过 callNativeMethod 直接覆盖，暂不作为跨端 Dart 公开 API。"
     target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
   - manager: ContactManager
     api: saveBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: contact_p1
-    reason_zh: "Android 原生 saveBlackList 是批量保存黑名单能力；当前 Flutter ContactManager 仅暴露单用户 addUserToBlockList/removeUserFromBlockList 与查询能力，未扫描到批量保存 wrapper。"
+    reason_zh: "Android 原生 saveBlackList 是 asyncSaveBlackList 的同步形态；Flutter 不额外暴露同步阻塞调用，Android wrapper 使用异步 asyncSaveBlackList 覆盖同一批量保存黑名单列表能力。"
     target_case: native-auto-test/tests/contact/test_contact_remaining_api_coverage.py
   - manager: ContactManager
     api: setContactListener

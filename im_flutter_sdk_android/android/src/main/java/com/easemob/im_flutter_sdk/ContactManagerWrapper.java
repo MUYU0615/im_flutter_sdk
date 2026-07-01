@@ -12,6 +12,7 @@ import com.hyphenate.chat.EMCursorResult;
 import com.hyphenate.exceptions.HyphenateException;
 
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -43,6 +44,8 @@ public class ContactManagerWrapper extends Wrapper implements MethodCallHandler 
                 getAllContactsFromDB(param, call.method, result);
             } else if (MethodKey.addUserToBlockList.equals(call.method)) {
                 addUserToBlockList(param, call.method, result);
+            } else if (MethodKey.saveBlackList.equals(call.method)) {
+                saveBlackList(param, call.method, result);
             } else if (MethodKey.removeUserFromBlockList.equals(call.method)) {
                 removeUserFromBlockList(param, call.method, result);
             } else if (MethodKey.getBlockListFromServer.equals(call.method)) {
@@ -135,6 +138,48 @@ public class ContactManagerWrapper extends Wrapper implements MethodCallHandler 
             } catch (HyphenateException e) {
                 onError(result, e);
             }
+        });
+    }
+
+    private void saveBlackList(JSONObject params, String channelName, Result result) throws JSONException {
+        if (!params.has("userIds")) {
+            onError(result, 101, "userIds is required");
+            return;
+        }
+        JSONArray array = params.optJSONArray("userIds");
+        if (array == null) {
+            onError(result, 101, "userIds must be an array");
+            return;
+        }
+        if (array.length() == 0) {
+            onError(result, 101, "userIds must not be empty");
+            return;
+        }
+        List<String> userIds = new ArrayList<>();
+        for (int i = 0; i < array.length(); i++) {
+            Object value = array.opt(i);
+            if (!(value instanceof String)) {
+                onError(result, 101, "userIds must contain only strings");
+                return;
+            }
+            String userId = (String) value;
+            if (userId.trim().length() == 0) {
+                onError(result, 101, "userIds must not contain empty values");
+                return;
+            }
+            userIds.add(userId);
+        }
+        EMClient.getInstance().contactManager().asyncSaveBlackList(
+                userIds,
+                new EMWrapperCallBack(result, channelName, true)
+        );
+    }
+
+    private void onError(Result result, int code, String desc) {
+        post(() -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("error", ErrorHelper.toJson(code, desc));
+            result.success(data);
         });
     }
 

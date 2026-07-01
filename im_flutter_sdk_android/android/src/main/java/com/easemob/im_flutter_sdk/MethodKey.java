@@ -47,6 +47,7 @@ public class MethodKey {
     static final String getAllContactsFromServer = "getAllContactsFromServer";
     static final String getAllContactsFromDB = "getAllContactsFromDB";
     static final String addUserToBlockList = "addUserToBlockList";
+    static final String saveBlackList = "saveBlackList";
     static final String removeUserFromBlockList = "removeUserFromBlockList";
     static final String getBlockListFromServer = "getBlockListFromServer";
     static final String getBlockListFromDB = "getBlockListFromDB";

@@ -53,6 +53,7 @@ class Cmd(str, Enum):
     getAllContactsFromServer = "getAllContactsFromServer"
     getAllContactsFromDB = "getAllContactsFromDB"
     addUserToBlockList = "addUserToBlockList"
+    saveBlackList = "saveBlackList"
     removeUserFromBlockList = "removeUserFromBlockList"
     getBlockListFromServer = "getBlockListFromServer"
     getBlockListFromDB = "getBlockListFromDB"
