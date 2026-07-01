@@ -133,6 +133,48 @@ TASK7A_GROUP_TARGET_CASES = {
     ("GroupManager", "changeOwner"): "native-auto-test/tests/group/test_group_roles.py",
 }
 
+TASK7B_GROUP_EQUIVALENT_APIS = {
+    ("GroupManager", "addGroupAdmin"): "GroupManager.addAdmin",
+    ("GroupManager", "removeGroupAdmin"): "GroupManager.removeAdmin",
+    ("GroupManager", "asyncAddUsersToGroup"): "GroupManager.addMembers",
+    ("GroupManager", "asyncRemoveUserFromGroup"): "GroupManager.removeMembers",
+    ("GroupManager", "removeUserFromGroup"): "GroupManager.removeMembers",
+    ("GroupManager", "removeUsersFromGroup"): "GroupManager.removeMembers",
+    ("GroupManager", "asyncBlockUser"): "GroupManager.blockMembers",
+    ("GroupManager", "blockUser"): "GroupManager.blockMembers",
+    ("GroupManager", "blockUsers"): "GroupManager.blockMembers",
+    ("GroupManager", "asyncUnblockUser"): "GroupManager.unblockMembers",
+    ("GroupManager", "unblockUser"): "GroupManager.unblockMembers",
+    ("GroupManager", "unblockUsers"): "GroupManager.unblockMembers",
+    ("GroupManager", "asyncFetchGroupBlackList"): "GroupManager.getGroupBlockListFromServer",
+    ("GroupManager", "getBlockedUsers"): "GroupManager.getGroupBlockListFromServer",
+    ("GroupManager", "muteGroupMembers"): "GroupManager.muteMembers",
+    ("GroupManager", "unMuteGroupMembers"): "GroupManager.unMuteMembers",
+    ("GroupManager", "blockGroupMessage"): "GroupManager.blockGroup",
+    ("GroupManager", "unblockGroupMessage"): "GroupManager.unblockGroup",
+}
+
+TASK7B_GROUP_TARGET_CASES = {
+    ("GroupManager", "addGroupAdmin"): "native-auto-test/tests/group/test_group_roles.py",
+    ("GroupManager", "removeGroupAdmin"): "native-auto-test/tests/group/test_group_roles.py",
+    ("GroupManager", "asyncAddUsersToGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "asyncRemoveUserFromGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "removeUserFromGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "removeUsersFromGroup"): "native-auto-test/tests/group/test_group_members.py",
+    ("GroupManager", "asyncBlockUser"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "blockUser"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "blockUsers"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "asyncUnblockUser"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "unblockUser"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "unblockUsers"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "asyncFetchGroupBlackList"): "native-auto-test/tests/group/test_group_server_state_lists.py",
+    ("GroupManager", "getBlockedUsers"): "native-auto-test/tests/group/test_group_server_state_lists.py",
+    ("GroupManager", "muteGroupMembers"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "unMuteGroupMembers"): "native-auto-test/tests/group/test_group_moderation.py",
+    ("GroupManager", "blockGroupMessage"): "native-auto-test/tests/group/test_group_exceptions_blocking.py",
+    ("GroupManager", "unblockGroupMessage"): "native-auto-test/tests/group/test_group_exceptions_blocking.py",
+}
+
 
 class _FakeItem:
     def __init__(self, marked: bool):
@@ -383,6 +425,57 @@ def test_task7a_group_join_leave_rows_require_positive_evidence():
         ("GroupManager", "asyncJoinGroup"),
         ("GroupManager", "leaveGroup"),
     ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert row["automation_covered"] == "yes"
+        assert row["coverage_conclusion"] == "covered_by_case"
+
+
+def test_task7b_group_member_role_block_mute_native_apis_are_not_wrapper_missing():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, wrapper in TASK7B_GROUP_EQUIVALENT_APIS.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert wrapper in row["covered_by_wrapper_api"]
+
+
+def test_task7b_group_target_cases_point_to_runnable_pytest_files():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key, target_case in TASK7B_GROUP_TARGET_CASES.items():
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["target_case"] == target_case
+        assert target_case in row["automation_files"]
+        assert not target_case.endswith("group_helpers.py")
+        target_path = NATIVE_AUTO_TEST_ROOT.parent / target_case
+        text = target_path.read_text(encoding="utf-8")
+        assert "def test_" in text
+
+
+def test_task7b_group_member_role_block_mute_rows_require_positive_evidence():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in TASK7B_GROUP_EQUIVALENT_APIS:
         row = rows[(key[0], key[1], "native_android_api")]
         assert row["review_requires_positive_case"] == "true"
         assert row["automation_positive_refs"] != "0"

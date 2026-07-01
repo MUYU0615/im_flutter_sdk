@@ -596,10 +596,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: addGroupAdmin
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 addGroupAdmin 已由 Flutter GroupManager.addAdmin 等价覆盖；Android wrapper 调用 asyncAddGroupAdmin，现有角色 E2E 直接调用该命令并断言 adminList 与事件。"
     target_case: native-auto-test/tests/group/test_group_roles.py
   - manager: GroupManager
     api: applyJoinToGroup
@@ -610,24 +611,27 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
     api: asyncAddUsersToGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 asyncAddUsersToGroup 已由 Flutter GroupManager.addMembers 等价覆盖；Android wrapper 调用 addUsersToGroup，现有成员 E2E 直接调用该命令并断言成员状态。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: asyncBlockUser
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 asyncBlockUser 已由 Flutter GroupManager.blockMembers 等价覆盖；Android wrapper 调用 asyncBlockUsers，单成员列表覆盖单人拉黑能力，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: asyncFetchGroupBlackList
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 asyncFetchGroupBlackList 已由 Flutter GroupManager.getGroupBlockListFromServer 等价覆盖；Android wrapper 调用 asyncGetBlockedUsers，现有服务端状态列表 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: asyncGetGroupFromServer
@@ -646,18 +650,20 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: asyncRemoveUserFromGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 asyncRemoveUserFromGroup 已由 Flutter GroupManager.removeMembers 等价覆盖；Android wrapper 调用 asyncRemoveUsersFromGroup，单成员列表覆盖单人移除能力，现有成员 E2E 直接调用该命令并断言成员状态。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: asyncUnblockUser
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 asyncUnblockUser 已由 Flutter GroupManager.unblockMembers 等价覆盖；Android wrapper 调用 asyncUnblockUsers，单成员列表覆盖单人解除拉黑能力，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: asyncUpdateGroupNamecard
     action: expose_wrapper
@@ -667,25 +673,28 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_member_info.py
   - manager: GroupManager
     api: blockGroupMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 blockGroupMessage 已由 Flutter GroupManager.blockGroup 等价覆盖；Android wrapper 调用 asyncBlockGroupMessage，现有 block/unblock 边界 E2E 含成功路径直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_exceptions_blocking.py
   - manager: GroupManager
     api: blockUser
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 blockUser 已由 Flutter GroupManager.blockMembers 等价覆盖；Android wrapper 调用 asyncBlockUsers，单成员列表覆盖单人拉黑能力，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: blockUsers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 blockUsers 已由 Flutter GroupManager.blockMembers 等价覆盖；Android wrapper 调用 asyncBlockUsers，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: changeGroupAvatar
     action: direct_e2e_case
@@ -793,10 +802,11 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_file_list.py
   - manager: GroupManager
     api: getBlockedUsers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 getBlockedUsers 已由 Flutter GroupManager.getGroupBlockListFromServer 等价覆盖；Android wrapper 调用 asyncGetBlockedUsers，现有服务端状态列表 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_server_state_lists.py
   - manager: GroupManager
     api: getGroupNamecard
@@ -843,60 +853,68 @@ native_api_review:
     target_case: native-auto-test/tests/group/test_group_remaining_api_coverage.py
   - manager: GroupManager
     api: muteGroupMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 muteGroupMembers 已由 Flutter GroupManager.muteMembers 等价覆盖；Android wrapper 调用 asyncMuteGroupMembers，现有管理 E2E 直接调用该命令并断言 muteList 与事件。"
     target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: removeGroupAdmin
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 removeGroupAdmin 已由 Flutter GroupManager.removeAdmin 等价覆盖；Android wrapper 调用 asyncRemoveGroupAdmin，现有角色 E2E 直接调用该命令并断言 adminList 与事件。"
     target_case: native-auto-test/tests/group/test_group_roles.py
   - manager: GroupManager
     api: removeUserFromGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 removeUserFromGroup 已由 Flutter GroupManager.removeMembers 等价覆盖；Android wrapper 调用 asyncRemoveUsersFromGroup，单成员列表覆盖单人移除能力，现有成员 E2E 直接调用该命令并断言成员状态。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: removeUsersFromGroup
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 removeUsersFromGroup 已由 Flutter GroupManager.removeMembers 等价覆盖；Android wrapper 调用 asyncRemoveUsersFromGroup，现有成员 E2E 直接调用该命令并断言成员状态。"
     target_case: native-auto-test/tests/group/test_group_members.py
   - manager: GroupManager
     api: unMuteGroupMembers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 unMuteGroupMembers 已由 Flutter GroupManager.unMuteMembers 等价覆盖；Android wrapper 调用 asyncUnMuteGroupMembers，现有管理 E2E 直接调用该命令并断言 muteList 与事件。"
     target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: unblockGroupMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 unblockGroupMessage 已由 Flutter GroupManager.unblockGroup 等价覆盖；Android wrapper 调用 asyncUnblockGroupMessage，现有 block/unblock 边界 E2E 含成功路径直接调用该命令。"
+    target_case: native-auto-test/tests/group/test_group_exceptions_blocking.py
   - manager: GroupManager
     api: unblockUser
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 unblockUser 已由 Flutter GroupManager.unblockMembers 等价覆盖；Android wrapper 调用 asyncUnblockUsers，单成员列表覆盖单人解除拉黑能力，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: unblockUsers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
-    reason_zh: "Android 原生 SDK 提供群组业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/group/test_group_blocking.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 unblockUsers 已由 Flutter GroupManager.unblockMembers 等价覆盖；Android wrapper 调用 asyncUnblockUsers，现有管理 E2E 直接调用该命令并断言 blockList。"
+    target_case: native-auto-test/tests/group/test_group_moderation.py
   - manager: GroupManager
     api: updateGroupAnnouncement
     action: expose_wrapper

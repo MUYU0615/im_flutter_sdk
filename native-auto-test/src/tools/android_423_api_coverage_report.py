@@ -508,6 +508,132 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter GroupManager.changeOwner 使用 updateGroupOwner method key 调用 Android asyncChangeOwner；等价覆盖 4.23 changeOwner 的群主转让能力。",
         }
     ],
+    ("GroupManager", "addGroupAdmin"): [
+        {
+            "manager": "GroupManager",
+            "api": "addAdmin",
+            "reason_zh": "Flutter GroupManager.addAdmin 使用 addAdmin method key 调用 Android asyncAddGroupAdmin；等价覆盖 4.23 addGroupAdmin 的管理员添加能力。",
+        }
+    ],
+    ("GroupManager", "removeGroupAdmin"): [
+        {
+            "manager": "GroupManager",
+            "api": "removeAdmin",
+            "reason_zh": "Flutter GroupManager.removeAdmin 使用 removeAdmin method key 调用 Android asyncRemoveGroupAdmin；等价覆盖 4.23 removeGroupAdmin 的管理员移除能力。",
+        }
+    ],
+    ("GroupManager", "asyncAddUsersToGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "addMembers",
+            "reason_zh": "Flutter GroupManager.addMembers 使用 addMembers method key 调用 Android addUsersToGroup；等价覆盖 4.23 asyncAddUsersToGroup 的批量加群成员能力。",
+        }
+    ],
+    ("GroupManager", "asyncRemoveUserFromGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "removeMembers",
+            "reason_zh": "Flutter GroupManager.removeMembers 使用 removeMembers method key 调用 Android asyncRemoveUsersFromGroup；单成员列表等价覆盖 4.23 asyncRemoveUserFromGroup。",
+        }
+    ],
+    ("GroupManager", "removeUserFromGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "removeMembers",
+            "reason_zh": "Flutter GroupManager.removeMembers 使用 removeMembers method key 调用 Android asyncRemoveUsersFromGroup；单成员列表等价覆盖 4.23 removeUserFromGroup。",
+        }
+    ],
+    ("GroupManager", "removeUsersFromGroup"): [
+        {
+            "manager": "GroupManager",
+            "api": "removeMembers",
+            "reason_zh": "Flutter GroupManager.removeMembers 使用 removeMembers method key 调用 Android asyncRemoveUsersFromGroup；等价覆盖 4.23 removeUsersFromGroup 的批量移除群成员能力。",
+        }
+    ],
+    ("GroupManager", "asyncBlockUser"): [
+        {
+            "manager": "GroupManager",
+            "api": "blockMembers",
+            "reason_zh": "Flutter GroupManager.blockMembers 使用 blockMembers method key 调用 Android asyncBlockUsers；单成员列表等价覆盖 4.23 asyncBlockUser。",
+        }
+    ],
+    ("GroupManager", "blockUser"): [
+        {
+            "manager": "GroupManager",
+            "api": "blockMembers",
+            "reason_zh": "Flutter GroupManager.blockMembers 使用 blockMembers method key 调用 Android asyncBlockUsers；单成员列表等价覆盖 4.23 blockUser。",
+        }
+    ],
+    ("GroupManager", "blockUsers"): [
+        {
+            "manager": "GroupManager",
+            "api": "blockMembers",
+            "reason_zh": "Flutter GroupManager.blockMembers 使用 blockMembers method key 调用 Android asyncBlockUsers；等价覆盖 4.23 blockUsers 的批量拉黑群成员能力。",
+        }
+    ],
+    ("GroupManager", "asyncUnblockUser"): [
+        {
+            "manager": "GroupManager",
+            "api": "unblockMembers",
+            "reason_zh": "Flutter GroupManager.unblockMembers 使用 unblockMembers method key 调用 Android asyncUnblockUsers；单成员列表等价覆盖 4.23 asyncUnblockUser。",
+        }
+    ],
+    ("GroupManager", "unblockUser"): [
+        {
+            "manager": "GroupManager",
+            "api": "unblockMembers",
+            "reason_zh": "Flutter GroupManager.unblockMembers 使用 unblockMembers method key 调用 Android asyncUnblockUsers；单成员列表等价覆盖 4.23 unblockUser。",
+        }
+    ],
+    ("GroupManager", "unblockUsers"): [
+        {
+            "manager": "GroupManager",
+            "api": "unblockMembers",
+            "reason_zh": "Flutter GroupManager.unblockMembers 使用 unblockMembers method key 调用 Android asyncUnblockUsers；等价覆盖 4.23 unblockUsers 的批量解除拉黑能力。",
+        }
+    ],
+    ("GroupManager", "asyncFetchGroupBlackList"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupBlockListFromServer",
+            "reason_zh": "Flutter GroupManager.getGroupBlockListFromServer 使用 getGroupBlockListFromServer method key 调用 Android asyncGetBlockedUsers；等价覆盖 4.23 asyncFetchGroupBlackList 的黑名单分页拉取能力。",
+        }
+    ],
+    ("GroupManager", "getBlockedUsers"): [
+        {
+            "manager": "GroupManager",
+            "api": "getGroupBlockListFromServer",
+            "reason_zh": "Flutter GroupManager.getGroupBlockListFromServer 使用 getGroupBlockListFromServer method key 调用 Android asyncGetBlockedUsers；等价覆盖 4.23 getBlockedUsers 的黑名单分页拉取能力。",
+        }
+    ],
+    ("GroupManager", "muteGroupMembers"): [
+        {
+            "manager": "GroupManager",
+            "api": "muteMembers",
+            "reason_zh": "Flutter GroupManager.muteMembers 使用 muteMembers method key 调用 Android asyncMuteGroupMembers；等价覆盖 4.23 muteGroupMembers 的成员禁言能力。",
+        }
+    ],
+    ("GroupManager", "unMuteGroupMembers"): [
+        {
+            "manager": "GroupManager",
+            "api": "unMuteMembers",
+            "reason_zh": "Flutter GroupManager.unMuteMembers 使用 unMuteMembers method key 调用 Android asyncUnMuteGroupMembers；等价覆盖 4.23 unMuteGroupMembers 的解除成员禁言能力。",
+        }
+    ],
+    ("GroupManager", "blockGroupMessage"): [
+        {
+            "manager": "GroupManager",
+            "api": "blockGroup",
+            "reason_zh": "Flutter GroupManager.blockGroup 使用 blockGroup method key 调用 Android asyncBlockGroupMessage；等价覆盖 4.23 blockGroupMessage 的屏蔽群消息能力。",
+        }
+    ],
+    ("GroupManager", "unblockGroupMessage"): [
+        {
+            "manager": "GroupManager",
+            "api": "unblockGroup",
+            "reason_zh": "Flutter GroupManager.unblockGroup 使用 unblockGroup method key 调用 Android asyncUnblockGroupMessage；等价覆盖 4.23 unblockGroupMessage 的解除屏蔽群消息能力。",
+        }
+    ],
     ("ContactManager", "asyncAcceptInvitation"): [
         {
             "manager": "ContactManager",
