@@ -3,13 +3,16 @@ from pathlib import Path
 
 from src.tools.android_423_api_coverage_report import (
     _automation_evidence_kind,
+    _direct_e2e_case_state,
     build_rows,
+    scan_automation,
     summarize,
 )
 from tests.conftest import _all_items_marked_no_global_login
 
 
 pytestmark = pytest.mark.no_global_login
+NATIVE_AUTO_TEST_ROOT = Path(__file__).resolve().parents[2]
 
 
 P1_EQUIVALENT_APIS = {
@@ -258,7 +261,7 @@ def test_task6_chatroom_target_cases_point_to_direct_case_files():
 
 
 def test_task6_chatroom_attribute_cases_cover_non_forced_branches():
-    text = Path("tests/chatroom/test_chatroom_management_basics.py").read_text(encoding="utf-8")
+    text = (NATIVE_AUTO_TEST_ROOT / "tests/chatroom/test_chatroom_management_basics.py").read_text(encoding="utf-8")
 
     set_start = text.index("def test_chatroom_set_attributes_non_forced_success")
     remove_start = text.index("def test_chatroom_remove_attributes_non_forced_success")
@@ -302,7 +305,7 @@ def test_task7a_group_target_cases_point_to_files_that_call_the_wrapper_commands
 
 
 def test_task7a_group_join_leave_target_case_is_not_error_only():
-    text = Path("tests/group/test_group_members.py").read_text(encoding="utf-8")
+    text = (NATIVE_AUTO_TEST_ROOT / "tests/group/test_group_members.py").read_text(encoding="utf-8")
     start = text.index("def test_group_join_and_leave_public_group")
     end = text.index("def test_group_members_batch_join_exit_new_events", start)
     block = text[start:end]
@@ -331,7 +334,7 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api):
 
 
 def test_task7a_group_join_leave_success_references_are_positive_evidence():
-    text = Path("tests/group/test_group_members.py").read_text(encoding="utf-8")
+    text = (NATIVE_AUTO_TEST_ROOT / "tests/group/test_group_members.py").read_text(encoding="utf-8")
     start = text.index("def test_group_join_and_leave_public_group")
     end = text.index("def test_group_members_batch_join_exit_new_events", start)
     block = text[start:end]
@@ -355,7 +358,40 @@ def test_task7a_group_join_leave_rows_require_positive_evidence():
         row = rows[(key[0], key[1], "native_android_api")]
         assert row["review_requires_positive_case"] == "true"
         assert row["automation_positive_refs"] != "0"
+        assert row["automation_covered"] == "yes"
         assert row["coverage_conclusion"] == "covered_by_case"
+
+
+def test_positive_required_direct_case_with_only_error_refs_is_not_covered():
+    conclusion, automation_covered = _direct_e2e_case_state(
+        requires_positive_case=True,
+        has_automation_refs=True,
+        positive_refs=0,
+    )
+
+    assert conclusion == "case_required"
+    assert automation_covered is False
+
+
+def test_report_tool_tests_are_not_scanned_as_e2e_automation_evidence():
+    automation = scan_automation()
+
+    for cmd in ("joinPublicGroup", "leaveGroup"):
+        files = automation[("GroupManager", cmd)]["files"]
+        assert not any(path.startswith("native-auto-test/tests/tools/") for path in files)
+
+
+def test_task7a_group_join_leave_positive_refs_do_not_come_from_textual_fallback_only():
+    automation = scan_automation()
+
+    for key in (
+        ("GroupManager", "joinPublicGroup"),
+        ("GroupManager", "leaveGroup"),
+    ):
+        evidence = automation[key]["evidence_kinds"]
+        assert evidence["positive"] > 0
+        assert evidence["unknown"] >= 0
+        assert evidence["positive"] < automation[key]["refs"]
 
 
 def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions():

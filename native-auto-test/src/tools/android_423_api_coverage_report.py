@@ -35,6 +35,9 @@ ANDROID_DIR = REPO_ROOT / "im_flutter_sdk_android/android/src/main/java/com/ease
 IOS_DIR = REPO_ROOT / "im_flutter_sdk_ios/ios/Classes"
 WEB_DIR = REPO_ROOT / "im_flutter_sdk_web/lib/src"
 TEST_DIRS = (ROOT / "tests", ROOT / "src/test_flow")
+AUTOMATION_SCAN_EXCLUDED_PARTS = {
+    ("tests", "tools"),
+}
 CMD_KEYS = ROOT / "src/sdk_api/cmd_keys.py"
 ANDROID_METHOD_KEYS = ANDROID_DIR / "MethodKey.java"
 IOS_METHOD_KEYS = IOS_DIR / "MethodKeys.h"
@@ -1104,6 +1107,14 @@ def _pytest_function_blocks(text: str) -> list[tuple[int, int, str]]:
     return blocks
 
 
+def _is_automation_scan_excluded(path: Path) -> bool:
+    try:
+        parts = path.relative_to(ROOT).parts
+    except ValueError:
+        parts = path.parts
+    return any(tuple(parts[: len(excluded)]) == excluded for excluded in AUTOMATION_SCAN_EXCLUDED_PARTS)
+
+
 def _automation_evidence_kind(block: str, cmd: str) -> str:
     if cmd not in block:
         return "unknown"
@@ -1157,16 +1168,28 @@ def _record_automation_ref(
     path: Path,
     block: str,
     count: int = 1,
+    kind: str | None = None,
 ) -> None:
     if count <= 0:
         return
     item = pairs[(manager, cmd)]
     item["files"].add(str(path.relative_to(REPO_ROOT)))
     item["refs"] += count
-    kind = _automation_evidence_kind(block, cmd)
+    kind = kind or _automation_evidence_kind(block, cmd)
     if kind not in AUTOMATION_EVIDENCE_KINDS:
         kind = "unknown"
     item["evidence_kinds"][kind] += count
+
+
+def _direct_e2e_case_state(
+    *,
+    requires_positive_case: bool,
+    has_automation_refs: bool,
+    positive_refs: int,
+) -> tuple[str, bool]:
+    has_required_automation = positive_refs > 0 if requires_positive_case else has_automation_refs
+    conclusion = "covered_by_case" if has_required_automation else "case_required"
+    return conclusion, has_required_automation
 
 
 def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
@@ -1177,6 +1200,8 @@ def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
     for root in TEST_DIRS:
         for path in root.rglob("*.py"):
             if "__pycache__" in path.parts:
+                continue
+            if _is_automation_scan_excluded(path):
                 continue
             text = _read(path)
             for _, _, block in _pytest_function_blocks(text):
@@ -1201,7 +1226,7 @@ def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
                     if count:
                         manager = _infer_manager(path, api_name)
                         if manager:
-                            _record_automation_ref(pairs, manager, cmd, path, block, count)
+                            _record_automation_ref(pairs, manager, cmd, path, block, count, kind="unknown")
     return pairs
 
 
@@ -1328,8 +1353,11 @@ def build_rows() -> list[dict[str, str]]:
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
         if review.get("action") == "direct_e2e_case" and wrappers:
             requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
-            has_required_automation = automation_positive_refs > 0 if requires_positive_case else bool(automation_infos)
-            conclusion = "covered_by_case" if has_required_automation else "case_required"
+            conclusion, has_required_automation = _direct_e2e_case_state(
+                requires_positive_case=requires_positive_case,
+                has_automation_refs=bool(automation_infos),
+                positive_refs=automation_positive_refs,
+            )
             assessment = {
                 **assessment,
                 "native_test_requirement": "direct_e2e",
@@ -1345,7 +1373,11 @@ def build_rows() -> list[dict[str, str]]:
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})
         indirect_files = _indirect_coverage_files(manager, assessment["coverage_semantics_group"])
-        is_automation_covered = bool(automation_infos) or assessment["coverage_conclusion"] == "indirect_covered_by_case"
+        requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
+        if requires_positive_case:
+            is_automation_covered = has_required_automation if review.get("action") == "direct_e2e_case" and wrappers else automation_positive_refs > 0
+        else:
+            is_automation_covered = bool(automation_infos) or assessment["coverage_conclusion"] == "indirect_covered_by_case"
         rows.append(
             {
                 "manager": manager,
