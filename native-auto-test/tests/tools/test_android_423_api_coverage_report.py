@@ -534,7 +534,7 @@ def test_task7c_group_announcement_lists_and_invite_native_apis_are_not_wrapper_
         assert wrapper in row["covered_by_wrapper_api"]
 
 
-def test_task7c_shared_file_native_apis_have_wrappers_but_still_need_positive_cases():
+def test_task8a_shared_file_native_apis_are_covered_by_positive_case():
     rows = {
         (row["manager"], row["api"], row["row_kind"]): row
         for row in build_rows()
@@ -544,12 +544,12 @@ def test_task7c_shared_file_native_apis_have_wrappers_but_still_need_positive_ca
 
     for key, wrapper in TASK7C_GROUP_CASE_REQUIRED_APIS.items():
         row = rows[(key[0], key[1], "native_android_api")]
-        assert row["coverage_conclusion"] == "case_required"
+        assert row["coverage_conclusion"] == "covered_by_case"
         assert row["android_covered"] == "yes"
-        assert row["automation_covered"] == "no"
+        assert row["automation_covered"] == "yes"
         assert row["review_action"] == "direct_e2e_case"
         assert row["review_requires_positive_case"] == "true"
-        assert row["automation_positive_refs"] == "0"
+        assert row["automation_positive_refs"] != "0"
         assert wrapper in row["covered_by_wrapper_api"]
 
 
