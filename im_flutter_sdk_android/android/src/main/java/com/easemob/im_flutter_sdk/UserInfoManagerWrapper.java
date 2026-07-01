@@ -8,7 +8,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -17,6 +19,8 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 
 public class UserInfoManagerWrapper extends Wrapper implements MethodCallHandler {
+
+    private static final int INVALID_PARAM = 110;
 
     UserInfoManagerWrapper(FlutterPlugin.FlutterPluginBinding flutterPluginBinding, String channelName) {
         super(flutterPluginBinding, channelName);
@@ -34,11 +38,19 @@ public class UserInfoManagerWrapper extends Wrapper implements MethodCallHandler
                 fetchUserInfoById(param, call.method, result);
             } else if (MethodKey.fetchUserInfoByIdWithType.equals(call.method)) {
                 fetchUserInfoByIdWithType(param, call.method, result);
+            } else if (MethodKey.subscribeUsersInfo.equals(call.method)) {
+                subscribeUsersInfo(param, call.method, result);
+            } else if (MethodKey.unsubscribeUsersInfo.equals(call.method)) {
+                unsubscribeUsersInfo(param, call.method, result);
+            } else if (MethodKey.fetchSubscribedUsers.equals(call.method)) {
+                fetchSubscribedUsers(call.method, result);
             } else {
                 super.onMethodCall(call, result);
             }
         } catch (JSONException e) {
             onError(result, new HyphenateException(-1, e.getMessage()));
+        } catch (HyphenateException e) {
+            onError(result, e);
         }
     }
 
@@ -82,6 +94,31 @@ public class UserInfoManagerWrapper extends Wrapper implements MethodCallHandler
             @Override
             public void onSuccess(Map<String, EMUserInfo> object) {
                 updateObject(userInfoMapToJson(object));
+            }
+        });
+    }
+
+    private void subscribeUsersInfo(JSONObject param, String channelName, Result result) throws JSONException, HyphenateException {
+        String[] userIds = requireUserIds(param);
+        EMClient.getInstance().userInfoManager().subscribeUsersInfo(
+                userIds,
+                new EMWrapperCallBack(result, channelName, true)
+        );
+    }
+
+    private void unsubscribeUsersInfo(JSONObject param, String channelName, Result result) throws JSONException, HyphenateException {
+        String[] userIds = requireUserIds(param);
+        EMClient.getInstance().userInfoManager().unsubscribeUsersInfo(
+                userIds,
+                new EMWrapperCallBack(result, channelName, true)
+        );
+    }
+
+    private void fetchSubscribedUsers(String channelName, Result result) {
+        EMClient.getInstance().userInfoManager().fetchSubscribedUsers(new EMValueWrapperCallBack<List<EMUserInfo>>(result, channelName) {
+            @Override
+            public void onSuccess(List<EMUserInfo> object) {
+                updateObject(userInfoListToJson(object));
             }
         });
     }
@@ -141,6 +178,43 @@ public class UserInfoManagerWrapper extends Wrapper implements MethodCallHandler
             data.put(entry.getKey(), userInfoToJson(entry.getValue()));
         }
         return data;
+    }
+
+    private static List<Map<String, Object>> userInfoListToJson(List<EMUserInfo> userInfos) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        if (userInfos == null) {
+            return data;
+        }
+        for (EMUserInfo info : userInfos) {
+            data.add(userInfoToJson(info));
+        }
+        return data;
+    }
+
+    private static String[] requireUserIds(JSONObject json) throws JSONException, HyphenateException {
+        if (!json.has("userIds")) {
+            throw new HyphenateException(INVALID_PARAM, "'userIds' can not be null");
+        }
+        JSONArray array = json.optJSONArray("userIds");
+        if (array == null) {
+            throw new HyphenateException(INVALID_PARAM, "'userIds' must be an array");
+        }
+        if (array.length() == 0) {
+            throw new HyphenateException(INVALID_PARAM, "'userIds' can not be null");
+        }
+        String[] values = new String[array.length()];
+        for (int i = 0; i < array.length(); i++) {
+            Object value = array.opt(i);
+            if (!(value instanceof String)) {
+                throw new HyphenateException(INVALID_PARAM, "'userIds' must contain only strings");
+            }
+            String userId = (String) value;
+            if (userId.trim().length() == 0) {
+                throw new HyphenateException(INVALID_PARAM, "'userIds' must not contain empty values");
+            }
+            values[i] = userId;
+        }
+        return values;
     }
 
     private static String[] stringArrayFromJson(JSONArray jsonArray) throws JSONException {

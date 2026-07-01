@@ -858,6 +858,27 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter wrapper 的 fetchUserInfoById 调用 Android fetchUserInfoByUserId 批量拉取用户属性；等价覆盖 getUserInfoWithUserIds 的批量用户属性查询能力。",
         }
     ],
+    ("UserInfoManager", "fetchSubscribedUsers"): [
+        {
+            "manager": "UserInfoManager",
+            "api": "fetchSubscribedUsers",
+            "reason_zh": "Flutter wrapper 的 fetchSubscribedUsers 调用 Android fetchSubscribedUsers；覆盖已订阅用户资料列表查询能力。",
+        }
+    ],
+    ("UserInfoManager", "subscribeUsersInfo"): [
+        {
+            "manager": "UserInfoManager",
+            "api": "subscribeUsersInfo",
+            "reason_zh": "Flutter wrapper 的 subscribeUsersInfo 调用 Android subscribeUsersInfo；覆盖批量订阅陌生人用户资料能力。",
+        }
+    ],
+    ("UserInfoManager", "unsubscribeUsersInfo"): [
+        {
+            "manager": "UserInfoManager",
+            "api": "unsubscribeUsersInfo",
+            "reason_zh": "Flutter wrapper 的 unsubscribeUsersInfo 调用 Android unsubscribeUsersInfo；覆盖批量取消订阅陌生人用户资料能力。",
+        }
+    ],
 }
 
 
@@ -1328,11 +1349,11 @@ def _is_automation_scan_excluded(path: Path) -> bool:
 def _automation_evidence_kind(block: str, cmd: str) -> str:
     if cmd not in block:
         return "unknown"
-    lowered = block.lower()
-    if any(token in lowered for token in ("nonexistent", "invalid", "error", "exception")):
-        return "error_only"
     cmd_pos = block.find(cmd)
     prefix = block[max(0, cmd_pos - 120) : cmd_pos]
+    local_context = block[max(0, cmd_pos - 260) : cmd_pos + 360].lower()
+    if any(token in local_context for token in ("nonexistent", "invalid", "error")):
+        return "error_only"
     response_var = ""
     assign_match = re.search(r"(\w+)\s*=\s*[^\n]{0,120}$", prefix)
     if assign_match:
@@ -1535,8 +1556,8 @@ def build_rows() -> list[dict[str, str]]:
         )
     for manager, method in sorted(native_android):
         wrappers = native_call_to_wrappers.get((manager, method), [])
-        wrapper_apis = [f"{item['manager']}.{item['api']}" for item in wrappers]
-        wrapper_files = [f"{item['android_file']}:{item['android_line']}" for item in wrappers]
+        wrapper_apis = list(dict.fromkeys(f"{item['manager']}.{item['api']}" for item in wrappers))
+        wrapper_files = list(dict.fromkeys(f"{item['android_file']}:{item['android_line']}" for item in wrappers))
         automation_infos = [
             automation[(item["manager"], item["api"])]
             for item in wrappers

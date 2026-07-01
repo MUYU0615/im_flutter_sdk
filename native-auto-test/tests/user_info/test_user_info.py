@@ -6,6 +6,8 @@
 """
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from src import Cmd
@@ -346,6 +348,107 @@ def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, us
         },
         ignore_keys=_USER_INFO_FETCH_BY_ID_IGNORE_KEYS,
     )
+
+
+@pytest.mark.real_e2e
+def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
+    device_a, assert_api, user_b
+):
+    """subscribeUsersInfo/fetchSubscribedUsers/unsubscribeUsersInfo：订阅陌生人资料后查询，再取消订阅。"""
+    subscribed = False
+    try:
+        subscribe_resp = device_a.call(
+            "UserInfoManager",
+            Cmd.subscribeUsersInfo.value,
+            info={"userIds": [user_b]},
+        )
+        assert_api.assert_response_matches(
+            subscribe_resp,
+            expected={
+                "manager": "UserInfoManager",
+                "cmd": Cmd.subscribeUsersInfo.value,
+                "device": "deviceA",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
+        subscribed = True
+
+        fetch_resp = device_a.call(
+            "UserInfoManager",
+            Cmd.fetchSubscribedUsers.value,
+            info={},
+        )
+        assert_api.assert_response_matches(
+            fetch_resp,
+            expected={
+                "manager": "UserInfoManager",
+                "cmd": Cmd.fetchSubscribedUsers.value,
+                "device": "deviceA",
+                "result": [{"userId": user_b}],
+            },
+            ignore_keys={
+                "sequence",
+                "ext",
+                "avatarUrl",
+                "phone",
+                "birth",
+                "nickName",
+                "sign",
+                "gender",
+                "mail",
+            },
+        )
+
+        unsubscribe_resp = device_a.call(
+            "UserInfoManager",
+            Cmd.unsubscribeUsersInfo.value,
+            info={"userIds": [user_b]},
+        )
+        assert_api.assert_response_matches(
+            unsubscribe_resp,
+            expected={
+                "manager": "UserInfoManager",
+                "cmd": Cmd.unsubscribeUsersInfo.value,
+                "device": "deviceA",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
+        subscribed = False
+
+        fetch_after_unsubscribe = device_a.call(
+            "UserInfoManager",
+            Cmd.fetchSubscribedUsers.value,
+            info={},
+        )
+        assert_api.assert_response_matches(
+            fetch_after_unsubscribe,
+            expected={
+                "manager": "UserInfoManager",
+                "cmd": Cmd.fetchSubscribedUsers.value,
+                "device": "deviceA",
+            },
+            ignore_keys={"sequence", "result"},
+        )
+        subscribed_user_ids = {
+            item.get("userId")
+            for item in fetch_after_unsubscribe.get("result", [])
+            if isinstance(item, dict)
+        }
+        assert user_b not in subscribed_user_ids
+    finally:
+        original_exc_type = sys.exc_info()[0]
+        if subscribed:
+            try:
+                device_a.call(
+                    "UserInfoManager",
+                    Cmd.unsubscribeUsersInfo.value,
+                    info={"userIds": [user_b]},
+                )
+            except Exception:
+                if original_exc_type is None:
+                    raise
 
 
 def test_user_info_fetch_by_id_empty_user_ids(device_a, assert_api):

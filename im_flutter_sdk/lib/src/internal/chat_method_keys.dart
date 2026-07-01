@@ -335,6 +335,9 @@ class ChatMethodKeys {
   static const String updateOwnUserInfoWithType = "updateOwnUserInfoWithType";
   static const String fetchUserInfoById = "fetchUserInfoById";
   static const String fetchUserInfoByIdWithType = "fetchUserInfoByIdWithType";
+  static const String subscribeUsersInfo = "subscribeUsersInfo";
+  static const String unsubscribeUsersInfo = "unsubscribeUsersInfo";
+  static const String fetchSubscribedUsers = "fetchSubscribedUsers";
 
   /// EMPresenceManager methods
   static const String presenceWithDescription =

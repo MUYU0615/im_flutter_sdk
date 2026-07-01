@@ -1130,10 +1130,10 @@ native_api_review:
     target_case: native-auto-test/tests/push/test_push_remaining_api_coverage.py
   - manager: UserInfoManager
     api: fetchSubscribedUsers
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: user_info_p1
-    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 fetchSubscribedUsers 已由 Flutter UserInfoManager.fetchSubscribedUsers method key 暴露，Android wrapper 调用真实 SDK fetchSubscribedUsers；自动化覆盖订阅后查询和取消订阅后的状态变化。"
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: getUserInfoWithUserId
@@ -1151,15 +1151,15 @@ native_api_review:
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: subscribeUsersInfo
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: user_info_p1
-    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 subscribeUsersInfo 已由 Flutter UserInfoManager.subscribeUsersInfo method key 暴露，Android wrapper 调用真实 SDK subscribeUsersInfo；自动化覆盖订阅成功后可由 fetchSubscribedUsers 观测。"
     target_case: native-auto-test/tests/user_info/test_user_info.py
   - manager: UserInfoManager
     api: unsubscribeUsersInfo
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: user_info_p1
-    reason_zh: "Android 原生 SDK 提供用户属性订阅/查询能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    reason_zh: "Android 原生 unsubscribeUsersInfo 已由 Flutter UserInfoManager.unsubscribeUsersInfo method key 暴露，Android wrapper 调用真实 SDK unsubscribeUsersInfo；自动化覆盖取消订阅后订阅列表不再包含目标用户。"
     target_case: native-auto-test/tests/user_info/test_user_info.py

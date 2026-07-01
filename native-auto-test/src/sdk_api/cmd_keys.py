@@ -275,6 +275,9 @@ class Cmd(str, Enum):
     fetchOwnInfo = "fetchOwnInfo"
     fetchUserInfoById = "fetchUserInfoById"
     fetchUserInfoByIdWithType = "fetchUserInfoByIdWithType"
+    subscribeUsersInfo = "subscribeUsersInfo"
+    unsubscribeUsersInfo = "unsubscribeUsersInfo"
+    fetchSubscribedUsers = "fetchSubscribedUsers"
 
     # ----- EMPresenceManager -----
     presenceWithDescription = "publishPresenceWithDescription"

@@ -281,15 +281,17 @@ def test_task5_equivalent_native_apis_are_not_wrapper_missing():
     assert row["review_action"] == "direct_e2e_case"
     assert "ContactManager.saveBlackList" in row["covered_by_wrapper_api"]
 
-    for key in (
-        ("UserInfoManager", "fetchSubscribedUsers"),
-        ("UserInfoManager", "subscribeUsersInfo"),
-        ("UserInfoManager", "unsubscribeUsersInfo"),
-    ):
+    for key, wrapper in {
+        ("UserInfoManager", "fetchSubscribedUsers"): "UserInfoManager.fetchSubscribedUsers",
+        ("UserInfoManager", "subscribeUsersInfo"): "UserInfoManager.subscribeUsersInfo",
+        ("UserInfoManager", "unsubscribeUsersInfo"): "UserInfoManager.unsubscribeUsersInfo",
+    }.items():
         row = rows[(key[0], key[1], "native_android_api")]
-        assert row["coverage_conclusion"] == "wrapper_missing"
-        assert row["android_covered"] == "no"
-        assert row["review_action"] == "expose_wrapper"
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert wrapper in row["covered_by_wrapper_api"]
 
 
 def test_task5_listener_lifecycle_reviews_are_indirect_not_wrapper_gaps():
@@ -612,6 +614,27 @@ def test_group_download_shared_file_nonexistent_group_current_behavior(device_a,
 '''
 
     assert _automation_evidence_kind(invalid_block, "downloadGroupSharedFile") == "error_only"
+
+
+def test_positive_case_with_cleanup_exception_handler_stays_positive_evidence():
+    block = '''
+def test_user_info_subscribe_fetch_and_unsubscribe_users_info(device_a, assert_api):
+    subscribe_resp = device_a.call(
+        "UserInfoManager",
+        Cmd.subscribeUsersInfo.value,
+        info={"userIds": ["u2"]},
+    )
+    assert_api.assert_response_matches(
+        subscribe_resp,
+        expected={"manager": "UserInfoManager", "cmd": Cmd.subscribeUsersInfo.value, "result": True},
+    )
+    try:
+        pass
+    except Exception:
+        raise
+'''
+
+    assert _automation_evidence_kind(block, "subscribeUsersInfo") == "positive"
 
 
 def test_positive_required_direct_case_with_only_error_refs_is_not_covered():
