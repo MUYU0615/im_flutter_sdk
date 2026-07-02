@@ -221,11 +221,25 @@ INDIRECT_COVERAGE_RULES = {
 }
 
 NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("ChatManager", "downloadBigImage"): [
+        {
+            "manager": "ChatManager",
+            "api": "downloadBigImage",
+            "reason_zh": "Flutter ChatManager.downloadBigImage 通过 invokeDownloadMethod 反射调用 Android downloadBigImage(EMMessage, EMCallBack)；扫描器无法从字符串反射中自动识别，但现有 E2E 发送真实图片后调用该命令并等待下载回调。",
+        }
+    ],
     ("ChatManager", "loadAllConversations"): [
         {
             "manager": "ChatManager",
             "api": "loadAllConversationsFromDB",
             "reason_zh": "Flutter ChatManager.loadAllConversationsFromDB 调用 Android loadAllConversations；现有公开 loadAllConversations 返回排序会话列表，不能改成 boolean，因此用测试桥接命令覆盖原生加载本地缓存能力。",
+        }
+    ],
+    ("ChatManager", "reportMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "reportMessage",
+            "reason_zh": "Flutter ChatManager.reportMessage 调用 Android asyncReportMessage，等价覆盖 4.23 reportMessage 的消息举报能力；现有 E2E 发送真实消息后按真实 msgId 调用并断言成功。",
         }
     ],
     ("GroupManager", "asyncUpdateGroupNamecard"): [
@@ -1360,10 +1374,13 @@ def _is_automation_scan_excluded(path: Path) -> bool:
     return any(tuple(parts[: len(excluded)]) == excluded for excluded in AUTOMATION_SCAN_EXCLUDED_PARTS)
 
 
-def _automation_evidence_kind(block: str, cmd: str) -> str:
-    if cmd not in block:
+def _automation_evidence_kind(block: str, cmd: str, api_name: str | None = None) -> str:
+    cmd_tokens = [cmd]
+    if api_name:
+        cmd_tokens.append(f"Cmd.{api_name}.value")
+    if not any(token in block for token in cmd_tokens):
         return "unknown"
-    cmd_pos = block.find(cmd)
+    cmd_pos = min(pos for token in cmd_tokens if (pos := block.find(token)) >= 0)
     prefix = block[max(0, cmd_pos - 120) : cmd_pos]
     local_context = block[max(0, cmd_pos - 260) : cmd_pos + 360].lower()
     if any(token in local_context for token in ("nonexistent", "invalid", "error")):
@@ -1402,6 +1419,13 @@ def _automation_evidence_kind(block: str, cmd: str) -> str:
     if cmd_success_pattern:
         has_success_for_cmd = True
 
+    helper_success_patterns = (
+        rf"_assert_chat_response\([\s\S]{{0,260}}(?:Cmd\.\w+\.value|['\"]{re.escape(cmd)}['\"])[\s\S]{{0,160}}\bTrue\b",
+        rf"_assert_download_api_with_progress\([\s\S]{{0,260}}cmd\s*=\s*(?:Cmd\.{re.escape(api_name or '')}\.value|['\"]{re.escape(cmd)}['\"])",
+    )
+    if any(re.search(pattern, block) for pattern in helper_success_patterns):
+        has_success_for_cmd = True
+
     if has_success_for_cmd:
         return "positive"
     if has_error_for_cmd:
@@ -1417,13 +1441,14 @@ def _record_automation_ref(
     block: str,
     count: int = 1,
     kind: str | None = None,
+    api_name: str | None = None,
 ) -> None:
     if count <= 0:
         return
     item = pairs[(manager, cmd)]
     item["files"].add(str(path.relative_to(REPO_ROOT)))
     item["refs"] += count
-    kind = kind or _automation_evidence_kind(block, cmd)
+    kind = kind or _automation_evidence_kind(block, cmd, api_name=api_name)
     if kind not in AUTOMATION_EVIDENCE_KINDS:
         kind = "unknown"
     item["evidence_kinds"][kind] += count
@@ -1474,7 +1499,7 @@ def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
                     if count:
                         manager = _infer_manager(path, api_name)
                         if manager:
-                            _record_automation_ref(pairs, manager, cmd, path, block, count, kind="unknown")
+                            _record_automation_ref(pairs, manager, cmd, path, block, count, api_name=api_name)
     return pairs
 
 

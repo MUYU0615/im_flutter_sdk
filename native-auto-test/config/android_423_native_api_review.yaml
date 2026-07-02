@@ -43,11 +43,12 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: downloadBigImage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
-    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 downloadBigImage 已由 Flutter ChatManager.downloadBigImage 覆盖；Android wrapper 通过 invokeDownloadMethod 反射调用真实 downloadBigImage(EMMessage, EMCallBack)，现有 E2E 发送真实图片后调用该命令并等待下载回调。"
+    target_case: native-auto-test/tests/chat/test_chat_s423_message_callback_and_combine.py
   - manager: ChatManager
     api: fetchGroupReadAcks
     action: direct_e2e_case
@@ -101,10 +102,11 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: reportMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供该聊天/消息业务 API；当前 Flutter wrapper 仅存在异步或不同命名的相邻能力，统计未证明该原生 API 已被等价覆盖，需要按真实缺口补 wrapper 或补明确等价映射证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 reportMessage 已由 Flutter ChatManager.reportMessage 等价覆盖；Android wrapper 调用 asyncReportMessage，现有 E2E 发送真实消息后使用真实 msgId 举报并断言成功。"
     target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: saveMessage

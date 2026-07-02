@@ -20,10 +20,12 @@ P1_EQUIVALENT_APIS = {
     "asyncFetchHistoryMessage": "ChatManager.fetchHistoryMessages",
     "asyncRecallMessage": "ChatManager.recallMessage",
     "cleanConversationsMemoryCache": "ChatManager.cleanConversationsMemoryCache",
+    "downloadBigImage": "ChatManager.downloadBigImage",
     "fetchGroupReadAcks": "ChatManager.asyncFetchGroupAcks",
     "getConversationsByType": "ChatManager.getConversationsByType",
     "getReactionDetail": "ChatManager.fetchReactionDetail",
     "getReactionList": "ChatManager.fetchReactionList",
+    "reportMessage": "ChatManager.reportMessage",
     "removeReaction": "ChatManager.removeReaction",
 }
 
