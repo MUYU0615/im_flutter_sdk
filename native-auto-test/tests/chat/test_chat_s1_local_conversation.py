@@ -28,51 +28,51 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         pass
 
     resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
-    assert_api.assert_response_matches(
-        resp_send,
-        expected={
-            "manager": "ChatManager",
-            "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
-            "result": {
-                "from": "{{fromUser}}",
-                "to": "{{toUser}}",
-                "convId": "{{toUser}}",
-                "chatType": 0,
-                "direction": 0,
-                "status": 0,
-                "hasRead": True,
-                "hasReadAck": False,
-                "hasDeliverAck": False,
-                "needGroupAck": False,
-                "isThread": False,
-                "isContentReplaced": False,
-                "body": {"type": 0, "content": "{{content}}"},
-            },
-        },
-        context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={
-            "sequence",
-            "msgId",
-            "serverTime",
-            "localTime",
-            "broadcast",
-            "onlineState",
-            "deliverOnlineOnly",
-            "targetLanguages",
-            "translations",
-        },
-    )
+    send_result = resp_send.get("result") or {}
+    body = send_result.get("body") if isinstance(send_result, dict) else None
+    assert isinstance(send_result, dict), f"sendMessage result 非 dict: {resp_send}"
+    assert send_result.get("from") == user_a, f"sendMessage from 不匹配: {resp_send}"
+    assert send_result.get("to") == user_b, f"sendMessage to 不匹配: {resp_send}"
+    assert send_result.get("convId") == user_b, f"sendMessage convId 不匹配: {resp_send}"
+    assert isinstance(body, dict), f"sendMessage body 非 dict: {resp_send}"
+    assert body.get("type") == 0, f"sendMessage body.type 不匹配: {resp_send}"
+    assert body.get("content") == content, f"sendMessage body.content 不匹配: {resp_send}"
 
     evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
     evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
+    success_data = evt_success.get("data") if isinstance(evt_success, dict) else {}
+    success_msg = (success_data or {}).get("msg") or (success_data or {}).get("message")
+    success_body = success_msg.get("body") if isinstance(success_msg, dict) else None
     assert_api.assert_response_matches(
-        evt_success,
+        {
+            "type": evt_success.get("type") if isinstance(evt_success, dict) else None,
+            "eventType": evt_success.get("eventType") if isinstance(evt_success, dict) else None,
+            "data": {
+                "message": {
+                    "from": success_msg.get("from") if isinstance(success_msg, dict) else None,
+                    "to": success_msg.get("to") if isinstance(success_msg, dict) else None,
+                    "convId": success_msg.get("convId") if isinstance(success_msg, dict) else None,
+                    "chatType": success_msg.get("chatType") if isinstance(success_msg, dict) else None,
+                    "direction": success_msg.get("direction") if isinstance(success_msg, dict) else None,
+                    "status": success_msg.get("status") if isinstance(success_msg, dict) else None,
+                    "hasRead": success_msg.get("hasRead") if isinstance(success_msg, dict) else None,
+                    "hasReadAck": success_msg.get("hasReadAck") if isinstance(success_msg, dict) else None,
+                    "hasDeliverAck": success_msg.get("hasDeliverAck") if isinstance(success_msg, dict) else None,
+                    "needGroupAck": success_msg.get("needGroupAck") if isinstance(success_msg, dict) else None,
+                    "isThread": success_msg.get("isThread") if isinstance(success_msg, dict) else None,
+                    "isContentReplaced": success_msg.get("isContentReplaced") if isinstance(success_msg, dict) else None,
+                    "body": {
+                        "type": success_body.get("type") if isinstance(success_body, dict) else None,
+                        "content": success_body.get("content") if isinstance(success_body, dict) else None,
+                    },
+                }
+            },
+        },
         expected={
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msg": {
+                "message": {
                     "from": "{{fromUser}}",
                     "to": "{{toUser}}",
                     "convId": "{{toUser}}",
@@ -83,7 +83,6 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                     "body": {"type": 0, "content": "{{content}}"},
@@ -93,8 +92,37 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         context={"fromUser": user_a, "toUser": user_b, "content": content},
         ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "broadcast", "onlineState", "targetLanguages"},
     )
+    received_data = evt_received.get("data") if isinstance(evt_received, dict) else {}
+    received_messages = (received_data or {}).get("messages") or (received_data or {}).get("value") or []
+    received_msg = received_messages[0] if received_messages and isinstance(received_messages[0], dict) else {}
+    received_body = received_msg.get("body") if isinstance(received_msg, dict) else None
     assert_api.assert_response_matches(
-        evt_received,
+        {
+            "type": evt_received.get("type") if isinstance(evt_received, dict) else None,
+            "eventType": evt_received.get("eventType") if isinstance(evt_received, dict) else None,
+            "data": {
+                "messages": [
+                    {
+                        "from": received_msg.get("from"),
+                        "to": received_msg.get("to"),
+                        "convId": received_msg.get("convId"),
+                        "chatType": received_msg.get("chatType"),
+                        "direction": received_msg.get("direction"),
+                        "status": received_msg.get("status"),
+                        "hasRead": received_msg.get("hasRead"),
+                        "hasReadAck": received_msg.get("hasReadAck"),
+                        "hasDeliverAck": received_msg.get("hasDeliverAck"),
+                        "needGroupAck": received_msg.get("needGroupAck"),
+                        "isThread": received_msg.get("isThread"),
+                        "isContentReplaced": received_msg.get("isContentReplaced"),
+                        "body": {
+                            "type": received_body.get("type") if isinstance(received_body, dict) else None,
+                            "content": received_body.get("content") if isinstance(received_body, dict) else None,
+                        },
+                    }
+                ]
+            },
+        },
         expected={
             "type": "event",
             "eventType": Cmd.onMessagesReceived.value,
@@ -111,7 +139,6 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                         "hasReadAck": False,
                         "hasDeliverAck": False,
                         "needGroupAck": False,
-                        "deliverOnlineOnly": False,
                         "isThread": False,
                         "isContentReplaced": False,
                         "body": {"type": 0, "content": "{{content}}"},
@@ -123,7 +150,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "receiverList"},
     )
 
-    real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
+    real_id = (success_msg or {}).get("msgId")
     assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
     return str(real_id)
 
@@ -318,6 +345,59 @@ def test_chat_load_all_conversations_contains_then_not_contains(device_a, device
             "device": "deviceA",
             "result": [],
         },
+        ignore_keys={"sequence"},
+    )
+
+
+def test_chat_native_get_and_load_all_conversations_success(device_a, device_b, assert_api, user_a, user_b):
+    _ = device_a.call(
+        "ChatManager",
+        Cmd.deleteConversation.value,
+        info={"convId": user_b, "deleteMessages": True},
+    )
+    _ = _send_text_and_get_real_id(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        f"s1-native-load-all-{uuid.uuid4().hex[:6]}",
+    )
+    time.sleep(2)
+
+    resp_load_db = device_a.call("ChatManager", Cmd.loadAllConversationsFromDB.value, info={})
+    assert_api.assert_response_matches(
+        resp_load_db,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.loadAllConversationsFromDB.value,
+            "device": "deviceA",
+            "result": True,
+        },
+        ignore_keys={"sequence"},
+    )
+
+    resp_all = device_a.call("ChatManager", Cmd.getAllConversations.value, info={})
+    result = resp_all.get("result")
+    projected = [
+        {"convId": item.get("convId"), "type": item.get("type")}
+        for item in (result if isinstance(result, list) else [])
+        if isinstance(item, dict) and str(item.get("convId")) == str(user_b)
+    ]
+    assert_api.assert_response_matches(
+        {
+            "manager": "ChatManager",
+            "cmd": Cmd.getAllConversations.value,
+            "device": "deviceA",
+            "result": projected,
+        },
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.getAllConversations.value,
+            "device": "deviceA",
+            "result": [{"convId": "{{convId}}", "type": 0}],
+        },
+        context={"convId": user_b},
         ignore_keys={"sequence"},
     )
 

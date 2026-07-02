@@ -244,7 +244,7 @@ def test_chat_manager_p1_equivalent_native_apis_are_not_wrapper_missing():
     assert row["target_case"] == "native-auto-test/tests/chat/test_chat_s1_local_conversation.py"
 
 
-def test_chat_manager_unimplemented_native_conversation_load_apis_stay_wrapper_missing():
+def test_chat_manager_native_conversation_load_apis_are_covered_by_positive_case():
     rows = {
         (row["manager"], row["api"], row["row_kind"]): row
         for row in build_rows()
@@ -252,11 +252,19 @@ def test_chat_manager_unimplemented_native_conversation_load_apis_stay_wrapper_m
     if not any(row[0] == "ChatManager" and row[2] == "native_android_api" for row in rows):
         pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
 
-    for api in ("getAllConversations", "loadAllConversations"):
+    expected_wrappers = {
+        "getAllConversations": "ChatManager.getAllConversations",
+        "loadAllConversations": "ChatManager.loadAllConversationsFromDB",
+    }
+    for api, wrapper in expected_wrappers.items():
         row = rows[("ChatManager", api, "native_android_api")]
-        assert row["coverage_conclusion"] == "wrapper_missing"
-        assert row["android_covered"] == "no"
-        assert row["review_action"] == "expose_wrapper"
+        assert row["coverage_conclusion"] == "covered_by_case"
+        assert row["android_covered"] == "yes"
+        assert row["automation_covered"] == "yes"
+        assert row["review_action"] == "direct_e2e_case"
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert wrapper in row["covered_by_wrapper_api"]
 
 
 def test_task5_equivalent_native_apis_are_not_wrapper_missing():

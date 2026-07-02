@@ -221,6 +221,13 @@ INDIRECT_COVERAGE_RULES = {
 }
 
 NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
+    ("ChatManager", "loadAllConversations"): [
+        {
+            "manager": "ChatManager",
+            "api": "loadAllConversationsFromDB",
+            "reason_zh": "Flutter ChatManager.loadAllConversationsFromDB 调用 Android loadAllConversations；现有公开 loadAllConversations 返回排序会话列表，不能改成 boolean，因此用测试桥接命令覆盖原生加载本地缓存能力。",
+        }
+    ],
     ("GroupManager", "asyncUpdateGroupNamecard"): [
         {
             "manager": "GroupManager",

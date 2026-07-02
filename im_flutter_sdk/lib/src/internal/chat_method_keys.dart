@@ -89,7 +89,9 @@ class ChatMethodKeys {
   static const String downloadMessageThumbnailInCombine =
       "downloadMessageThumbnailInCombine";
   static const String importMessages = "importMessages";
+  static const String getAllConversations = "getAllConversations";
   static const String loadAllConversations = "loadAllConversations";
+  static const String loadAllConversationsFromDB = "loadAllConversationsFromDB";
   static const String getConversationsByType = "getConversationsByType";
   static const String cleanConversationsMemoryCache =
       "cleanConversationsMemoryCache";

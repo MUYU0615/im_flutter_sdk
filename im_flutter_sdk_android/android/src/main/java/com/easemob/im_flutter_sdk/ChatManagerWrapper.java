@@ -89,8 +89,12 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 downloadMessageThumbnailInCombine(params, call.method, result);
             } else if (MethodKey.importMessages.equals(call.method)) {
                 importMessages(params, call.method, result);
+            } else if (MethodKey.getAllConversations.equals(call.method)) {
+                getAllConversations(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
                 loadAllConversations(params, call.method, result);
+            } else if (MethodKey.loadAllConversationsFromDB.equals(call.method)) {
+                loadAllConversationsFromDB(params, call.method, result);
             } else if (MethodKey.getConversationsByType.equals(call.method)) {
                 getConversationsByType(params, call.method, result);
             } else if (MethodKey.cleanConversationsMemoryCache.equals(call.method)) {
@@ -734,6 +738,24 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 conversations.add(ConversationHelper.toJson(conversation));
             }
             onSuccess(result, channelName, conversations);
+        });
+    }
+
+    private void getAllConversations(JSONObject params, String channelName, Result result) throws JSONException {
+        asyncHeavyWorkRunnable(() -> {
+            Map<String, EMConversation> map = EMClient.getInstance().chatManager().getAllConversations();
+            List<Map> conversations = new ArrayList<>();
+            for (EMConversation conversation : map.values()) {
+                conversations.add(ConversationHelper.toJson(conversation));
+            }
+            onSuccess(result, channelName, conversations);
+        });
+    }
+
+    private void loadAllConversationsFromDB(JSONObject params, String channelName, Result result) throws JSONException {
+        asyncHeavyWorkRunnable(() -> {
+            boolean loaded = EMClient.getInstance().chatManager().loadAllConversations();
+            onSuccess(result, channelName, loaded);
         });
     }
 

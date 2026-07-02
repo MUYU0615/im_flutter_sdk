@@ -80,7 +80,9 @@ public class MethodKey {
     static final String downloadMessageAttachmentInCombine = "downloadMessageAttachmentInCombine";
     static final String downloadMessageThumbnailInCombine = "downloadMessageThumbnailInCombine";
     static final String importMessages = "importMessages";
+    static final String getAllConversations = "getAllConversations";
     static final String loadAllConversations = "loadAllConversations";
+    static final String loadAllConversationsFromDB = "loadAllConversationsFromDB";
     static final String getConversationsByType = "getConversationsByType";
     static final String cleanConversationsMemoryCache = "cleanConversationsMemoryCache";
     static final String getConversationsFromServer = "getConversationsFromServer";

@@ -57,10 +57,11 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: getAllConversations
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 getAllConversations 尚未被 Flutter Android wrapper 真实调用；当前 loadAllConversations wrapper 调用的是 getAllConversationsBySort，不能作为该原生 API 的直接覆盖证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 getAllConversations 已由测试桥接命令 ChatManager.getAllConversations 覆盖；Android wrapper 真实调用 getAllConversations 并返回本地会话列表，E2E 发送消息后断言列表包含目标会话。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: getConversationsByType
@@ -85,10 +86,11 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_reaction_fetch.py
   - manager: ChatManager
     api: loadAllConversations
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 loadAllConversations 尚未被 Flutter Android wrapper 真实调用；当前同名 wrapper 返回 getAllConversationsBySort 结果，不能作为该原生 API 的直接覆盖证据。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 loadAllConversations 已由测试桥接命令 ChatManager.loadAllConversationsFromDB 覆盖；保留现有公开 loadAllConversations 的会话列表语义，新增命令真实调用原生 boolean 加载本地缓存能力。"
     target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
   - manager: ChatManager
     api: removeReaction
