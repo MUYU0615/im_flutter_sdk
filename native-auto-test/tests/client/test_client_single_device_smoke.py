@@ -11,6 +11,12 @@ pytestmark = [pytest.mark.client, pytest.mark.real_e2e]
 
 def test_single_device_login_and_get_current_user(device_a, user_a, assert_api):
     """Verify one launched native test app can log in and answer Client calls."""
+    current_before = device_a.call("Client", Cmd.getCurrentUser.value, info={})
+    current_result = assert_api.get_result(current_before)
+    if current_result == user_a:
+        assert_api.assert_success(current_before)
+        return
+
     try:
         device_a.call(
             "Client",

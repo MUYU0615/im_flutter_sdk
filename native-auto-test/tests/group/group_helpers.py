@@ -762,7 +762,24 @@ def create_group(
         member_count_value=1 + len(invite_members),
         is_member_allow_to_invite=(style == 1),
     )
+    wait_group_visible_from_server(device_a, gid)
     return gid, resp_create
+
+
+def wait_group_visible_from_server(device_a, group_id: str, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    last_resp = None
+    while time.monotonic() < deadline:
+        last_resp = device_a.call(
+            "GroupManager",
+            Cmd.getGroupSpecificationFromServer.value,
+            info={"groupId": group_id, "fetchMembers": False},
+        )
+        result = last_resp.get("result")
+        if isinstance(result, dict) and result.get("groupId") == group_id:
+            return
+        time.sleep(0.5)
+    raise AssertionError(f"createGroup 后服务端未能查询到 groupId={group_id}: {last_resp}")
 
 
 def destroy_group(device_a, assert_api, group_id: str, *, device_b=None):

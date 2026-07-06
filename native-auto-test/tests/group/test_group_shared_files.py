@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import time
 import uuid
@@ -17,6 +18,9 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
+_ANDROID_TEST_APP_PACKAGE = "com.easemob.im_flutter_test"
+_ANDROID_APP_INTERNAL_E2E_DIR = f"/data/user/0/{_ANDROID_TEST_APP_PACKAGE}/files/e2e"
+_ANDROID_APP_INTERNAL_E2E_REL_DIR = "files/e2e"
 
 
 def _run_adb(*args: str, text: bool = True) -> subprocess.CompletedProcess:
@@ -42,18 +46,62 @@ def _android_serial_for_device_a() -> str:
 
 
 def _push_android_shared_file(serial: str, local_file: Path, file_name: str) -> str:
-    remote_path = f"/sdcard/Download/{file_name}"
-    pushed = _run_adb("-s", serial, "push", str(local_file), remote_path)
+    mkdir = _run_adb(
+        "-s",
+        serial,
+        "shell",
+        "run-as",
+        _ANDROID_TEST_APP_PACKAGE,
+        "mkdir",
+        "-p",
+        _ANDROID_APP_INTERNAL_E2E_REL_DIR,
+    )
+    if mkdir.returncode != 0:
+        raise AssertionError(
+            f"adb mkdir failed for Android shared-file staging on {serial}: "
+            f"stdout={mkdir.stdout!r}, stderr={mkdir.stderr!r}"
+        )
+    remote_rel_path = f"{_ANDROID_APP_INTERNAL_E2E_REL_DIR}/{file_name}"
+    remote_path = f"{_ANDROID_APP_INTERNAL_E2E_DIR}/{file_name}"
+    pushed = subprocess.run(
+        [
+            "adb",
+            "-s",
+            serial,
+            "exec-in",
+            "run-as",
+            _ANDROID_TEST_APP_PACKAGE,
+            "sh",
+            "-c",
+            f"cat > {shlex.quote(remote_rel_path)}",
+        ],
+        input=local_file.read_bytes(),
+        check=False,
+        capture_output=True,
+    )
     if pushed.returncode != 0:
         raise AssertionError(
-            f"adb push failed for explicit deviceA serial {serial}: "
+            f"adb run-as file staging failed for explicit deviceA serial {serial}: "
             f"stdout={pushed.stdout!r}, stderr={pushed.stderr!r}"
         )
     return remote_path
 
 
 def _read_android_file(serial: str, remote_path: str) -> bytes:
-    completed = _run_adb("-s", serial, "exec-out", "cat", remote_path, text=False)
+    if remote_path.startswith(f"{_ANDROID_APP_INTERNAL_E2E_DIR}/"):
+        rel_path = f"{_ANDROID_APP_INTERNAL_E2E_REL_DIR}/{remote_path.rsplit('/', 1)[-1]}"
+        completed = _run_adb(
+            "-s",
+            serial,
+            "exec-out",
+            "run-as",
+            _ANDROID_TEST_APP_PACKAGE,
+            "cat",
+            rel_path,
+            text=False,
+        )
+    else:
+        completed = _run_adb("-s", serial, "exec-out", "cat", remote_path, text=False)
     if completed.returncode != 0:
         raise AssertionError(
             f"下载文件不存在或不可读: path={remote_path}, "
@@ -110,7 +158,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
     local_file.write_text(content, encoding="utf-8")
     android_serial = _android_serial_for_device_a()
     remote_file_path = _push_android_shared_file(android_serial, local_file, file_name)
-    download_path = f"/sdcard/Download/downloaded-{file_name}"
+    download_path = f"{_ANDROID_APP_INTERNAL_E2E_DIR}/downloaded-{file_name}"
 
     try:
         group_id, _ = create_group(

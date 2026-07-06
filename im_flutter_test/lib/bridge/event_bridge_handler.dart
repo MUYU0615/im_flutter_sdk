@@ -53,6 +53,36 @@ class EventBridgeHandler {
         },
       ),
     );
+    EMClient.getInstance.contactManager.addEventHandler(
+      _handlerId,
+      EMContactEventHandler(
+        onContactAdded: (userId) {
+          emitContactAdded(userId: userId);
+        },
+        onContactDeleted: (userId) {
+          emitContactDeleted(userId: userId);
+        },
+        onContactInvited: (userId, reason) {
+          emitContactChanged(
+            type: 'onContactInvited',
+            userId: userId,
+            reason: reason,
+          );
+        },
+        onFriendRequestAccepted: (userId) {
+          emitContactChanged(
+            type: 'onFriendRequestAccepted',
+            userId: userId,
+          );
+        },
+        onFriendRequestDeclined: (userId) {
+          emitContactChanged(
+            type: 'onFriendRequestDeclined',
+            userId: userId,
+          );
+        },
+      ),
+    );
     if (emitConnectedOnRegister) {
       emitConnected(deviceName: deviceName);
     }
@@ -435,6 +465,19 @@ class EventBridgeHandler {
     });
   }
 
+  void emitContactChanged({
+    required String type,
+    required String userId,
+    String? reason,
+  }) {
+    if (!_registered) return;
+    _sendEvent?.call('onContactChanged', {
+      'type': type,
+      'userId': userId,
+      if (reason != null) 'reason': reason,
+    });
+  }
+
   void emitMessagesReceived({
     required List<Map<String, dynamic>> messages,
   }) {
@@ -707,6 +750,7 @@ class EventBridgeHandler {
 
   void unregisterAllHandlers() {
     EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
+    EMClient.getInstance.contactManager.removeEventHandler(_handlerId);
     _registered = false;
     _sendEvent = null;
   }

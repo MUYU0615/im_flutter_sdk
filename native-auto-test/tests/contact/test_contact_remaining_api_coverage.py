@@ -160,7 +160,7 @@ def test_contact_save_black_list_then_fetch_from_server(
             except Exception as exc:
                 cleanup_errors.append(exc)
             try:
-                flow.delete_friend(device_a, user_b)
+                flow.delete_friend(device_a, user_b, wait_event=False)
             except Exception as exc:
                 cleanup_errors.append(exc)
         if cleanup_errors and original_exc_type is None:

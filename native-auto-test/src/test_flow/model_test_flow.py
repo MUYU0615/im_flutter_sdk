@@ -69,8 +69,15 @@ class ContactTestFlow:
             )
         )
 
-    def delete_friend(self, initiator: Any, friend_user_id: str, *, keep_conversation: bool = True) -> None:
-        """在 initiator 连接上删除好友并消费 CONTACT_DELETE。"""
+    def delete_friend(
+        self,
+        initiator: Any,
+        friend_user_id: str,
+        *,
+        keep_conversation: bool = True,
+        wait_event: bool = True,
+    ) -> None:
+        """在 initiator 连接上删除好友；需要时消费 CONTACT_DELETE。"""
         self._api.assert_success(
             initiator.call(
                 "ContactManager",
@@ -78,6 +85,8 @@ class ContactTestFlow:
                 info={"userId": friend_user_id, "keepConversation": keep_conversation},
             )
         )
+        if not wait_event:
+            return
         assert receive_contact_changed_event(
             initiator,
             ContactChangeEvent.CONTACT_DELETE.value,
