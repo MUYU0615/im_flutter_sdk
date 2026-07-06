@@ -4,6 +4,55 @@ import argparse
 import subprocess
 import sys
 
+from .e2e_cli import parse_client_arg, parse_sdk_version_arg, resolve_client_versions
+
+
+def _is_android_android_matrix(platform_matrix: str, client_args: list[str], sdk_version_args: list[str]) -> bool:
+    if platform_matrix != "android-android":
+        return False
+    clients = [parse_client_arg(value) for value in client_args]
+    versions = dict(parse_sdk_version_arg(value) for value in sdk_version_args)
+    resolved = resolve_client_versions(clients, versions)
+    return bool(resolved) and all(client.platform == "android" for client in resolved)
+
+
+def build_android_runner_commands(
+    *,
+    client_args: list[str],
+    sdk_version_args: list[str],
+    run_id: str,
+    output_root: str,
+    platform_matrix: str,
+    pytest_args: list[str],
+) -> list[list[str]]:
+    if not _is_android_android_matrix(platform_matrix, client_args, sdk_version_args):
+        raise ValueError("--platform-matrix android-android 只能搭配 android client")
+    case_results = f"{output_root}/test-results/{run_id}-case-results.json"
+    gap_backlog = f"{output_root}/api-coverage/{run_id}-gap-backlog.csv"
+    runner = [
+        sys.executable,
+        "-m",
+        "src.tools.android_e2e_runner",
+        "--run-id",
+        run_id,
+        "--output-root",
+        output_root,
+        "--",
+        *pytest_args,
+    ]
+    coverage = [
+        sys.executable,
+        "-m",
+        "src.tools.e2e_api_coverage",
+        "--run-id",
+        run_id,
+        "--case-results",
+        case_results,
+        "--output",
+        gap_backlog,
+    ]
+    return [runner, coverage]
+
 
 def build_stage_commands(
     *,
@@ -89,18 +138,29 @@ def main(argv: list[str] | None = None) -> int:
     pytest_args = args.pytest_args
     if pytest_args and pytest_args[0] == "--":
         pytest_args = pytest_args[1:]
-    for command in build_stage_commands(
-        client_args=args.client,
-        sdk_version_args=args.sdk_version,
-        run_id=args.run_id,
-        output_root=args.output_root,
-        matrix_mode=args.matrix_mode,
-        install_mode=args.install_mode,
-        account_mode=args.account_mode,
-        device_mode=args.device_mode,
-        platform_matrix=args.platform_matrix,
-        pytest_args=pytest_args,
-    ):
+    if _is_android_android_matrix(args.platform_matrix, args.client, args.sdk_version):
+        commands = build_android_runner_commands(
+            client_args=args.client,
+            sdk_version_args=args.sdk_version,
+            run_id=args.run_id,
+            output_root=args.output_root,
+            platform_matrix=args.platform_matrix,
+            pytest_args=pytest_args,
+        )
+    else:
+        commands = build_stage_commands(
+            client_args=args.client,
+            sdk_version_args=args.sdk_version,
+            run_id=args.run_id,
+            output_root=args.output_root,
+            matrix_mode=args.matrix_mode,
+            install_mode=args.install_mode,
+            account_mode=args.account_mode,
+            device_mode=args.device_mode,
+            platform_matrix=args.platform_matrix,
+            pytest_args=pytest_args,
+        )
+    for command in commands:
         code = subprocess.call(command)
         if code != 0:
             return code

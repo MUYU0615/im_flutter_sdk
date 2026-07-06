@@ -29,6 +29,7 @@ def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
         device_ids=["emulator-5554"],
         package_name="com.easemob.im_flutter_test",
         pytest_args=["tests/contact/test_contact.py", "--target-platform", "android", "-q"],
+        output_root=Path("/repo/native-auto-test/out"),
     )
 
     assert commands.relay == [
@@ -62,6 +63,12 @@ def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceA" in commands.flutter_run[0]
     assert commands.env["NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"] == "90.0"
     assert commands.env["NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA"] == "emulator-5554"
+    assert commands.env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] == (
+        "/repo/native-auto-test/out/test-results/android-contact-case-results.json"
+    )
+    assert commands.env["NATIVE_AUTO_TEST_CASE_RESULTS_CSV"] == (
+        "/repo/native-auto-test/out/test-results/android-contact-case-results.csv"
+    )
     assert commands.pytest == [
         "pytest",
         "tests/contact/test_contact.py",
@@ -82,6 +89,7 @@ def test_android_runner_builds_two_device_launch_commands():
         device_ids=["emulator-5554", "emulator-5556"],
         package_name="com.easemob.im_flutter_test",
         pytest_args=["tests/contact/test_contact.py", "--target-platform", "android", "-q"],
+        output_root=Path("/repo/native-auto-test/out"),
     )
 
     assert len(commands.reverse) == 2

@@ -26,6 +26,8 @@ cd native-auto-test
 make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id <run_id> --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
 ```
 
+`android-android` 矩阵已接入真实 Android runner：会启动 relay、执行 `adb reverse`、卸载旧 App、启动两个 `im_flutter_test` 客户端、下发 `Client.init`、执行 pytest，并生成 HTML、Allure、case-results 和 API gap backlog。其他矩阵仍处在通用 prepare/run/coverage 阶段，不要把它描述成已经完成真实设备编排。
+
 阶段调试才拆开执行：
 
 - `make e2e-prepare ARGS="..."`：准备环境和 `out/run/<run_id>/context.yaml`。

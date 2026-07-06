@@ -186,16 +186,28 @@ out/android-4.23-wrapper-platform-alignment.csv
 
 ## SDK E2E 正式入口
 
-正式发版测试入口是 `e2e-full-run`，固定执行：
+正式发版测试入口是 `e2e-full-run`。
+
+当前已落地的真实环境编排是 `android-android`：入口会委托 Android runner 启动 WebSocket relay、执行 `adb reverse`、卸载旧 App、启动两个 `im_flutter_test` 客户端、登录前下发 `Client.init`、运行 pytest，并在最后生成 API 覆盖缺口文件。
+
+其他平台矩阵仍走通用阶段入口：
 
 ```text
 e2e_prepare -> e2e_run(pytest) -> e2e_api_coverage
 ```
 
+通用阶段入口目前主要用于 context、报告路径和后续跨平台编排设计，不应把它当作已经完成 iOS/Web/HMOS/Windows 环境启动的真实 runner。
+
 示例：
 
 ```bash
 make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+```
+
+只跑当前 Android real_e2e 小全集时，可以把 pytest 参数显式透传到 `--` 后：
+
+```bash
+make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh -- tests --target-platform android -m 'real_e2e and not web' -q"
 ```
 
 阶段调试入口：
@@ -218,6 +230,7 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
 | `--install-mode` | 安装策略。第一阶段写入 context，升级安装另行实现。 |
 | `--account-mode` | 账号策略。第一阶段只支持 `fresh`。 |
 | `--device-mode` | 设备策略。第一阶段只支持 `existing`。 |
+| `--` 后面的 pytest 参数 | 透传给 pytest。Android-Android 矩阵下由 Android runner 执行，并自动补 HTML、Allure 和 case-results 环境变量。 |
 
 直接 `pytest` 只作为低层调试入口，不作为正式覆盖报告入口。正式执行必须能生成：
 
@@ -228,6 +241,13 @@ out/log/<platform-matrix>/<run_id>-allure-results/
 out/test-results/<run_id>-case-results.json
 out/test-results/<run_id>-case-results.csv
 out/api-coverage/<run_id>-gap-backlog.csv
+```
+
+Android-Android 当前实际日志目录是 `out/log/android/`，例如：
+
+```text
+out/log/android/<run_id>-android-pytest.html
+out/log/android/<run_id>-allure-results/
 ```
 
 ## 常用命令

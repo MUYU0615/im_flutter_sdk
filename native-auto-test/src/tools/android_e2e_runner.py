@@ -56,6 +56,7 @@ def _build_commands(
     native_auto_test_dir: Path,
     im_flutter_test_dir: Path,
     run_id: str,
+    output_root: Path,
     app_url_device: str,
     host: str,
     port: int,
@@ -66,6 +67,9 @@ def _build_commands(
     env = os.environ.copy()
     env["NATIVE_AUTO_TEST_RUN_ID"] = run_id
     env.setdefault("NATIVE_AUTO_TEST_RESPONSE_TIMEOUT", "90.0")
+    test_results_dir = output_root / "test-results"
+    env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] = str(test_results_dir / f"{run_id}-case-results.json")
+    env["NATIVE_AUTO_TEST_CASE_RESULTS_CSV"] = str(test_results_dir / f"{run_id}-case-results.csv")
     device_names = [f"device{chr(ord('A') + index)}" for index in range(len(device_ids))]
     topics = [f"{get_topic_prefix()}-{run_id}-{device_name}" for device_name in device_names]
     for device_name, device_id in zip(device_names, device_ids):
@@ -341,6 +345,7 @@ def run(args: argparse.Namespace) -> int:
         native_auto_test_dir=native_auto_test_dir,
         im_flutter_test_dir=im_flutter_test_dir,
         run_id=run_id,
+        output_root=Path(args.output_root),
         app_url_device=args.bridge_url,
         host=args.host,
         port=args.relay_port,
@@ -409,6 +414,7 @@ def run(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--output-root", default="out")
     parser.add_argument(
         "--device-ids",
         nargs="+",
