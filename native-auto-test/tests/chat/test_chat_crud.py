@@ -104,6 +104,7 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
             "type": "event",
             "eventType": Cmd.onMessagesReceived.value,
             "data": {
+                "operation": "messages_received",
                 "messages": [
                     {
                         "from": "{{fromUser}}",

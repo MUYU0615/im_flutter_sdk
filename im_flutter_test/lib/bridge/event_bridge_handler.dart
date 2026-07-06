@@ -1,3 +1,5 @@
+import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+
 /// Event forwarding entry point for the JSON bridge test app.
 ///
 /// The Web MVP forwards deterministic events triggered by JSON bridge commands
@@ -12,9 +14,14 @@ class EventBridgeHandler {
   EventBridgeHandler._();
 
   static final EventBridgeHandler instance = EventBridgeHandler._();
+  static const String _handlerId = 'im_flutter_test_bridge';
 
   bool _registered = false;
   BridgeEventSender? _sendEvent;
+
+  List<Map<String, dynamic>> _messagesToJson(List<EMMessage> messages) {
+    return messages.map((message) => message.toJson()).toList();
+  }
 
   void registerAllHandlers({
     String? deviceName,
@@ -23,6 +30,29 @@ class EventBridgeHandler {
   }) {
     _registered = true;
     _sendEvent = sendEvent;
+    EMClient.getInstance.chatManager.addEventHandler(
+      _handlerId,
+      EMChatEventHandler(
+        onMessagesReceived: (messages) {
+          emitMessagesReceived(messages: _messagesToJson(messages));
+        },
+        onCmdMessagesReceived: (messages) {
+          emitCmdMessagesReceived(messages: _messagesToJson(messages));
+        },
+        onMessagesRead: (messages) {
+          emitMessagesRead(messages: _messagesToJson(messages));
+        },
+        onMessagesDelivered: (messages) {
+          emitMessagesDelivered(messages: _messagesToJson(messages));
+        },
+        onMessagesRecalled: (messages) {
+          emitMessagesRecalled(messages: _messagesToJson(messages));
+        },
+        onStreamMessagesReceived: (messages) {
+          emitStreamMessagesReceived(messages: _messagesToJson(messages));
+        },
+      ),
+    );
     if (emitConnectedOnRegister) {
       emitConnected(deviceName: deviceName);
     }
@@ -676,6 +706,7 @@ class EventBridgeHandler {
   }
 
   void unregisterAllHandlers() {
+    EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
     _registered = false;
     _sendEvent = null;
   }
