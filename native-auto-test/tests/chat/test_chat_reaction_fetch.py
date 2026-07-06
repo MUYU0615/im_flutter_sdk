@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
+
 from src import Cmd
 from tests.chat._utils import build_text
 
@@ -82,6 +84,11 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_reaction_list.invalid_msg_id.empty")
+@pytest.mark.api("ChatManager.fetchReactionList")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
     """fetchReactionList 传入不存在的 msgId 列表；先断言信封。"""
     # Flutter 端签名要求 chatType 必填；请求体键名为 msgIds。
@@ -99,6 +106,11 @@ def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_reaction_list.empty_msg_ids.error")
+@pytest.mark.api("ChatManager.fetchReactionList")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
     """fetchReactionList 传入空 msgIds；应返回参数错误。"""
     info = {"msgIds": [], "chatType": 0}
@@ -115,6 +127,11 @@ def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_reaction_list.invalid_chat_type.error")
+@pytest.mark.api("ChatManager.fetchReactionList")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
     """fetchReactionList 传入非法 chatType；wrapper 返回本地参数错误。"""
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": -1}
@@ -131,6 +148,11 @@ def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_reaction_detail.invalid_msg_id.empty")
+@pytest.mark.api("ChatManager.fetchReactionDetail")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
     """fetchReactionDetail 使用无效 msgId/reaction；先校验信封。"""
     # 原生 wrapper 将 pageSize 按必填读取（Android: getInt），缺失会直接抛参错。

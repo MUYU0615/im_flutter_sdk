@@ -237,6 +237,11 @@ def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b
     _assert_loaded_messages_contains_ids(resp_multi, [msg_id_1, msg_id_2], user_a, user_b)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.load_messages_with_ids.empty_ids.error")
+@pytest.mark.api("ChatManager.loadMessagesWithIds")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_load_messages_with_ids_empty_ids(device_a, assert_api, user_b):
     resp = device_a.call(
         "ChatManager",

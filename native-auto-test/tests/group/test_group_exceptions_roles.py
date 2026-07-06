@@ -14,6 +14,11 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 _NONEXISTENT_USER = "nonexistent_user_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.add_admin.nonexistent_group.error")
+@pytest.mark.api("GroupManager.addAdmin")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_add_admin_nonexistent_group(device_a, assert_api, user_b):
     resp = device_a.call(
         "GroupManager",
@@ -23,6 +28,11 @@ def test_group_add_admin_nonexistent_group(device_a, assert_api, user_b):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.remove_admin.nonexistent_group.error")
+@pytest.mark.api("GroupManager.removeAdmin")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_remove_admin_nonexistent_group(device_a, assert_api, user_b):
     resp = device_a.call(
         "GroupManager",
@@ -32,6 +42,11 @@ def test_group_remove_admin_nonexistent_group(device_a, assert_api, user_b):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_owner.nonexistent_group.error")
+@pytest.mark.api("GroupManager.updateGroupOwner")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_owner_nonexistent_group(device_a, assert_api, user_b):
     resp = device_a.call(
         "GroupManager",

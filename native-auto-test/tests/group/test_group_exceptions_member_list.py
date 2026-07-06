@@ -13,6 +13,11 @@ pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.get_member_list_from_server.nonexistent_group.error")
+@pytest.mark.api("GroupManager.getGroupMemberListFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_get_group_member_list_from_server_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",

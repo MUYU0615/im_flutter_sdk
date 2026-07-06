@@ -103,6 +103,11 @@ def test_group_update_description_too_long(device_a, assert_api, user_a):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_subject.nonexistent_group.error")
+@pytest.mark.api("GroupManager.updateGroupSubject")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_subject_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",
@@ -112,6 +117,11 @@ def test_group_update_subject_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_description.nonexistent_group.error")
+@pytest.mark.api("GroupManager.updateDescription")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_description_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",

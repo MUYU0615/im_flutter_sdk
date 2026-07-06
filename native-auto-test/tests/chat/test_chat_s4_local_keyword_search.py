@@ -190,6 +190,11 @@ def test_chat_load_conversation_messages_with_keyword_success(device_a, device_b
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.load_conversation_messages_with_keyword.no_hit.success")
+@pytest.mark.api("ChatManager.loadConversationMessagesWithKeyword")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_load_conversation_messages_with_keyword_no_hit(device_a, assert_api, user_a):
     keyword = f"kw_no_hit_{uuid.uuid4().hex[:10]}"
     resp = device_a.call(
