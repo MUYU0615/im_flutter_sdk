@@ -54,6 +54,10 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
     return str(real_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.get_conversations_from_server.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.getConversationsFromServer")
 def test_chat_get_conversations_from_server_success(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-get-server-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
@@ -150,6 +154,10 @@ def test_chat_get_conversations_from_server_with_cursor_invalid_page_size_negati
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_conversations_from_server_with_page.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.fetchConversationsFromServerWithPage")
 def test_chat_fetch_conversations_from_server_with_page_success(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-fetch-page-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
@@ -318,6 +326,10 @@ def test_chat_get_pinned_conversations_from_server_with_cursor_invalid_page_size
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.delete_remote_conversation.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.deleteRemoteConversation")
 def test_chat_delete_remote_conversation_success(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-del-remote-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
@@ -346,6 +358,10 @@ def test_chat_delete_remote_conversation_invalid_type(device_a, assert_api):
     _assert_chat_response(assert_api, resp, Cmd.deleteRemoteConversation.value, "deviceA", None)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.remove_messages_from_server_with_msg_ids.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.removeMessagesFromServerWithMsgIds")
 def test_chat_remove_messages_from_server_with_msg_ids_success(device_a, device_b, assert_api, user_a, user_b):
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-rm-server-ids-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
@@ -423,6 +439,10 @@ def test_chat_remove_messages_from_server_with_ts_missing_conv_id(device_a):
     assert_error(resp, code=-1, description="MissingPluginException")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.report_message.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.reportMessage")
 def test_chat_report_message_success(device_a, device_b, assert_api, user_a, user_b):
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-report-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
