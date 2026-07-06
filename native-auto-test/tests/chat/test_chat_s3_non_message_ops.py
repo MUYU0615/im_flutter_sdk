@@ -10,6 +10,14 @@ from tests.chat._utils import build_text
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat1_4_0]
 
+_ANDROID_MESSAGE_OPTIONAL_KEYS = {
+    "broadcast",
+    "onlineState",
+    "deliverOnlineOnly",
+    "targetLanguages",
+    "translations",
+}
+
 
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     try:
@@ -69,7 +77,6 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                     "body": {"type": 0, "content": "{{content}}"},
@@ -77,7 +84,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             },
         },
         context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "broadcast", "onlineState", "targetLanguages"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     evt_msg = ((evt_success.get("data") or {}).get("msg")) or {}
     evt_body = evt_msg.get("body") or {}
@@ -96,6 +103,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             "type": "event",
             "eventType": Cmd.onMessagesReceived.value,
             "data": {
+                "operation": "messages_received",
                 "messages": [
                     {
                         "from": "{{fromUser}}",
@@ -108,7 +116,6 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                         "hasReadAck": False,
                         "hasDeliverAck": False,
                         "needGroupAck": False,
-                        "deliverOnlineOnly": False,
                         "isThread": False,
                         "isContentReplaced": False,
                         "body": {"type": 0, "content": "{{content}}"},
@@ -117,7 +124,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             },
         },
         context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "receiverList"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "receiverList"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     data = evt_received.get("data") or {}
     for msg in (data.get("messages") or []):
@@ -179,7 +186,7 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
             "manager": "ChatManager",
             "cmd": Cmd.ackConversationRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -231,6 +238,14 @@ def test_chat_ack_conversation_read_empty_conv_id(device_b, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.pin_conversation.toggle_after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.pinConversation")
+@pytest.mark.api("ChatManager.getConversation")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s3-pin-{uuid.uuid4().hex[:6]}")
 
@@ -337,6 +352,13 @@ def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_history_messages.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.fetchHistoryMessages")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, user_a, user_b):
     content = f"s3-history-{uuid.uuid4().hex[:6]}"
     resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
@@ -379,7 +401,6 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                     "body": {"type": 0, "content": "{{content}}"},
@@ -387,7 +408,7 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
             },
         },
         context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "broadcast", "onlineState", "targetLanguages"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
     assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
@@ -458,6 +479,13 @@ def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.fetch_history_messages_by_options.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.fetchHistoryMessagesByOptions")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_fetch_history_messages_by_options_success(device_a, device_b, assert_api, user_a, user_b):
     content = f"s3-history-opt-{uuid.uuid4().hex[:6]}"
     resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
@@ -500,7 +528,6 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                     "body": {"type": 0, "content": "{{content}}"},
@@ -508,7 +535,7 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
             },
         },
         context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId", "translations", "broadcast", "onlineState", "targetLanguages"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
     assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"

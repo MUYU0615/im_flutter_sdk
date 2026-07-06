@@ -10,6 +10,14 @@ from tests.chat._utils import build_text
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat1_4_0]
 
+_ANDROID_MESSAGE_OPTIONAL_KEYS = {
+    "broadcast",
+    "onlineState",
+    "deliverOnlineOnly",
+    "targetLanguages",
+    "translations",
+}
+
 
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     try:
@@ -71,7 +79,6 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                     "needGroupAck": False,
                     "isThread": False,
                     "isContentReplaced": False,
-                    "deliverOnlineOnly": False,
                     "body": {"type": 0, "content": content},
                 }
             },
@@ -81,15 +88,11 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             "sequence",
             "serverTime",
             "localTime",
-            "translations",
-            "broadcast",
-            "onlineState",
-            "targetLanguages",
             "receiverList",
             "msgId",
             "data.msgId",
             "data.msg.msgId",
-        },
+        } | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     evt_success_msg = ((evt_success.get("data") or {}).get("msg")) or {}
     evt_success_body = evt_success_msg.get("body") or {}
@@ -109,6 +112,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             "type": "event",
             "eventType": Cmd.onMessagesReceived.value,
             "data": {
+                "operation": "messages_received",
                 "messages": [
                     {
                         "from": user_a,
@@ -123,13 +127,12 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                         "needGroupAck": False,
                         "isThread": False,
                         "isContentReplaced": False,
-                        "deliverOnlineOnly": False,
                         "body": {"type": 0, "content": content},
                     }
                 ]
             },
         },
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "translations", "receiverList", "msgId"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "receiverList", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
     data = evt_received.get("data") or {}
     for msg in (data.get("messages") or []):
@@ -180,6 +183,13 @@ def _assert_loaded_messages_contains_ids(resp: dict, expected_ids: list[str], us
             assert msg.get("deliverOnlineOnly") is False, f"msg.deliverOnlineOnly 不匹配: {msg}"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.load_messages_with_ids.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.loadMessagesWithIds")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b, assert_api, user_a, user_b):
     content_1 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-1"
     content_2 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-2"
