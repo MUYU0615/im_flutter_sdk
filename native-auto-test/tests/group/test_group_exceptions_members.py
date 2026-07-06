@@ -34,6 +34,11 @@ def test_group_add_members_empty_members(device_a, assert_api, user_a):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.add_members.nonexistent_group.error")
+@pytest.mark.api("GroupManager.addMembers")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_add_members_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",
@@ -65,6 +70,11 @@ def test_group_remove_members_non_member(device_a, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.leave_group.nonexistent_group.error")
+@pytest.mark.api("GroupManager.leaveGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_leave_group_non_member(device_b, assert_api):
     resp = device_b.call("GroupManager", Cmd.leaveGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_error(resp, code=600, description="do not find this group")

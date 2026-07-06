@@ -14,6 +14,11 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 _NONEXISTENT_USER = "nonexistent_user_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.inviter_user.nonexistent_group.error")
+@pytest.mark.api("GroupManager.inviterUser")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_inviter_user_nonexistent_group(device_a, assert_api, user_b):
     resp = device_a.call(
         "GroupManager",

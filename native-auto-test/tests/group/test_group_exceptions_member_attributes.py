@@ -13,6 +13,11 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.set_member_attributes.nonexistent_group.current_success")
+@pytest.mark.api("GroupManager.setMemberAttributesFromGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_set_member_attributes_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",
@@ -52,6 +57,11 @@ def test_group_fetch_member_attributes_nonexistent_group(device_a, assert_api):
     assert result.get("k") == "v", f"fetchMemberAttributesFromGroup 当前端返回值不匹配: {resp}"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.fetch_members_attributes.nonexistent_group.current_result")
+@pytest.mark.api("GroupManager.fetchMembersAttributesFromGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_attributes_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",

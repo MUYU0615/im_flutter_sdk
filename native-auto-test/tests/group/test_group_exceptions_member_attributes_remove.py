@@ -13,6 +13,11 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.remove_member_attributes.nonexistent_group.current_success")
+@pytest.mark.api("GroupManager.removeMemberAttributesFromGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_remove_member_attributes_nonexistent_group(device_a, assert_api):
     resp = device_a.call(
         "GroupManager",

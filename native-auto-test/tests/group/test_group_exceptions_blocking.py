@@ -13,11 +13,21 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.block.nonexistent_group.error")
+@pytest.mark.api("GroupManager.blockGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_block_nonexistent_group(device_a, assert_api):
     resp = device_a.call("GroupManager", Cmd.blockGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.unblock.nonexistent_group.error")
+@pytest.mark.api("GroupManager.unblockGroup")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_unblock_nonexistent_group(device_a, assert_api):
     resp = device_a.call("GroupManager", Cmd.unblockGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_error(resp, code=600, description="do not find this group")
@@ -100,4 +110,3 @@ def test_group_unblock_idempotent(device_a, assert_api, user_a):
     finally:
         if group_id:
             destroy_group(device_a, assert_api, group_id)
-
