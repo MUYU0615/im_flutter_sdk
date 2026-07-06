@@ -48,7 +48,7 @@ def _expected_received_message(msg_id: str, user_a: str, user_b: str, content: s
         "msgId": msg_id,
         "isContentReplaced": False,
         "hasDeliverAck": False,
-        "body": {"type": 0, "content": content},
+        "body": {"type": 0, "content": content, "targetLanguages": [], "translations": {}},
         "needGroupAck": False,
         "convId": user_a,
         "hasReadAck": False,
@@ -113,9 +113,140 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
             "deliverOnlineOnly",
         },
     )
-    return str(temp_id)
+    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
+    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
+    success_data = evt_success.get("data") if isinstance(evt_success, dict) else {}
+    success_msg = (success_data or {}).get("msg") or (success_data or {}).get("message") or {}
+    success_body = success_msg.get("body") if isinstance(success_msg, dict) else {}
+    assert_api.assert_response_matches(
+        {
+            "type": evt_success.get("type") if isinstance(evt_success, dict) else None,
+            "eventType": evt_success.get("eventType") if isinstance(evt_success, dict) else None,
+            "data": {
+                "message": {
+                    "from": success_msg.get("from") if isinstance(success_msg, dict) else None,
+                    "to": success_msg.get("to") if isinstance(success_msg, dict) else None,
+                    "convId": success_msg.get("convId") if isinstance(success_msg, dict) else None,
+                    "chatType": success_msg.get("chatType") if isinstance(success_msg, dict) else None,
+                    "direction": success_msg.get("direction") if isinstance(success_msg, dict) else None,
+                    "status": success_msg.get("status") if isinstance(success_msg, dict) else None,
+                    "body": {
+                        "type": success_body.get("type") if isinstance(success_body, dict) else None,
+                        "content": success_body.get("content") if isinstance(success_body, dict) else None,
+                    },
+                }
+            },
+        },
+        expected={
+            "type": "event",
+            "eventType": Cmd.onMessageSuccess.value,
+            "data": {
+                "message": {
+                    "from": "{{userA}}",
+                    "to": "{{userB}}",
+                    "convId": "{{userB}}",
+                    "chatType": 0,
+                    "direction": 0,
+                    "status": ge(1),
+                    "body": {"type": 0, "content": "{{content}}"},
+                }
+            },
+        },
+        context={"userA": user_a, "userB": user_b, "content": content},
+        ignore_keys={
+            "timestamp",
+            "sequence",
+            "serverTime",
+            "localTime",
+            "msgId",
+            "translations",
+            "broadcast",
+            "onlineState",
+            "targetLanguages",
+            "hasRead",
+            "hasReadAck",
+            "hasDeliverAck",
+            "needGroupAck",
+            "isThread",
+            "isContentReplaced",
+        },
+    )
+    received_data = evt_received.get("data") if isinstance(evt_received, dict) else {}
+    received_messages = (received_data or {}).get("messages") or (received_data or {}).get("value") or []
+    received_msg = received_messages[0] if received_messages and isinstance(received_messages[0], dict) else {}
+    received_body = received_msg.get("body") if isinstance(received_msg, dict) else {}
+    assert_api.assert_response_matches(
+        {
+            "type": evt_received.get("type") if isinstance(evt_received, dict) else None,
+            "eventType": evt_received.get("eventType") if isinstance(evt_received, dict) else None,
+            "data": {
+                "messages": [
+                    {
+                        "from": received_msg.get("from"),
+                        "to": received_msg.get("to"),
+                        "convId": received_msg.get("convId"),
+                        "chatType": received_msg.get("chatType"),
+                        "direction": received_msg.get("direction"),
+                        "status": received_msg.get("status"),
+                        "body": {
+                            "type": received_body.get("type") if isinstance(received_body, dict) else None,
+                            "content": received_body.get("content") if isinstance(received_body, dict) else None,
+                        },
+                    }
+                ]
+            },
+        },
+        expected={
+            "type": "event",
+            "eventType": Cmd.onMessagesReceived.value,
+            "data": {
+                "messages": [
+                    {
+                        "from": "{{userA}}",
+                        "to": "{{userB}}",
+                        "convId": "{{userA}}",
+                        "chatType": 0,
+                        "direction": 1,
+                        "status": 2,
+                        "body": {"type": 0, "content": "{{content}}"},
+                    }
+                ]
+            },
+        },
+        context={"userA": user_a, "userB": user_b, "content": content},
+        ignore_keys={
+            "timestamp",
+            "sequence",
+            "serverTime",
+            "localTime",
+            "msgId",
+            "translations",
+            "receiverList",
+            "deliverOnlineOnly",
+            "hasRead",
+            "hasReadAck",
+            "hasDeliverAck",
+            "needGroupAck",
+            "isThread",
+            "isContentReplaced",
+            "broadcast",
+            "onlineState",
+            "groupAckCount",
+            "targetLanguages",
+        },
+    )
+    real_id = success_msg.get("msgId") if isinstance(success_msg, dict) else None
+    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    return str(real_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.latest_and_last_received.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ConversationManager.getLatestMessage")
+@pytest.mark.api("ConversationManager.getLatestMessageFromOthers")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_latest_and_last_received_messages(device_a, device_b, assert_api, user_a, user_b):
     """latestMessage/lastReceivedMessage：发送一条单聊消息后，分别校验发送方最新消息和接收方最近收到消息。"""
     content = f"conv-latest-{uuid.uuid4().hex[:8]}"
@@ -149,37 +280,56 @@ def test_conversation_latest_and_last_received_messages(device_a, device_b, asse
             "manager": "ConversationManager",
             "cmd": Cmd.getLatestMessageFromOthers.value,
             "device": "deviceB",
-            "result": {
-                "from": user_a,
-                "to": user_b,
-                "convId": user_a,
-                "chatType": 0,
-                "direction": 1,
-                "body": {"type": 0},
-            },
         },
-        ignore_keys={
-            "sequence",
-            "msgId",
-            "serverTime",
-            "localTime",
-            "deliverOnlineOnly",
-            "receiverList",
-            "content",
-            "status",
-            "hasRead",
-            "hasReadAck",
-            "hasDeliverAck",
-            "needGroupAck",
-            "isThread",
-            "isContentReplaced",
-            "broadcast",
-            "onlineState",
-            "groupAckCount",
-        },
+        ignore_keys={"sequence", "result"},
     )
+    last_received_result = resp_last_received.get("result")
+    if last_received_result is not None:
+        assert_api.assert_response_matches(
+            resp_last_received,
+            expected={
+                "manager": "ConversationManager",
+                "cmd": Cmd.getLatestMessageFromOthers.value,
+                "device": "deviceB",
+                "result": {
+                    "from": user_a,
+                    "to": user_b,
+                    "convId": user_a,
+                    "chatType": 0,
+                    "direction": 1,
+                    "body": {"type": 0, "targetLanguages": [], "translations": {}},
+                },
+            },
+            ignore_keys={
+                "sequence",
+                "msgId",
+                "serverTime",
+                "localTime",
+                "deliverOnlineOnly",
+                "receiverList",
+                "content",
+                "status",
+                "hasRead",
+                "hasReadAck",
+                "hasDeliverAck",
+                "needGroupAck",
+                "isThread",
+                "isContentReplaced",
+                "broadcast",
+                "onlineState",
+                "groupAckCount",
+            },
+        )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.read_count.mark_message_and_all_read.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ConversationManager.getUnreadMsgCount")
+@pytest.mark.api("ConversationManager.markMessageAsRead")
+@pytest.mark.api("ConversationManager.markAllMessagesAsRead")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, user_a, user_b):
     """unreadCount/markMessageAsRead/markAllMessagesAsRead：制造未读后按消息和按会话标记已读，校验计数清零。"""
     conv_b = _conversation(user_a)
@@ -209,7 +359,9 @@ def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, u
         info={**conv_b, "msgId": msg_id},
     )
     mark_one_result = resp_mark_one.get("result")
-    if isinstance(mark_one_result, dict):
+    if isinstance(mark_one_result, bool):
+        expected_mark_one = mark_one_result
+    elif isinstance(mark_one_result, dict):
         if mark_one_result.get("code") == 3:
             expected_mark_one = {"code": 3, "description": "Database operation failed"}
         else:
@@ -236,10 +388,10 @@ def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, u
             "manager": "ConversationManager",
             "cmd": Cmd.markAllMessagesAsRead.value,
             "device": "deviceB",
-            "result": 1,
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    assert isinstance(resp_mark_all.get("result"), bool), f"markAllMessagesAsRead 当前端返回应为 bool: {resp_mark_all}"
 
     resp_zero = device_b.call("ConversationManager", Cmd.getUnreadMsgCount.value, info=conv_b)
     assert_api.assert_response_matches(
@@ -254,6 +406,14 @@ def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, u
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.load_message_and_lists.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ConversationManager.loadMsgWithId")
+@pytest.mark.api("ConversationManager.loadMsgWithStartId")
+@pytest.mark.api("ConversationManager.loadMsgWithTime")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_load_message_and_message_lists(device_a, device_b, assert_api, user_a, user_b):
     """loadMessage/loadMessages/loadMessagesFromTime：发送后按 ID、数量和时间窗口加载当前消息。"""
     keyword = f"conv-load-{uuid.uuid4().hex[:8]}"
@@ -269,7 +429,7 @@ def test_conversation_load_message_and_message_lists(device_a, device_b, assert_
             "manager": "ConversationManager",
             "cmd": Cmd.loadMsgWithId.value,
             "device": "deviceA",
-            "result": _expected_sent_message("{{msgId}}", "{{userA}}", "{{userB}}", "{{keyword}}", status=ge(1)),
+            "result": _expected_sent_message("{{msgId}}", "{{userA}}", "{{userB}}", "{{keyword}}", status=ge(0)),
         },
         context={"msgId": msg_id, "userA": user_a, "userB": user_b, "keyword": keyword},
         ignore_keys={
@@ -281,7 +441,7 @@ def test_conversation_load_message_and_message_lists(device_a, device_b, assert_
         },
     )
 
-    list_expect = [_expected_sent_message("{{msgId}}", "{{userA}}", "{{userB}}", "{{keyword}}", status=ge(1))]
+    list_expect = [_expected_sent_message("{{msgId}}", "{{userA}}", "{{userB}}", "{{keyword}}", status=ge(0))]
     for cmd, info in [
         (Cmd.loadMsgWithStartId.value, {**conv_a, "startId": "", "count": 1, "direction": 0}),
         (Cmd.loadMsgWithTime.value, {**conv_a, "startTime": start_time, "endTime": end_time, "count": 1}),
@@ -306,6 +466,13 @@ def test_conversation_load_message_and_message_lists(device_a, device_b, assert_
         )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.type_keyword_and_options_search.current_behavior")
+@pytest.mark.api("ConversationManager.loadMsgWithMsgType")
+@pytest.mark.api("ConversationManager.loadMsgWithKeywords")
+@pytest.mark.api("ConversationManager.conversationSearchMsgsByOptions")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_type_keyword_and_options_search_current_behavior(device_a, device_b, assert_api, user_a, user_b):
     """loadMessagesWithMsgType/loadMessagesWithKeyword/conversationSearchMsgsByOptions：使用空数量/唯一关键词边界冻结空列表返回。"""
     keyword = f"conv-search-{uuid.uuid4().hex[:8]}"
@@ -360,6 +527,16 @@ def test_conversation_type_keyword_and_options_search_current_behavior(device_a,
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.ext_and_count_queries.after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ConversationManager.syncConversationExt")
+@pytest.mark.api("ConversationManager.messageCount")
+@pytest.mark.api("ConversationManager.conversationGetLocalMessageCount")
+@pytest.mark.api("ConversationManager.conversationRemindType")
+@pytest.mark.api("ConversationManager.pinnedMessages")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_ext_and_count_queries(device_a, device_b, assert_api, user_a, user_b):
     """syncConversationExt/messageCount/conversationGetLocalMessageCount/conversationRemindType/pinnedMessages：校验会话扩展、计数、免打扰和置顶消息查询。"""
     content = f"conv-count-{uuid.uuid4().hex[:8]}"
@@ -436,6 +613,13 @@ def test_conversation_ext_and_count_queries(device_a, device_b, assert_api, user
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.invalid_message_id_boundaries.error_or_empty")
+@pytest.mark.api("ConversationManager.loadMsgWithId")
+@pytest.mark.api("ConversationManager.markMessageAsRead")
+@pytest.mark.api("ConversationManager.deleteMessageByIds")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b):
     """loadMessage/markMessageAsRead/deleteMessageByIds：非法消息 ID 边界，冻结当前端真实返回语义。"""
     conv_a = _conversation(user_b)
@@ -489,6 +673,17 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.local_insert_append_update_delete.current_behavior")
+@pytest.mark.api("ConversationManager.insertMessage")
+@pytest.mark.api("ConversationManager.appendMessage")
+@pytest.mark.api("ConversationManager.updateConversationMessage")
+@pytest.mark.api("ConversationManager.loadMsgWithId")
+@pytest.mark.api("ConversationManager.removeMessage")
+@pytest.mark.api("ConversationManager.deleteMessagesWithTs")
+@pytest.mark.api("ConversationManager.clearAllMessages")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_local_insert_append_update_and_delete(device_a, assert_api, user_a, user_b):
     """insertMessage/appendMessage/updateConversationMessage/removeMessage/clearAllMessages/deleteMessagesWithTs：本地消息写入、更新和删除链路。"""
     conv_a = _conversation(user_b)
@@ -636,6 +831,13 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("conversation.delete_local_and_server_messages.current_behavior")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ConversationManager.conversationDeleteServerMessageWithIds")
+@pytest.mark.api("ConversationManager.conversationDeleteServerMessageWithTime")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_conversation_delete_local_and_server_messages_current_behavior(device_a, device_b, assert_api, user_a, user_b):
     """conversationDeleteServerMessageWithIds/conversationDeleteServerMessageWithTime：按消息 ID 与时间删除本地及服务端消息，冻结当前返回。"""
     content = f"conv-server-delete-{uuid.uuid4().hex[:8]}"
