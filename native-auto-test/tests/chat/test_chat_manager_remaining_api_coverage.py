@@ -411,6 +411,12 @@ def test_chat_manager_conversation_marks_and_fetch_options(device_a, device_b, a
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.message_count_and_search_options.boundary.success")
+@pytest.mark.api("ChatManager.getMessageCount")
+@pytest.mark.api("ChatManager.searchMsgsByOptions")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_message_count_and_search_options_boundaries(device_a, assert_api, user_a):
     """getMessageCount/searchMsgsByOptions：校验全量消息计数返回数值，以及 count=0 搜索边界返回空列表。"""
     resp_count = device_a.call("ChatManager", Cmd.getMessageCount.value, info={})
@@ -442,6 +448,13 @@ def test_chat_manager_message_count_and_search_options_boundaries(device_a, asse
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.delete_all_message_and_conversation.local.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.deleteAllMessageAndConversation")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_manager_delete_all_message_and_conversation_local(device_a, device_b, assert_api, user_a, user_b):
     """deleteAllMessageAndConversation：本地清空所有会话与消息，冻结 clearServerData=False 当前返回。"""
     _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-clear-all-{uuid.uuid4().hex[:8]}")

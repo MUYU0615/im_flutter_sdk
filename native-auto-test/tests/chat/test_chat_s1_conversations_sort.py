@@ -93,6 +93,13 @@ def _extract_conv_ids_in_order(resp: dict) -> list[str]:
     return conv_ids
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.get_all_conversations_by_sort.latest_first.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.loadAllConversations")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_get_all_conversations_by_sort_orders_latest_first(device_a, device_b, assert_api, user_a, user_b):
     """
     目标：验证 ChatManager#getAllConversationsBySort 返回的会话排序正确（最新消息会话优先）。
