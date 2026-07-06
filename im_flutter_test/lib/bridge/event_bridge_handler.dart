@@ -48,6 +48,26 @@ class EventBridgeHandler {
         onMessagesRecalled: (messages) {
           emitMessagesRecalled(messages: _messagesToJson(messages));
         },
+        onMessagesRecalledInfo: (infos) {
+          emitMessagesRecalledInfo(
+            infos: infos
+                .map((info) => Map<String, dynamic>.from(info.toJson()))
+                .toList(),
+          );
+        },
+        onMessagePinChanged: (
+          messageId,
+          conversationId,
+          pinOperation,
+          pinInfo,
+        ) {
+          emitMessagePinChanged(
+            messageId: messageId,
+            conversationId: conversationId,
+            pinOperation: pinOperation,
+            pinInfo: Map<String, dynamic>.from(pinInfo.toJson()),
+          );
+        },
         onStreamMessagesReceived: (messages) {
           emitStreamMessagesReceived(messages: _messagesToJson(messages));
         },
@@ -709,17 +729,17 @@ class EventBridgeHandler {
   }
 
   void emitMessagePinChanged({
-    required String msgId,
-    required String convId,
-    required String operatorId,
-    required bool pinned,
+    required String messageId,
+    required String conversationId,
+    required MessagePinOperation pinOperation,
+    required Map<String, dynamic> pinInfo,
   }) {
     if (!_registered) return;
     _sendEvent?.call('onMessagePinChanged', {
-      'msgId': msgId,
-      'convId': convId,
-      'operatorId': operatorId,
-      'operation': pinned ? 'message_pinned' : 'message_unpinned',
+      'messageId': messageId,
+      'conversationId': conversationId,
+      'pinOperation': pinOperation.toString(),
+      'pinInfo': pinInfo,
     });
   }
 

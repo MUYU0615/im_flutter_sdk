@@ -73,8 +73,7 @@ class IMWebSocketBridge {
       serverTransfer: info['serverTransfer'] as bool? ?? true,
       isAutoDownloadThumbnail: info['isAutoDownload'] as bool? ?? true,
       enableDNSConfig: info['enableDNSConfig'] as bool? ?? true,
-      enableAutoSyncContacts:
-          info['enableAutoSyncContacts'] as bool? ?? false,
+      enableAutoSyncContacts: info['enableAutoSyncContacts'] as bool? ?? false,
       enableUserInfo: info['enableUserInfo'] as bool?,
       dnsUrl: info['dnsUrl']?.toString(),
       restServer: info['restServer']?.toString(),
@@ -231,11 +230,15 @@ class IMWebSocketBridge {
           ],
         );
       } else if (call.method == 'realWebMessagePinChanged') {
+        final pinned = data['operation']?.toString() != 'message_unpinned';
         EventBridgeHandler.instance.emitMessagePinChanged(
-          msgId: data['msgId']?.toString() ?? '',
-          convId: data['convId']?.toString() ?? '',
-          operatorId: data['operatorId']?.toString() ?? '',
-          pinned: data['operation']?.toString() != 'message_unpinned',
+          messageId: data['msgId']?.toString() ?? '',
+          conversationId: data['convId']?.toString() ?? '',
+          pinOperation:
+              pinned ? MessagePinOperation.Pin : MessagePinOperation.Unpin,
+          pinInfo: {
+            'operatorId': data['operatorId']?.toString() ?? '',
+          },
         );
       } else if (call.method == 'messageReactionDidChange') {
         sendEvent(call.method, data);
@@ -1102,10 +1105,14 @@ class IMWebSocketBridge {
             operator != null &&
             operator.isNotEmpty) {
           EventBridgeHandler.instance.emitMessagePinChanged(
-            msgId: msgId,
-            convId: convId,
-            operatorId: operator,
-            pinned: method == 'pinMessage',
+            messageId: msgId,
+            conversationId: convId,
+            pinOperation: method == 'pinMessage'
+                ? MessagePinOperation.Pin
+                : MessagePinOperation.Unpin,
+            pinInfo: {
+              'operatorId': operator,
+            },
           );
         }
       }

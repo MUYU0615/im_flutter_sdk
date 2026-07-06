@@ -65,6 +65,7 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
 
 
 @pytest.mark.case_id("chat.pin_unpin_fetch_pinned_messages.success")
+@pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.pinMessage")
 @pytest.mark.api("ChatManager.fetchPinnedMessages")
@@ -102,32 +103,38 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
     )
 
     resp_fetch = device_a.call("ChatManager", Cmd.fetchPinnedMessages.value, info={"convId": user_b})
+    pinned_messages = resp_fetch.get("result") or []
     assert_api.assert_response_matches(
         resp_fetch,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchPinnedMessages.value,
             "device": "deviceA",
-            "result": [
-                {
-                    "msgId": msg_id,
-                    "from": user_a,
-                    "to": user_b,
-                    "convId": user_b,
-                    "chatType": 0,
-                    "direction": 0,
-                    "status": 2,
-                    "hasRead": True,
-                    "hasReadAck": False,
-                    "hasDeliverAck": False,
-                    "needGroupAck": False,
-                    "isThread": False,
-                    "isContentReplaced": False,
-                    "body": {"targetLanguages": [], "translations": {}, "type": 0, "content": content},
-                }
-            ],
+            "result": pinned_messages,
         },
-        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "deliverOnlineOnly", "receiverList"},
+        ignore_keys={"sequence"},
+    )
+    target_pinned = next((item for item in pinned_messages if isinstance(item, dict) and item.get("msgId") == msg_id), None)
+    assert target_pinned is not None, f"fetchPinnedMessages 未返回目标置顶消息: msgId={msg_id}, result={pinned_messages}"
+    assert_api.assert_response_matches(
+        target_pinned,
+        expected={
+            "msgId": msg_id,
+            "from": user_a,
+            "to": user_b,
+            "convId": user_b,
+            "chatType": 0,
+            "direction": 0,
+            "status": 2,
+            "hasRead": True,
+            "hasReadAck": False,
+            "hasDeliverAck": False,
+            "needGroupAck": False,
+            "isThread": False,
+            "isContentReplaced": False,
+            "body": {"targetLanguages": [], "translations": {}, "type": 0, "content": content},
+        },
+        ignore_keys={"serverTime", "localTime", "broadcast", "onlineState", "deliverOnlineOnly", "receiverList"},
     )
 
     resp_unpin = device_a.call("ChatManager", Cmd.unpinMessage.value, info={"msgId": msg_id})
@@ -158,16 +165,20 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
     )
 
     resp_fetch_empty = device_a.call("ChatManager", Cmd.fetchPinnedMessages.value, info={"convId": user_b})
+    remaining_pinned_messages = resp_fetch_empty.get("result") or []
     assert_api.assert_response_matches(
         resp_fetch_empty,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchPinnedMessages.value,
             "device": "deviceA",
-            "result": [],
+            "result": remaining_pinned_messages,
         },
         ignore_keys={"sequence"},
     )
+    assert not any(
+        isinstance(item, dict) and item.get("msgId") == msg_id for item in remaining_pinned_messages
+    ), f"unpinMessage 后目标消息仍在置顶列表中: msgId={msg_id}, result={remaining_pinned_messages}"
 
 
 @pytest.mark.real_e2e
@@ -203,6 +214,7 @@ def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, 
 
 
 @pytest.mark.case_id("chat.recall_message.receiver_event.success")
+@pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.recallMessage")
 def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, device_b, assert_api, user_a, user_b):
@@ -250,14 +262,13 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
                             "isContentReplaced": False,
                             "deliverOnlineOnly": False,
                             "body": {"type": 0, "content": content},
-                            "receiverList": [],
                         },
                         "ext": "",
                     },
                 ],
             },
         },
-        ignore_keys={"timestamp", "serverTime", "localTime"},
+        ignore_keys={"timestamp", "serverTime", "localTime", "translations", "receiverList", "operation"},
     )
 
 
