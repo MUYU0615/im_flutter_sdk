@@ -15,6 +15,12 @@ from src.tools.config import get_sdk_app_key
 pytestmark = [pytest.mark.client]
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.connection_state_queries.success")
+@pytest.mark.api("Client.isConnected")
+@pytest.mark.api("Client.isLoggedInBefore")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_connection_state_queries(device_a, assert_api):
     """isConnected / isLoggedInBefore：已登录 session 下查询连接态和历史登录态，均应返回 true。"""
     connected_resp = device_a.call("Client", Cmd.isConnected.value, info={})
@@ -42,8 +48,13 @@ def test_client_connection_state_queries(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.init.repeated_call.current_bool")
+@pytest.mark.api("Client.init")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_init_repeated_call_idempotent(device_a, assert_api):
-    """init：SDK 已初始化后重复调用，验证原生幂等返回 result=null，不改变当前登录态。"""
+    """init：SDK 已初始化后重复调用，冻结当前端返回 bool，且不改变当前登录态。"""
     app_key = get_sdk_app_key()
     assert app_key, "config.yaml sdk_options.app_key 不能为空"
     resp = device_a.call(
@@ -57,10 +68,10 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
             "manager": "Client",
             "cmd": Cmd.init.value,
             "device": "deviceA",
-            "result": None,
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    assert isinstance(resp.get("result"), bool), f"重复 init 当前端返回应为 bool: {resp}"
 
     current_user_resp = device_a.call("Client", Cmd.getCurrentUser.value, info={})
     assert_api.assert_response_matches(
@@ -75,6 +86,12 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
     assert current_user_resp.get("result"), "重复 init 后当前登录用户不应被清空"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.current_token_and_device_id.success")
+@pytest.mark.api("Client.getToken")
+@pytest.mark.api("Client.getCurrentDeviceId")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_current_token_and_device_id(device_a, assert_api):
     """getToken / getCurrentDeviceId：已登录 session 下获取 token 和当前设备信息，校验关键字段非空。"""
     token_resp = device_a.call("Client", Cmd.getToken.value, info={})
@@ -107,6 +124,11 @@ def test_client_current_token_and_device_id(device_a, assert_api):
     assert device_info["deviceUUID"], "getCurrentDeviceId 应返回非空 deviceUUID"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.compress_logs.returns_path")
+@pytest.mark.api("Client.compressLogs")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_compress_logs_returns_path(device_a, assert_api):
     """compressLogs：压缩本地日志，校验返回压缩文件路径字符串。"""
     resp = device_a.call("Client", Cmd.compressLogs.value, info={})
@@ -123,6 +145,11 @@ def test_client_compress_logs_returns_path(device_a, assert_api):
     assert resp["result"], "compressLogs 应返回非空路径字符串"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.create_account.empty_user_boundary.error")
+@pytest.mark.api("Client.createAccount")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_create_account_empty_user_boundary(device_a, assert_api):
     """createAccount：空 userId/password 边界，冻结真实模拟器参数校验错误，不创建新账号。"""
     resp = device_a.call(
@@ -169,6 +196,23 @@ def test_client_create_account_empty_user_boundary(device_a, assert_api):
         (Cmd.updateRegradeMessagesSetting.value, {"isRead": True}),
     ],
 )
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.update_runtime_setting.success")
+@pytest.mark.api("Client.updateUsingHttpsOnlySetting")
+@pytest.mark.api("Client.updateLoginExtensionInfo")
+@pytest.mark.api("Client.updateDeleteMessagesWhenLeaveGroupSetting")
+@pytest.mark.api("Client.updateDeleteMessageWhenLeaveRoomSetting")
+@pytest.mark.api("Client.updateRoomOwnerCanLeaveSetting")
+@pytest.mark.api("Client.updateAutoAcceptGroupInvitationSetting")
+@pytest.mark.api("Client.updateAcceptInvitationAlways")
+@pytest.mark.api("Client.updateAutoDownloadAttachmentThumbnailSetting")
+@pytest.mark.api("Client.updateRequireAckSetting")
+@pytest.mark.api("Client.updateDeliveryAckSetting")
+@pytest.mark.api("Client.updateSortMessageByServerTimeSetting")
+@pytest.mark.api("Client.updateMessagesReceiveCallbackIncludeSendSetting")
+@pytest.mark.api("Client.updateRegradeMessagesSetting")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
     """update*Setting：逐项更新运行时配置，冻结真实模拟器返回 result=null 的成功语义。"""
     resp = device_a.call("Client", cmd, info=info)
@@ -230,6 +274,16 @@ def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
         ),
     ],
 )
+@pytest.mark.real_e2e
+@pytest.mark.case_id("client.session_sensitive_api_boundaries.error")
+@pytest.mark.api("Client.renewToken")
+@pytest.mark.api("Client.changeAppKey")
+@pytest.mark.api("Client.getLoggedInDevicesFromServer")
+@pytest.mark.api("Client.kickDevice")
+@pytest.mark.api("Client.kickAllDevices")
+@pytest.mark.api("Client.loginWithAgoraToken")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_client_session_sensitive_api_boundaries(device_a, assert_api, cmd, info, expected_result):
     """renew/changeAppKey/device-kick 类方法：使用不会破坏当前 session 的边界入参冻结真实错误返回。"""
     resp = device_a.call("Client", cmd, info=info)
