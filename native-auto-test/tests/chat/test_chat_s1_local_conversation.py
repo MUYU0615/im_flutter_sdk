@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 import uuid
 
+import pytest
+
 from src import Cmd
 from tests.chat._utils import build_text, now_ms
 
@@ -155,6 +157,10 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
     return str(real_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.get_conversation.local_after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.getConversation")
 def test_chat_get_conversation_success(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s1-get-conv-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
@@ -202,6 +208,11 @@ def test_chat_get_conversation_empty_conv_id(device_a, assert_api):
     _assert_chat_response(assert_api, resp, Cmd.getConversation.value, "deviceA", None)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.unread_count.mark_all_read.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.getUnreadMessageCount")
+@pytest.mark.api("ChatManager.markAllChatMsgAsRead")
 def test_chat_get_unread_count_positive_then_zero(device_a, device_b, assert_api, user_a, user_b):
     resp_mark = device_b.call("ChatManager", Cmd.markAllChatMsgAsRead.value, info={})
     assert_api.assert_response_matches(
@@ -210,7 +221,7 @@ def test_chat_get_unread_count_positive_then_zero(device_a, device_b, assert_api
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -236,7 +247,7 @@ def test_chat_get_unread_count_positive_then_zero(device_a, device_b, assert_api
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -253,7 +264,7 @@ def test_chat_mark_all_as_read_idempotent(device_b, assert_api):
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -274,6 +285,11 @@ def test_chat_mark_all_as_read_idempotent(device_b, assert_api):
     _assert_chat_response(assert_api, resp_unread, Cmd.getUnreadMessageCount.value, "deviceB", 0)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.load_all_conversations.local_after_send_delete.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.loadAllConversations")
+@pytest.mark.api("ChatManager.deleteConversation")
 def test_chat_load_all_conversations_contains_then_not_contains(device_a, device_b, assert_api, user_a, user_b):
     _ = device_a.call(
         "ChatManager",
@@ -562,6 +578,11 @@ def test_chat_delete_messages_before_timestamp_future_removes_msg(device_a, devi
     _assert_chat_response(assert_api, resp_get, Cmd.getMessage.value, "deviceA", None)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.delete_messages_before_timestamp.keep_recent.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.deleteMessagesBeforeTimestamp")
+@pytest.mark.api("ChatManager.getMessage")
 def test_chat_delete_messages_before_timestamp_zero_keeps_recent_msg(device_a, device_b, assert_api, user_a, user_b):
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s1-del-before-zero-{uuid.uuid4().hex[:6]}")
     resp_del = device_a.call(
