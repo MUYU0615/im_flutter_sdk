@@ -31,6 +31,11 @@ def _assert_error_result(assert_api, resp: dict, *, cmd: str, code: int, descrip
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.clear_all_groups_from_local.success")
+@pytest.mark.api("GroupManager.clearAllGroupsFromDB")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a):
     """clearAllGroupsFromLocal：清理本地群缓存，实测成功返回 None。"""
     resp = device_a.call("GroupManager", Cmd.clearAllGroupsFromDB.value)
@@ -46,6 +51,11 @@ def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a)
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.fetch_members_info.empty_group_id.error")
+@pytest.mark.api("GroupManager.fetchGroupMembersInfo")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
     """fetchGroupMembersInfo：groupId 为空字符串时，冻结真实错误返回。"""
     resp = device_a.call(
@@ -62,6 +72,11 @@ def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.fetch_members_info.limit_zero.current_result")
+@pytest.mark.api("GroupManager.fetchGroupMembersInfo")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
     """fetchGroupMembersInfo：limit=0 的分页边界，并比对成员资料与当前用户资料一致。"""
     group_id = ""
@@ -123,6 +138,11 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_avatar.success")
+@pytest.mark.api("GroupManager.updateGroupAvatar")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_success(device_a, assert_api, user_a):
     """updateGroupAvatar：群主更新群头像 URL，返回群对象中 avatarUrl 为新值。"""
     group_id = ""
@@ -190,6 +210,11 @@ def test_group_update_avatar_success(device_a, assert_api, user_a):
         "https://example.com/" + ("a" * 2048),
     ],
 )
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_avatar.abnormal_values.current_success")
+@pytest.mark.api("GroupManager.updateGroupAvatar")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_abnormal_values(
     device_a,
     assert_api,
@@ -250,6 +275,11 @@ def test_group_update_avatar_abnormal_values(
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("group.update_avatar.empty_group_id.error")
+@pytest.mark.api("GroupManager.updateGroupAvatar")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_empty_group_id(device_a, assert_api):
     """updateGroupAvatar：groupId 为空字符串时，冻结真实错误返回。"""
     resp = device_a.call(
