@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart';
 
 import 'bridge_socket.dart';
@@ -39,12 +40,62 @@ class IMWebSocketBridge {
     'downloadMessageThumbnailInCombine',
   };
   String? _deviceName;
-  String _webSdkMode = 'real_sdk';
+  final String _webSdkMode = 'real_sdk';
 
   OnBridgeLog? onLog;
 
   static bool _isLoginMethod(String? method) {
     return method == _login || method == _loginWithAgoraToken;
+  }
+
+  EMOptions _optionsFromInitInfo(Map<String, dynamic> info) {
+    final appKey = info['appKey']?.toString() ?? '';
+    if (appKey.isEmpty) {
+      throw ArgumentError('Client.init requires appKey');
+    }
+    return EMOptions.withAppKey(
+      appKey,
+      autoLogin: info['autoLogin'] as bool? ?? true,
+      debugMode: info['debugModel'] as bool? ?? false,
+      acceptInvitationAlways: info['acceptInvitationAlways'] as bool? ?? false,
+      autoAcceptGroupInvitation:
+          info['autoAcceptGroupInvitation'] as bool? ?? false,
+      requireAck: info['requireAck'] as bool? ?? true,
+      requireDeliveryAck: info['requireDeliveryAck'] as bool? ?? false,
+      deleteMessagesAsExitGroup:
+          info['deleteMessagesAsExitGroup'] as bool? ?? true,
+      deleteMessagesAsExitChatRoom:
+          info['deleteMessagesAsExitChatRoom'] as bool? ?? true,
+      isChatRoomOwnerLeaveAllowed:
+          info['isChatRoomOwnerLeaveAllowed'] as bool? ?? true,
+      sortMessageByServerTime: info['sortMessageByServerTime'] as bool? ?? true,
+      usingHttpsOnly: info['usingHttpsOnly'] as bool? ?? false,
+      serverTransfer: info['serverTransfer'] as bool? ?? true,
+      isAutoDownloadThumbnail: info['isAutoDownload'] as bool? ?? true,
+      enableDNSConfig: info['enableDNSConfig'] as bool? ?? true,
+      enableAutoSyncContacts:
+          info['enableAutoSyncContacts'] as bool? ?? false,
+      enableUserInfo: info['enableUserInfo'] as bool?,
+      dnsUrl: info['dnsUrl']?.toString(),
+      restServer: info['restServer']?.toString(),
+      imPort: info['imPort'] as int?,
+      imServer: info['imServer']?.toString(),
+      webSocketServer: info['webSocketServer']?.toString(),
+      webSocketPort: info['webSocketPort'] as int?,
+      syncDataWebSocketServer: info['syncDataWebSocketServer']?.toString(),
+      syncDataWebSocketPort: info['syncDataWebSocketPort'] as int?,
+      chatAreaCode: info['areaCode'] as int?,
+      enableEmptyConversation: info['loadEmptyConversations'] as bool? ?? false,
+      deviceName: info['deviceName']?.toString(),
+      osType: info['osType'] as int?,
+      useReplacedMessageContents:
+          info['useReplacedMessageContents'] as bool? ?? false,
+      enableTLS: info['enableTLS'] as bool? ?? false,
+      messagesReceiveCallbackIncludeSend:
+          info['messagesReceiveCallbackIncludeSend'] as bool? ?? false,
+      regardImportMessagesAsRead:
+          info['regardImportMessagesAsRead'] as bool? ?? false,
+    );
   }
 
   static void _logV(String message) {
@@ -277,18 +328,28 @@ class IMWebSocketBridge {
     }
     final managerName = request['manager'] as String?;
     final method = request['cmd'] as String?;
-    if (managerName == 'Client' && method == 'init') {
-      final info = request['info'];
-      if (info is Map) {
-        _webSdkMode = info['webSdkMode']?.toString() ?? _webSdkMode;
-      }
-    }
     dynamic args = request['info'];
     if (managerName == null || method == null) {
       final resp = _errorResponse(id, -1, 'Missing manager or cmd');
       _logV('cmd request: ${jsonEncode(resp)}');
       _send(ws, resp);
       onLog?.call(text, jsonEncode(resp));
+      return;
+    }
+
+    if (managerName == 'Client' && method == 'init') {
+      final info =
+          args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
+      try {
+        await EMClient.getInstance.init(_optionsFromInitInfo(info));
+        final resp = _successResponse(request, {'init': true}, method);
+        _send(ws, resp);
+        onLog?.call(text, jsonEncode(resp));
+      } catch (e) {
+        final resp = _errorResponse(id, -1, 'Client.init failed: $e');
+        _send(ws, resp);
+        onLog?.call(text, jsonEncode(resp));
+      }
       return;
     }
 
@@ -1202,6 +1263,33 @@ class IMWebSocketBridge {
     return value.toString();
   }
 
+  static Map<String, dynamic> _normalizeEventData(
+    String eventType,
+    Map<String, dynamic> data,
+  ) {
+    final normalized = Map<String, dynamic>.from(data);
+    if (eventType == 'onMessageSuccess' || eventType == 'onMessageError') {
+      final message = normalized['msg'] ?? normalized['message'];
+      if (message is Map) {
+        normalized['msg'] = Map<String, dynamic>.from(message);
+      }
+      final localId = normalized['msgId'] ?? normalized['localId'];
+      if (localId != null) {
+        normalized['msgId'] = localId.toString();
+      }
+      normalized.remove('message');
+      normalized.remove('localId');
+    } else if (eventType == 'onMessageProgress' ||
+        eventType == 'onMessageProgressUpdate') {
+      final localId = normalized['msgId'] ?? normalized['localId'];
+      if (localId != null) {
+        normalized['msgId'] = localId.toString();
+      }
+      normalized.remove('localId');
+    }
+    return normalized;
+  }
+
   void _send(BridgeSocket ws, Map<String, dynamic> payload) {
     if (ws.isClosed) {
       _logV('WebSocket closed, payload not sent');
@@ -1261,10 +1349,11 @@ class IMWebSocketBridge {
       return;
     }
     try {
+      final eventData = _normalizeEventData(eventType, data);
       final payload = {
         'type': 'event',
         'eventType': eventType,
-        'data': _toJsonSafe(data),
+        'data': _toJsonSafe(eventData),
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
       _send(ws, payload);

@@ -5,6 +5,7 @@ Chat tests shared fixtures & marks.
 from __future__ import annotations
 
 import os
+import time
 import pytest
 
 from src import Cmd
@@ -12,11 +13,30 @@ from src import Cmd
 pytestmark = [pytest.mark.client, pytest.mark.chat]
 
 
+def _wait_until_mutual_contacts(device_a, device_b, user_a: str, user_b: str, *, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    last_a = None
+    last_b = None
+    while time.monotonic() < deadline:
+        last_a = device_a.call("ContactManager", Cmd.getAllContactsFromServer.value, info={})
+        last_b = device_b.call("ContactManager", Cmd.getAllContactsFromServer.value, info={})
+        contacts_a = last_a.get("result") or []
+        contacts_b = last_b.get("result") or []
+        if user_b in contacts_a and user_a in contacts_b:
+            return
+        time.sleep(0.5)
+    raise AssertionError(
+        "chat 用例前置好友关系未双向生效，不能继续执行依赖好友关系的消息链路: "
+        f"deviceA_contacts={last_a}, deviceB_contacts={last_b}"
+    )
+
+
 @pytest.fixture(autouse=True)
 def ensure_friends(device_a, device_b, assert_api, user_a, user_b):
     discovering = os.getenv("CASES_DISCOVER", "0") in ("1", "true", "True")
     server_resp = device_a.call("ContactManager", Cmd.getAllContactsFromServer.value, info={})
     if user_b in (server_resp.get("result") or []):
+        _wait_until_mutual_contacts(device_a, device_b, user_a, user_b)
         return
 
     try:
@@ -71,6 +91,7 @@ def ensure_friends(device_a, device_b, assert_api, user_a, user_b):
                 },
                 ignore_keys={"sequence"},
             )
+        _wait_until_mutual_contacts(device_a, device_b, user_a, user_b)
     else:
         assert resp_add.get("manager") == "ContactManager" and resp_add.get("cmd") == Cmd.addContact.value
         retry_server_resp = device_a.call("ContactManager", Cmd.getAllContactsFromServer.value, info={})
@@ -78,3 +99,4 @@ def ensure_friends(device_a, device_b, assert_api, user_a, user_b):
             "chat 用例前置好友关系未建立，不能继续执行依赖好友关系的消息链路: "
             f"addContact={resp_add}, contacts={retry_server_resp}"
         )
+        _wait_until_mutual_contacts(device_a, device_b, user_a, user_b)

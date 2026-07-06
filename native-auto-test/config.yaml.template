@@ -1,8 +1,10 @@
-# native-auto-test 控制端配置。
-# 本文件复制为 config.yaml 后可包含 REST 凭据；config.yaml 已被 .gitignore 忽略。
-# 不要把本文件中的 rest_api 凭据打包进 Flutter 测试 App。
+# native-auto-test 控制端本地配置模板。
+# 复制为 config.yaml 后填写真实 app key、REST 凭据、账号和 SDK options。
+# config.yaml 已被 .gitignore 忽略，不提交、不打包、不放入 Flutter assets。
 
-# WebSocket 连接配置，与 Flutter 测试端 flutter_config.yaml 保持一致。
+# WebSocket 控制通道配置。
+# runner 会把 bridge URL / topic 通过启动参数或 WebSocket 编排下发给 im_flutter_test。
+# 不再维护 flutter_config.yaml，也不允许 im_flutter_test/assets/config.yaml 承载这些配置。
 websocket:
   # 本地长期回归建议先启动：
   #   python -m src.tools.local_ws_relay --host 127.0.0.1 --port 2000
@@ -34,8 +36,9 @@ rest_api:
   client_secret: "your_client_secret"
   verify_ssl: false  # 临时绕过证书校验（仅测试环境使用）
 
-# Flutter SDK EMOptions 配置（与 im_flutter_test/lib/sdk_config_loader.dart 映射字段一一对应）。
-# 若修改本节中客户端也需要的字段，请同步 native-auto-test/flutter_config.yaml。
+# Flutter SDK EMOptions / SDK init 配置。
+# 本节真实值只写入本地 config.yaml，由 src/tools/sdk_options_resolver.py 校验并转换成
+# bridge Client.init JSON；im_flutter_test 不读取本地 yaml，也不内置 sdk_config_loader.dart。
 sdk_options:
   app_key: "your_org_name#your_app_name"
   # rest_server: "https://a1-hsb.easemob.com"
@@ -51,3 +54,25 @@ sdk_options:
   require_ack: true
   enable_auto_sync_contacts: false
   enable_user_info: true
+
+# SDK E2E 默认运行配置。
+e2e:
+  # 第一阶段只支持 existing：使用已经在线的设备或客户端。
+  device_mode: existing
+  # 默认矩阵模式。pair 表示按当前 context 做成对互测。
+  matrix_mode: pair
+  # 默认安装模式。第一阶段只记录到 context，不执行安装编排。
+  install_mode: clean
+  # 第一阶段只支持 fresh。
+  account_mode: fresh
+
+# E2E fresh 账号策略。真实密码只写入本地 config.yaml。
+accounts:
+  default_password: ""
+  user_id_prefix: "im_e2e"
+  create_retry: 5
+  # 如需使用已存在账号，可在本地 config.yaml 中显式指定；不要提交真实账号。
+  # users:
+  #   a: "existing_user_a"
+  #   b: "existing_user_b"
+  #   c: "existing_user_c"

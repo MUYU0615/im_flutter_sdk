@@ -27,6 +27,7 @@ P1_EQUIVALENT_APIS = {
     "getReactionList": "ChatManager.fetchReactionList",
     "reportMessage": "ChatManager.reportMessage",
     "removeReaction": "ChatManager.removeReaction",
+    "saveMessage": "ChatManager.saveMessage",
 }
 
 TASK5_EQUIVALENT_APIS = {

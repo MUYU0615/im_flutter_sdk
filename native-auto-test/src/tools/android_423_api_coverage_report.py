@@ -1,17 +1,19 @@
-"""Generate Android 4.23 based API coverage reports.
+"""Generate Android 4.23 based native API coverage reports.
 
 This report has two independent dimensions:
 
-1. Platform API coverage:
-   - Android callable APIs are one baseline.
-   - iOS/Web callable APIs are compared with Android.
-   - iOS/Web APIs that Android does not expose are also listed.
-2. Automation coverage:
-   - native-auto-test case references are scanned separately.
+1. Native Android API coverage:
+   - Android native SDK APIs are the primary baseline.
+   - Flutter Android wrapper coverage and native-auto-test coverage are
+     checked against each native API.
+2. Wrapper platform alignment:
+   - Flutter wrapper callable APIs are emitted as a separate auxiliary
+     report for Android/iOS/Web alignment.
 
 The Android baseline is not built from MethodKey alone. It scans wrapper
 dispatch branches and checks whether the matched handler body references
-real SDK objects such as EMClient and SDK managers.
+real SDK objects such as EMClient and SDK managers. The primary output is
+API-level, not wrapper-API-level.
 """
 
 from __future__ import annotations
@@ -1787,6 +1789,10 @@ FIELDS = [
 ]
 
 
+def _rows_by_kind(rows: list[dict[str, str]], row_kind: str) -> list[dict[str, str]]:
+    return [row for row in rows if row.get("row_kind") == row_kind]
+
+
 def render_csv(rows: list[dict[str, str]]) -> str:
     from io import StringIO
 
@@ -1831,7 +1837,7 @@ def _badge(value: str, positive: str = "yes") -> str:
     return f'<span class="badge {cls}">{html.escape(label)}</span>'
 
 
-def render_html(rows: list[dict[str, str]], summary: dict[str, Any]) -> str:
+def render_html(rows: list[dict[str, str]], summary: dict[str, Any], *, title: str, description: str) -> str:
     managers = sorted({row["manager"] for row in rows})
     manager_options = "".join(f'<option value="{html.escape(item)}">{html.escape(item)}</option>' for item in managers)
     trs: list[str] = []
@@ -1884,9 +1890,10 @@ def render_html(rows: list[dict[str, str]], summary: dict[str, Any]) -> str:
         summary["android_missing_against_ios"]["ios_has_android_missing"]
         + summary["android_missing_against_web"]["web_has_android_missing"]
     )
+    shown_total_label = "原生 Android API" if all(row.get("row_kind") == "native_android_api" for row in rows) else "平台 API 并集"
     return f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Android 4.23 API 覆盖统计</title>
+<title>{html.escape(title)}</title>
 <style>
 body{{margin:0;background:#f6f7f9;color:#17202a;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}
 header{{background:#fff;border-bottom:1px solid #d9dee7;padding:22px 28px}} h1{{margin:0 0 8px;font-size:24px}} p{{margin:0;color:#637083}}
@@ -1899,7 +1906,7 @@ th,td{{border-bottom:1px solid #d9dee7;padding:9px 10px;text-align:left;vertical
 code{{font-size:12px}} .small{{font-size:12px;color:#4d5a69}} .badge{{display:inline-flex;min-width:34px;justify-content:center;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:650}}
 .ok{{color:#147a4b;background:#e6f5ed}} .bad{{color:#a12b2b;background:#fae7e7}} tr.hidden{{display:none}}
 </style></head><body>
-<header><h1>Android 4.23 API 覆盖统计</h1><p>平台 API 覆盖与自动化覆盖是两个独立维度；Android 基准来自 wrapper 分发入口和真实 SDK 调用痕迹，不只看 MethodKey。</p></header>
+<header><h1>{html.escape(title)}</h1><p>{html.escape(description)}</p></header>
 <main>
 <div class="cards">
 <section class="card"><div class="v">{summary['total_native_android_api']}</div><div>Android 原生 API</div><div class="n">来自 4.23.0 api.jar</div></section>
@@ -1918,7 +1925,7 @@ code{{font-size:12px}} .small{{font-size:12px;color:#4d5a69}} .badge{{display:in
 <select id="web"><option value="">Web 全部</option><option value="yes">Web 有</option><option value="no">Web 缺</option></select>
 <select id="auto"><option value="">自动化全部</option><option value="yes">自动化有</option><option value="no">自动化缺</option></select>
 </div>
-<div class="n"><span id="count">{len(rows)}</span> / {len(rows)} 条平台 API 并集</div>
+<div class="n"><span id="count">{len(rows)}</span> / {len(rows)} 条{shown_total_label}</div>
 <div class="table"><table><thead><tr><th>Manager</th><th>API</th><th>行类型</th><th>测试要求</th><th>覆盖结论</th><th>Review Action</th><th>优先级</th><th>Review Batch</th><th>原生 Android</th><th>Android wrapper</th><th>iOS</th><th>Web</th><th>自动化</th><th>Wrapper SDK 调用证据</th><th>源码位置</th><th>自动化文件</th><th>目标 Case</th><th>扫描证据</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>
 </main><script>
 const rows=[...document.querySelectorAll('tbody tr')]; const count=document.getElementById('count');
@@ -1929,23 +1936,57 @@ for(const e of document.querySelectorAll('input,select')) e.addEventListener('in
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "out/android-4.23-api-coverage.html")
-    parser.add_argument("--csv-output", type=Path, default=ROOT / "out/android-4.23-api-coverage.csv")
-    parser.add_argument("--json-output", type=Path, default=ROOT / "out/android-4.23-api-coverage-summary.json")
+    parser.add_argument("--output", type=Path, default=ROOT / "out/android-4.23-native-api-coverage.html")
+    parser.add_argument("--csv-output", type=Path, default=ROOT / "out/android-4.23-native-api-coverage.csv")
+    parser.add_argument("--json-output", type=Path, default=ROOT / "out/android-4.23-native-api-coverage-summary.json")
+    parser.add_argument(
+        "--wrapper-output",
+        type=Path,
+        default=ROOT / "out/android-4.23-wrapper-platform-alignment.html",
+    )
+    parser.add_argument(
+        "--wrapper-csv-output",
+        type=Path,
+        default=ROOT / "out/android-4.23-wrapper-platform-alignment.csv",
+    )
     args = parser.parse_args()
 
     rows = build_rows()
     summary = summarize(rows)
+    native_rows = _rows_by_kind(rows, "native_android_api")
+    wrapper_rows = _rows_by_kind(rows, "wrapper_api")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(render_html(rows, summary), encoding="utf-8")
+    args.output.write_text(
+        render_html(
+            native_rows,
+            summary,
+            title="Android 4.23 原生 API 覆盖统计",
+            description="一行表示一个 Android 原生 SDK API；统计该原生 API 是否被 Flutter Android wrapper 封装，以及 native-auto-test 是否覆盖。",
+        ),
+        encoding="utf-8",
+    )
     args.csv_output.parent.mkdir(parents=True, exist_ok=True)
-    args.csv_output.write_text(render_csv(rows), encoding="utf-8")
+    args.csv_output.write_text(render_csv(native_rows), encoding="utf-8")
     _write_wrapper_missing_backlog(rows, args.csv_output.parent)
+    args.wrapper_output.parent.mkdir(parents=True, exist_ok=True)
+    args.wrapper_output.write_text(
+        render_html(
+            wrapper_rows,
+            summary,
+            title="Android 4.23 Wrapper 三端对齐辅助统计",
+            description="一行表示一个 Flutter wrapper 可调 API；仅用于 Android/iOS/Web 对齐分析，不作为原生 SDK API 主覆盖表。",
+        ),
+        encoding="utf-8",
+    )
+    args.wrapper_csv_output.parent.mkdir(parents=True, exist_ok=True)
+    args.wrapper_csv_output.write_text(render_csv(wrapper_rows), encoding="utf-8")
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
     print(f"html: {args.output}")
     print(f"csv: {args.csv_output}")
+    print(f"wrapper_html: {args.wrapper_output}")
+    print(f"wrapper_csv: {args.wrapper_csv_output}")
     print(f"backlog: {args.csv_output.parent / 'android-4.23-wrapper-missing-backlog.csv'}")
     print(f"json: {args.json_output}")
     return 0

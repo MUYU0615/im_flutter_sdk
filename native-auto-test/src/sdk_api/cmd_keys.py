@@ -88,6 +88,7 @@ class Cmd(str, Enum):
     downloadMessageAttachmentInCombine = "downloadMessageAttachmentInCombine"
     downloadMessageThumbnailInCombine = "downloadMessageThumbnailInCombine"
     importMessages = "importMessages"
+    saveMessage = "saveMessage"
     getAllConversations = "getAllConversations"
     loadAllConversations = "loadAllConversations"
     loadAllConversationsFromDB = "loadAllConversationsFromDB"

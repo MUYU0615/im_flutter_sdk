@@ -31,10 +31,11 @@
 - Android、iOS、Web 的桥接行为应尽量一致；若某个平台只能提供 wrapper mapping、local adapter 或 synthetic event，必须在 `../native-auto-test/` 的 suite/coverage 中单独标记，不能计入真实 E2E 覆盖。
 
 ## 配置边界
-- `assets/config.yaml` 应软链到 `../native-auto-test/flutter_config.yaml`，只包含 Flutter 测试 App 运行必需的客户端配置。
-- 不要把 `../native-auto-test/config.yaml` 直接打包进 App；该文件可包含 `rest_api.client_id`、`client_secret`、`auth_token` 等控制端凭据。
-- Flutter 端需要的连接目标、`sdk_options`、`web.sdk_mode` 放在 `flutter_config.yaml`。Python 控制端的 REST 用户管理配置只放在 `config.yaml`。
-- Web 测试端默认使用 `web.sdk_mode=real_sdk`。只有明确做 wrapper JSON 映射验证时，才手动指定 Web 兼容模式 `local_adapter`。
+- 测试 App 不再打包 SDK 初始化配置；`assets/` 只允许放测试媒体等非敏感素材。
+- SDK 初始化参数由 `../native-auto-test/config.yaml` 的 `sdk_options` 统一解析，并由 runner 在 WebSocket bridge ready 后通过 `Client.init` 下发。
+- 不要把 `../native-auto-test/config.yaml`、REST 凭据、app secret、auth token 或 SDK 环境配置打包进 App。
+- Flutter 端只关注 WebSocket 连接、设备标识、topic、事件转发和真实 SDK 调用。
+- Web/Android/iOS E2E 默认都是真实 SDK 全流程；wrapper mapping/local adapter 类能力只能作为独立执行层统计，不能算真实 E2E。
 
 ## 相关目录
 - Python 自动化测试主工程：`../native-auto-test/`

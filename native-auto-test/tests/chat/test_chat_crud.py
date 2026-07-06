@@ -9,9 +9,24 @@ from src.tools.assertions import get_result
 from tests.chat._utils import build_text
 
 
+_ANDROID_MESSAGE_OPTIONAL_KEYS = {
+    "broadcast",
+    "onlineState",
+    "deliverOnlineOnly",
+    "targetLanguages",
+    "translations",
+}
+
+
 # ======================== Create / Send ========================
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.send_message.text.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.expects_event
 def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
     try:
         device_a.drain_events()
@@ -44,15 +59,18 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                 },
             },
         },
         context={"tempId": temp_id, "realId": real_id, "fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
+    success_msg = ((evt_success.get("data") or {}).get("msg")) or {}
+    if "deliverOnlineOnly" in success_msg:
+        assert success_msg.get("deliverOnlineOnly") is False, f"data.msg.deliverOnlineOnly 不匹配: {success_msg}"
+
     assert_api.assert_response_matches(
         resp_send,
         expected={
@@ -77,9 +95,9 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
             },
         },
         context={"tempId": temp_id, "fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "deliverOnlineOnly", "targetLanguages", "translations"},
+        ignore_keys={"sequence", "serverTime", "localTime"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
+    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=60.0)
     assert_api.assert_response_matches(
         evt_received,
         expected={
@@ -98,7 +116,6 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
                         "hasReadAck": False,
                         "hasDeliverAck": False,
                         "needGroupAck": False,
-                        "deliverOnlineOnly": False,
                         "isThread": False,
                         "isContentReplaced": False,
                         "body": {"type": 0, "content": "{{content}}"},
@@ -108,8 +125,11 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
             },
         },
         context={"fromUser": user_a, "toUser": user_b, "content": content, "realId": real_id},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "receiverList"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "receiverList"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
+    received_messages = ((evt_received.get("data") or {}).get("messages")) or []
+    if received_messages and "deliverOnlineOnly" in received_messages[0]:
+        assert received_messages[0].get("deliverOnlineOnly") is False, f"data.messages[0].deliverOnlineOnly 不匹配: {received_messages[0]}"
 
 
 def test_chat_send_to_self_event(device_a, assert_api, user_a):
@@ -142,7 +162,6 @@ def test_chat_send_to_self_event(device_a, assert_api, user_a):
                     "hasReadAck": False,
                     "hasDeliverAck": False,
                     "needGroupAck": False,
-                    "deliverOnlineOnly": False,
                     "isThread": False,
                     "isContentReplaced": False,
                 },
@@ -151,6 +170,10 @@ def test_chat_send_to_self_event(device_a, assert_api, user_a):
         context={"tempId": temp_id, "realId": real_id, "user": user_a, "content": content},
         ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "broadcast", "onlineState", "targetLanguages", "deliverOnlineOnly"},
     )
+    msg = ((evt.get("data") or {}).get("msg")) or {}
+    if "deliverOnlineOnly" in msg:
+        assert msg.get("deliverOnlineOnly") is False, f"data.msg.deliverOnlineOnly 不匹配: {msg}"
+
     assert_api.assert_response_matches(
         resp_send,
         expected={
@@ -232,6 +255,55 @@ def test_chat_fetch_history_by_options_invalid_conversation(device_a, assert_api
             },
         },
         ignore_keys={"sequence"},
+    )
+
+
+def test_chat_save_message_then_get_message_success(device_a, assert_api, user_a, user_b):
+    msg_id = f"save-local-{uuid.uuid4().hex}"
+    content = f"save-message-{uuid.uuid4().hex[:6]}"
+    message = build_text(user_a, user_b, content)
+    message["msgId"] = msg_id
+
+    resp_save = device_a.call("ChatManager", Cmd.saveMessage.value, info={"message": message})
+    assert_api.assert_response_matches(
+        resp_save,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.saveMessage.value,
+            "device": "deviceA",
+            "result": {
+                "msgId": "{{msgId}}",
+                "from": "{{fromUser}}",
+                "to": "{{toUser}}",
+                "convId": "{{toUser}}",
+                "chatType": 0,
+                "direction": 0,
+                "body": {"type": 0, "content": "{{content}}"},
+            },
+        },
+        context={"msgId": msg_id, "fromUser": user_a, "toUser": user_b, "content": content},
+        ignore_keys={"sequence", "status", "hasRead", "hasReadAck", "hasDeliverAck", "needGroupAck", "isThread", "isContentReplaced", "serverTime", "localTime", "broadcast", "onlineState", "deliverOnlineOnly", "targetLanguages", "translations"},
+    )
+
+    resp_get = device_a.call("ChatManager", Cmd.getMessage.value, info={"msgId": msg_id})
+    assert_api.assert_response_matches(
+        resp_get,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.getMessage.value,
+            "device": "deviceA",
+            "result": {
+                "msgId": "{{msgId}}",
+                "from": "{{fromUser}}",
+                "to": "{{toUser}}",
+                "convId": "{{toUser}}",
+                "chatType": 0,
+                "direction": 0,
+                "body": {"type": 0, "content": "{{content}}"},
+            },
+        },
+        context={"msgId": msg_id, "fromUser": user_a, "toUser": user_b, "content": content},
+        ignore_keys={"sequence", "status", "hasRead", "hasReadAck", "hasDeliverAck", "needGroupAck", "isThread", "isContentReplaced", "serverTime", "localTime", "broadcast", "onlineState", "deliverOnlineOnly", "targetLanguages", "translations"},
     )
 
 

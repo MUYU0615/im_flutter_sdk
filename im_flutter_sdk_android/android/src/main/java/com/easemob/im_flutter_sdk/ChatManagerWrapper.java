@@ -89,6 +89,8 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 downloadMessageThumbnailInCombine(params, call.method, result);
             } else if (MethodKey.importMessages.equals(call.method)) {
                 importMessages(params, call.method, result);
+            } else if (MethodKey.saveMessage.equals(call.method)) {
+                saveMessage(params, call.method, result);
             } else if (MethodKey.getAllConversations.equals(call.method)) {
                 getAllConversations(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
@@ -505,6 +507,14 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         asyncRunnable(() -> {
             EMClient.getInstance().chatManager().importMessages(messages);
             onSuccess(result, channelName, true);
+        });
+    }
+
+    private void saveMessage(JSONObject params, String channelName, Result result) throws JSONException {
+        EMMessage msg = MessageHelper.fromJson(params.getJSONObject("message"));
+        asyncRunnable(() -> {
+            EMClient.getInstance().chatManager().saveMessage(msg);
+            onSuccess(result, channelName, MessageHelper.toJson(msg));
         });
     }
 

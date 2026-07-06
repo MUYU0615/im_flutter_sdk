@@ -427,6 +427,7 @@ class DeviceConnection:
         *,
         buffer_maxlen: int = 2000,
         queue_maxsize: int = 5000,
+        debug: bool = False,
     ):
         self._topic = topic or get_topic(device)
         self._device = device
@@ -445,10 +446,10 @@ class DeviceConnection:
         try:
             flags = _get_debug_flags()
             self._relax = bool(flags.relax_event_match)
-            self._debug_dump = bool(flags.dump_events)
+            self._debug_dump = bool(debug or flags.dump_events)
         except Exception:
             self._relax = False
-            self._debug_dump = False
+            self._debug_dump = bool(debug)
 
     def _run_async_loop(self) -> None:
         async def run() -> None:

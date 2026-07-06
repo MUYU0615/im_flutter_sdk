@@ -1,0 +1,117 @@
+# SDK 版本能力增量账本。
+#
+# 只记录每个版本新增/变更/移除的 API，不手写维护全量表。
+# 工具根据 test_versions 中的当前测试版本，把 baseline 到目标版本的 added/changed/removed
+# 累计成当前版本应覆盖 API，再叠加真实 SDK 扫描、wrapper 扫描和 case 结果生成报告。
+#
+# 新增平台（例如 tablet）时，只需要：
+# 1. 在 test_versions.platforms 增加平台当前 SDK 版本。
+# 2. 在 sdk_sources 增加该平台 SDK 来源、下载地址、源码目录。
+# 3. 在 api_changes 对应版本下记录该平台新增/变更/移除 API。
+
+test_versions:
+  baseline_platform: android
+  purpose: "当前发版测试版本选择；Android 4.23.0 仅为本次追平基线，不是永久基线。"
+  platforms:
+    android:
+      version: "4.23.0"
+      enabled: true
+      role: baseline
+      source_ref: android-4.23.0
+    ios:
+      version: "4.23.0"
+      enabled: true
+      role: target
+      source_ref: ios-4.23.0
+    web:
+      version: "4.23.0"
+      enabled: true
+      role: target
+      source_ref: web-4.23.0
+    hmos:
+      version: null
+      enabled: false
+      role: target
+      source_ref: null
+    windows:
+      version: null
+      enabled: false
+      role: target
+      source_ref: null
+
+sdk_sources:
+  android:
+    artifact: "com.hyphenate:hyphenate-chat"
+    source_dir: "im_flutter_sdk_android/"
+    download_url_template: ""
+    docs_url: ""
+    versions:
+      android-4.23.0:
+        version: "4.23.0"
+        download_url: ""
+        local_artifact_hint: "Gradle cache or im_flutter_sdk_android/android/libs"
+  ios:
+    artifact: "HyphenateChat"
+    source_dir: "im_flutter_sdk_ios/"
+    download_url_template: ""
+    docs_url: ""
+    versions:
+      ios-4.23.0:
+        version: "4.23.0"
+        download_url: ""
+        local_artifact_hint: "CocoaPods cache or im_flutter_sdk_ios"
+  web:
+    artifact: "easemob-websdk"
+    source_dir: "im_flutter_sdk_web/"
+    download_url_template: ""
+    docs_url: ""
+    versions:
+      web-4.23.0:
+        version: "4.23.0"
+        download_url: ""
+        local_artifact_hint: "im_flutter_sdk_web and im_flutter_test/web/vendor"
+  hmos:
+    artifact: ""
+    source_dir: ""
+    download_url_template: ""
+    docs_url: ""
+    versions: {}
+  windows:
+    artifact: ""
+    source_dir: ""
+    download_url_template: ""
+    docs_url: ""
+    versions: {}
+
+api_changes:
+  "4.23.0":
+    release_note_url: ""
+    android:
+      added:
+        - api: "ChatManager.saveMessage"
+          native: "EMChatManager.saveMessage"
+          reason: "Android 4.23.0 追平阶段新增 API 示例。"
+      changed: {}
+      removed: []
+    ios:
+      added: []
+      changed: {}
+      removed: []
+    web:
+      added: []
+      changed: {}
+      removed: []
+
+api_policy:
+  ChatManager.saveMessage:
+    introduced:
+      android: "4.23.0"
+      ios: null
+      web: null
+    status:
+      ios:
+        status: "version_gap"
+        reason: "iOS 当前目标版本未声明该真实 SDK 能力，暂不覆盖。"
+      web:
+        status: "version_gap"
+        reason: "Web 当前目标版本未声明该真实 SDK 能力，暂不覆盖。"

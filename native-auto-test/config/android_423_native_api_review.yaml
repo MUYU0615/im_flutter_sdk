@@ -110,10 +110,11 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: saveMessage
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    requires_positive_case: true
+    reason_zh: "Android 原生 saveMessage 已由测试桥接命令 ChatManager.saveMessage 覆盖；Android wrapper 真实调用 saveMessage(EMMessage)，E2E 构造本地文本消息保存后用 getMessage 读回断言。"
     target_case: native-auto-test/tests/chat/test_chat_crud.py
   - manager: ChatManager
     api: setVoiceMessageListened

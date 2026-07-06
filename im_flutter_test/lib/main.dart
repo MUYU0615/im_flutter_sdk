@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
-import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart';
 
-import 'sdk_config_loader.dart';
 import 'web_client_bootstrap.dart';
 import 'websocket_config_page.dart';
 
@@ -18,18 +14,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   installWebClientForTestApp();
-
-  if (kIsWeb) {
-    final options = await SdkConfigLoader.loadOptionsJson();
-    final webSdkMode = Uri.base.queryParameters['webSdkMode'];
-    if (webSdkMode != null && webSdkMode.isNotEmpty) {
-      options['webSdkMode'] = webSdkMode;
-    }
-    await Client.instance.callNativeMethod('init', options);
-  } else {
-    final options = await SdkConfigLoader.loadOptions();
-    await EMClient.getInstance.init(options);
-  }
 
   runApp(const IMTestApp());
 }

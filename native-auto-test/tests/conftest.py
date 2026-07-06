@@ -6,6 +6,7 @@ Allure：请求、响应、比对结果会写入报告（需安装 allure-pytest
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from contextlib import nullcontext
@@ -16,7 +17,13 @@ import pytest
 # 保证能 import src
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.tools.config import get_default_topic, get_topic, get_rest_authorization_header
+from src.tools.config import (
+    get_account_password,
+    get_configured_test_users,
+    get_default_topic,
+    get_topic,
+    get_rest_authorization_header,
+)
 from src.rest_api.user_api import create_users, delete_user, get_user_access_token
 from src.tools.target_platforms import TARGET_PLATFORMS, target_device_pair_for_platform
 from src.tools.ws_client import (
@@ -26,6 +33,7 @@ from src.tools.ws_client import (
     DeviceConnection,
 )
 from src.tools import assertions
+from src.tools.e2e_case_results import CaseResult, marker_value, split_api, write_case_results
 from src import Cmd
 
 # 未配置 REST 用户管理时的回退账号（仅当不创建用户时使用）
@@ -297,6 +305,11 @@ def pytest_addoption(parser):
         default="legacy_webim",
         help="Select Web SDK runtime baseline for web target.",
     )
+    parser.addoption(
+        "--run-context",
+        default="",
+        help="Path to e2e_prepare generated context.yaml.",
+    )
 @pytest.fixture(scope="session")
 def ws_debug(request) -> bool:
     return bool(request.config.getoption("--ws-debug"))
@@ -419,6 +432,10 @@ def created_test_users():
     """
     global _LAST_CREATE_USERS_ERROR
     _LAST_CREATE_USERS_ERROR = ""
+    configured_users = get_configured_test_users()
+    if configured_users:
+        yield configured_users
+        return
     token = get_rest_authorization_header()
     # 优先使用日期用户名，避免固定回退账号与被测端不一致
     user_a, user_b, user_c = _test_usernames()
@@ -500,12 +517,13 @@ def global_login_logout(request):
     web_sdk_runtime = request.getfixturevalue("web_sdk_runtime")
     created_test_users = request.getfixturevalue("created_test_users")
     user_a, user_b, user_c = created_test_users
+    password = get_account_password()
     _session_login(
         device_a,
         device_b,
         user_a,
         user_b,
-        SESSION_PWD,
+        password,
         use_token_login=(target_platform == "web" and web_sdk_runtime == "imsdk"),
     )
     yield
@@ -648,7 +666,7 @@ def device_a(ws_debug):
     设备 A 的单连接双工通道：同一 WebSocket 上 .call() 发请求、.receive_message() 收推送。
     登录、addContact、onFriendRequestAccepted 等均走该连接，保证能收到服务端回调。
     """
-    conn = DeviceConnection(device="deviceA")
+    conn = DeviceConnection(device="deviceA", debug=ws_debug)
     conn.start()
     try:
         yield _DeviceChannelWrapper(conn, "deviceA")
@@ -661,7 +679,7 @@ def device_b(ws_debug):
     """
     设备 B 的单连接双工通道：同一 WebSocket 上 .call() 发请求、.receive_message() 收推送。
     """
-    conn = DeviceConnection(device="deviceB")
+    conn = DeviceConnection(device="deviceB", debug=ws_debug)
     conn.start()
     try:
         yield _DeviceChannelWrapper(conn, "deviceB")
@@ -672,7 +690,7 @@ def device_b(ws_debug):
 @pytest.fixture(scope="session")
 def primary_device(target_device_pair, ws_debug):
     """目标平台的主设备；android/ios/mobile=deviceA，web=webA。"""
-    conn = DeviceConnection(device=target_device_pair[0])
+    conn = DeviceConnection(device=target_device_pair[0], debug=ws_debug)
     conn.start()
     try:
         yield _DeviceChannelWrapper(conn, target_device_pair[0])
@@ -683,7 +701,7 @@ def primary_device(target_device_pair, ws_debug):
 @pytest.fixture(scope="session")
 def secondary_device(target_device_pair, ws_debug):
     """目标平台的副设备；android/ios/mobile=deviceB，web=webB。"""
-    conn = DeviceConnection(device=target_device_pair[1])
+    conn = DeviceConnection(device=target_device_pair[1], debug=ws_debug)
     conn.start()
     try:
         yield _DeviceChannelWrapper(conn, target_device_pair[1])
@@ -729,6 +747,14 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "ios: iOS target platform cases")
     config.addinivalue_line("markers", "real_web: real Web SDK/service E2E cases")
     config.addinivalue_line("markers", "agorachat4_23_0: AgoraChat SDK 4.23.0 release coverage tests")
+    config.addinivalue_line("markers", "case_id(id): 稳定用例 ID，用于报告")
+    config.addinivalue_line("markers", "api(name): 本用例覆盖的 Manager.methodKey")
+    config.addinivalue_line("markers", "clients(*roles): 本用例使用的 client 角色")
+    config.addinivalue_line("markers", "roles_mode(mode): ordered 或 symmetric")
+    config.addinivalue_line("markers", "expects_event: 本用例会等待并断言 websocket event")
+    config.addinivalue_line("markers", "no_login_fixture: 本用例不使用默认登录 fixture")
+    config.addinivalue_line("markers", "init_case: 本用例自行执行 Client.init")
+    config._e2e_case_results = []
 
 
 def pytest_collection_modifyitems(config, items):
@@ -743,3 +769,33 @@ def pytest_collection_modifyitems(config, items):
             and "/tests/web/" in item.path.as_posix()
         ):
             item.add_marker(pytest.mark.wrapper_mapping)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if report.when != "call":
+        return
+    api_name = marker_value(item, "api")
+    manager, method_key = split_api(api_name)
+    item.config._e2e_case_results.append(
+        CaseResult(
+            run_id=os.environ.get("NATIVE_AUTO_TEST_RUN_ID", ""),
+            nodeid=item.nodeid,
+            case_id=marker_value(item, "case_id"),
+            api=api_name,
+            manager=manager,
+            method_key=method_key,
+            outcome=report.outcome,
+            duration=float(report.duration),
+            failure_summary=str(report.longrepr)[:1000] if report.failed else "",
+        )
+    )
+
+
+def pytest_sessionfinish(session, exitstatus):
+    json_path = os.environ.get("NATIVE_AUTO_TEST_CASE_RESULTS_JSON")
+    csv_path = os.environ.get("NATIVE_AUTO_TEST_CASE_RESULTS_CSV")
+    if json_path and csv_path:
+        write_case_results(session.config._e2e_case_results, Path(json_path), Path(csv_path))

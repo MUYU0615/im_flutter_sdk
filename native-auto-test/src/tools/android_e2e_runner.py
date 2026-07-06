@@ -13,7 +13,24 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import get_topic_prefix
+from .sdk_options_resolver import resolve_sdk_init_options
 from .ws_client import DeviceConnection
+
+
+ANDROID_DEFAULT_TEST_PATHS = [
+    "tests/client",
+    "tests/contact",
+    "tests/chat",
+    "tests/chatroom",
+    "tests/group",
+    "tests/presence",
+    "tests/push",
+    "tests/user_info",
+]
+
+
+def _default_android_pytest_args() -> list[str]:
+    return [*ANDROID_DEFAULT_TEST_PATHS, "--target-platform", "android", "-m", "real_e2e", "-q"]
 
 
 @dataclass(frozen=True)
@@ -106,6 +123,10 @@ def _has_pytest_html_arg(pytest_args: list[str]) -> bool:
     return any(arg == "--html" or arg.startswith("--html=") for arg in pytest_args)
 
 
+def _has_pytest_allure_arg(pytest_args: list[str]) -> bool:
+    return any(arg == "--alluredir" or arg.startswith("--alluredir=") for arg in pytest_args)
+
+
 def _pytest_args_with_html_report(
     pytest_args: list[str],
     *,
@@ -122,6 +143,24 @@ def _pytest_args_with_html_report(
         "--html",
         str(out_dir / f"{run_id}-android-pytest.html"),
         "--self-contained-html",
+    ]
+
+
+def _pytest_args_with_allure_report(
+    pytest_args: list[str],
+    *,
+    native_auto_test_dir: Path,
+    run_id: str,
+    allure_report: bool,
+) -> list[str]:
+    if not allure_report or _has_pytest_allure_arg(pytest_args):
+        return pytest_args
+    out_dir = native_auto_test_dir / "out" / "log" / "android" / f"{run_id}-allure-results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return [
+        *pytest_args,
+        "--alluredir",
+        str(out_dir),
     ]
 
 
@@ -201,6 +240,24 @@ def _required_device_count(pytest_args: list[str]) -> int:
     return 1 if _is_single_device_run(pytest_args) else 2
 
 
+def _connected_android_devices() -> list[str]:
+    completed = subprocess.run(
+        ["adb", "devices"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return []
+    devices: list[str] = []
+    for line in completed.stdout.splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 2 and parts[1] == "device":
+            devices.append(parts[0])
+    return devices
+
+
 def _wait_for_bridge_device(
     device_name: str,
     *,
@@ -233,16 +290,52 @@ def _wait_for_bridge_device(
         conn.stop()
 
 
+def _init_bridge_device(
+    device_name: str,
+    *,
+    run_id: str,
+    platform: str,
+) -> None:
+    topic = f"{get_topic_prefix()}-{run_id}-{device_name}"
+    conn = DeviceConnection(device=device_name, topic=topic)
+    try:
+        options = resolve_sdk_init_options(platform)
+        resp = conn.call("Client", "init", info=options, timeout=30.0)
+        if resp.get("success") is False or resp.get("error"):
+            raise RuntimeError(f"SDK init failed for {device_name}: {resp}")
+        result = resp.get("result")
+        if isinstance(result, dict):
+            body = result.get("init")
+            if body is False:
+                raise RuntimeError(f"SDK init failed for {device_name}: {resp}")
+            if isinstance(body, dict) and ("code" in body or "description" in body):
+                raise RuntimeError(f"SDK init failed for {device_name}: {resp}")
+        elif result not in (None, "", True, 1):
+            # Most platform init wrappers return null/empty on success. Keep this
+            # permissive for wrappers that return a truthy success marker.
+            pass
+        print(f"sdk init {device_name} ready", flush=True)
+    finally:
+        conn.stop()
+
+
 def run(args: argparse.Namespace) -> int:
     repo_dir = _repo_dir()
     native_auto_test_dir = repo_dir / "native-auto-test"
     im_flutter_test_dir = repo_dir / "im_flutter_test"
     run_id = args.run_id or _default_run_id()
+    pytest_args = args.pytest_args or _default_android_pytest_args()
     pytest_args = _pytest_args_with_html_report(
-        args.pytest_args or ["tests", "--target-platform", "android", "-m", "real_e2e", "-q"],
+        pytest_args,
         native_auto_test_dir=native_auto_test_dir,
         run_id=run_id,
         html_report=args.html_report,
+    )
+    pytest_args = _pytest_args_with_allure_report(
+        pytest_args,
+        native_auto_test_dir=native_auto_test_dir,
+        run_id=run_id,
+        allure_report=args.allure_report,
     )
     commands = _build_commands(
         native_auto_test_dir=native_auto_test_dir,
@@ -296,6 +389,11 @@ def run(args: argparse.Namespace) -> int:
                 run_id=run_id,
                 timeout=args.bridge_timeout,
             )
+            _init_bridge_device(
+                device_name,
+                run_id=run_id,
+                platform="android",
+            )
 
         print("+ " + " ".join(commands.pytest), flush=True)
         completed = subprocess.run(
@@ -332,12 +430,19 @@ def main() -> int:
         default=True,
         help="Do not append pytest-html output under native-auto-test/out/log/android.",
     )
+    parser.add_argument(
+        "--no-allure-report",
+        dest="allure_report",
+        action="store_false",
+        default=True,
+        help="Do not append pytest allure output under native-auto-test/out/log/android.",
+    )
     parser.add_argument("pytest_args", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.pytest_args and args.pytest_args[0] == "--":
         args.pytest_args = args.pytest_args[1:]
     if args.device_ids is None:
-        args.device_ids = [args.device_id or "emulator-5554"]
+        args.device_ids = [args.device_id] if args.device_id else _connected_android_devices()
     elif args.device_id:
         args.device_ids = [args.device_id, *args.device_ids]
     return run(args)

@@ -290,3 +290,41 @@ def get_sdk_options() -> dict:
 def get_sdk_app_key() -> str:
     """返回 sdk_options.app_key。"""
     return get_sdk_options().get("app_key", "")
+
+
+def get_account_password() -> str:
+    """返回 E2E 账号默认密码，优先环境变量，其次 config.yaml。"""
+    cfg = load_config()
+    accounts = cfg.get("accounts") or {}
+    return (
+        os.getenv("NATIVE_AUTO_TEST_ACCOUNT_PASSWORD")
+        or accounts.get("default_password")
+        or "1"
+    )
+
+
+def get_configured_test_users() -> tuple[str, str, str] | None:
+    """返回显式配置的 E2E 用户；未配置时返回 None。
+
+    支持环境变量：
+    - NATIVE_AUTO_TEST_USER_A
+    - NATIVE_AUTO_TEST_USER_B
+    - NATIVE_AUTO_TEST_USER_C
+
+    也支持 config.yaml:
+    accounts:
+      users:
+        a: user1
+        b: user2
+        c: user3
+    """
+    cfg = load_config()
+    users = (cfg.get("accounts") or {}).get("users") or {}
+    user_a = (os.getenv("NATIVE_AUTO_TEST_USER_A") or users.get("a") or "").strip()
+    user_b = (os.getenv("NATIVE_AUTO_TEST_USER_B") or users.get("b") or "").strip()
+    user_c = (os.getenv("NATIVE_AUTO_TEST_USER_C") or users.get("c") or "").strip()
+    if not user_a and not user_b and not user_c:
+        return None
+    if not user_a or not user_b:
+        raise RuntimeError("显式 E2E 账号至少需要配置 user_a 和 user_b")
+    return user_a, user_b, user_c or user_b
