@@ -9,6 +9,11 @@ from tests.chatroom.chatroom_helpers import create_chatroom_or_skip, safe_delete
 pytestmark = [pytest.mark.client, pytest.mark.chatroom]
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.fetch_public_chat_rooms_from_server.success")
+@pytest.mark.api("ChatRoomManager.fetchPublicChatRoomsFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_public_chat_rooms_from_server_success(device_a, assert_api, user_a):
     room_id = ""
     room_name = ""

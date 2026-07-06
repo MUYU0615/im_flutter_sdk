@@ -11,6 +11,11 @@ from tests.chatroom.chatroom_helpers import create_chatroom_or_skip, safe_delete
 pytestmark = [pytest.mark.client, pytest.mark.chatroom, pytest.mark.agorachat1_4_0]
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.create_room_via_sdk_without_permission.error")
+@pytest.mark.api("ChatRoomManager.createChatRoom")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_create_room_via_sdk_without_permission(device_a, assert_api):
     room_name = f"sdk_create_{uuid4().hex[:8]}"
     room_desc = f"sdk_desc_{uuid4().hex[:8]}"
@@ -28,6 +33,11 @@ def test_chatroom_create_room_via_sdk_without_permission(device_a, assert_api):
     assert_api.assert_error(resp, code=703, description="you have no permission to do this.")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.create_and_fetch_from_server.success")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_create_and_fetch_from_server(device_a, assert_api, user_a):
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="create", desc_prefix="create")
     try:
@@ -63,6 +73,12 @@ def test_chatroom_create_and_fetch_from_server(device_a, assert_api, user_a):
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.fetch_room_info_with_members_from_server.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="fetch_members", desc_prefix="fetch_members")
     try:
@@ -73,9 +89,28 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
                 "device": "deviceB",
-                "result": 1,
+                "result": {
+                    "roomId": room_id,
+                    "memberCount": ne(None),
+                    "isAllMemberMuted": False,
+                    "isInWhitelist": False,
+                },
             },
-            ignore_keys={"sequence"},
+            ignore_keys={
+                "sequence",
+                "owner",
+                "maxUsers",
+                "permissionType",
+                "adminList",
+                "muteList",
+                "muteExpireTimestamp",
+                "memberList",
+                "blockList",
+                "name",
+                "desc",
+                "announcement",
+                "createTimestamp",
+            },
         )
 
         resp = device_a.call(
@@ -122,6 +157,11 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.destroy_room.success")
+@pytest.mark.api("ChatRoomManager.destroyChatRoom")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_destroy_room_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="destroy", desc_prefix="destroy")
     resp = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
@@ -137,6 +177,12 @@ def test_chatroom_destroy_room_success(device_a, assert_api, user_a):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.fetch_room_info_from_server_after_destroy.error")
+@pytest.mark.api("ChatRoomManager.destroyChatRoom")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_room_info_from_server_after_destroy(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="destroy_fetch", desc_prefix="destroy_fetch")
     resp_destroy = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})

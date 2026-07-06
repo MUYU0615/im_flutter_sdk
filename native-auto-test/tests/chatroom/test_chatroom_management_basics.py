@@ -24,6 +24,12 @@ def _assert_success_envelope(assert_api, resp: dict, *, cmd: str, device: str) -
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.update_and_fetch_announcement.success")
+@pytest.mark.api("ChatRoomManager.updateChatRoomAnnouncement")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAnnouncement")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="announcement", desc_prefix="announcement")
     announcement = f"notice-{uuid.uuid4().hex[:8]}"
@@ -59,6 +65,14 @@ def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, us
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.add_fetch_remove_white_list.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.addMembersToChatRoomWhiteList")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomWhiteListFromServer")
+@pytest.mark.api("ChatRoomManager.removeMembersFromChatRoomWhiteList")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="whitelist", desc_prefix="whitelist")
     try:
@@ -69,9 +83,28 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
                 "device": "deviceB",
-                "result": 1,
+                "result": {
+                    "roomId": room_id,
+                    "memberCount": ne(None),
+                    "isAllMemberMuted": False,
+                    "isInWhitelist": False,
+                },
             },
-            ignore_keys={"sequence"},
+            ignore_keys={
+                "sequence",
+                "owner",
+                "maxUsers",
+                "permissionType",
+                "adminList",
+                "muteList",
+                "muteExpireTimestamp",
+                "memberList",
+                "blockList",
+                "name",
+                "desc",
+                "announcement",
+                "createTimestamp",
+            },
         )
 
         add_resp = device_a.call(
@@ -151,9 +184,28 @@ def _join_chatroom_as_b(device_b, assert_api, room_id: str) -> None:
             "manager": "ChatRoomManager",
             "cmd": Cmd.joinChatRoom.value,
             "device": "deviceB",
-            "result": 1,
+            "result": {
+                "roomId": room_id,
+                "memberCount": ne(None),
+                "isAllMemberMuted": False,
+                "isInWhitelist": False,
+            },
         },
-        ignore_keys={"sequence"},
+        ignore_keys={
+            "sequence",
+            "owner",
+            "maxUsers",
+            "permissionType",
+            "adminList",
+            "muteList",
+            "muteExpireTimestamp",
+            "memberList",
+            "blockList",
+            "name",
+            "desc",
+            "announcement",
+            "createTimestamp",
+        },
     )
 
 
@@ -173,6 +225,14 @@ def _assert_list_response(assert_api, resp: dict, *, cmd: str, device: str) -> l
     return result
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.mute_fetch_unmute_member.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.muteChatRoomMembers")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomMuteList")
+@pytest.mark.api("ChatRoomManager.unMuteChatRoomMembers")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute", desc_prefix="mute")
     try:
@@ -221,6 +281,14 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.block_fetch_unblock_member.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.blockChatRoomMembers")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomBlockList")
+@pytest.mark.api("ChatRoomManager.unBlockChatRoomMembers")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="block", desc_prefix="block")
     try:
@@ -269,6 +337,13 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.change_subject_and_description.success")
+@pytest.mark.api("ChatRoomManager.changeChatRoomSubject")
+@pytest.mark.api("ChatRoomManager.changeChatRoomDescription")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_change_subject_and_description_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="profile", desc_prefix="profile")
     new_subject = f"room-subject-{uuid.uuid4().hex[:8]}"
@@ -331,6 +406,14 @@ def test_chatroom_change_subject_and_description_success(device_a, assert_api, u
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.add_and_remove_admin.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.addChatRoomAdmin")
+@pytest.mark.api("ChatRoomManager.removeChatRoomAdmin")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="admin", desc_prefix="admin")
     try:
@@ -373,6 +456,13 @@ def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, u
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.remove_member.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.removeChatRoomMembers")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomMembers")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="kick", desc_prefix="kick")
     try:
@@ -410,6 +500,13 @@ def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, 
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.mute_and_unmute_all_members.success")
+@pytest.mark.api("ChatRoomManager.muteAllChatRoomMembers")
+@pytest.mark.api("ChatRoomManager.unMuteAllChatRoomMembers")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute_all", desc_prefix="mute_all")
     try:
@@ -448,6 +545,12 @@ def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.set_and_fetch_attributes.success")
+@pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs", desc_prefix="attrs")
     attr_key = f"room_attr_{uuid.uuid4().hex[:8]}"
@@ -489,6 +592,11 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.set_attributes_non_forced.success")
+@pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_nf", desc_prefix="attrs_nf")
     attr_key = f"room_attr_nf_{uuid.uuid4().hex[:8]}"
@@ -530,6 +638,11 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.fetch_all_attributes.success")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_all", desc_prefix="attrs_all")
     attr_key_1 = f"room_attr_all_1_{uuid.uuid4().hex[:8]}"
@@ -573,6 +686,11 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.fetch_attributes_by_partial_keys.success")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_partial", desc_prefix="attrs_partial")
     attr_key_1 = f"room_attr_partial_1_{uuid.uuid4().hex[:8]}"
@@ -620,6 +738,12 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.update_attribute_overwrites_previous_value.success")
+@pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_update", desc_prefix="attrs_update")
     attr_key = f"room_attr_update_{uuid.uuid4().hex[:8]}"
@@ -677,6 +801,13 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.change_owner.success")
+@pytest.mark.api("ChatRoomManager.joinChatRoom")
+@pytest.mark.api("ChatRoomManager.changeChatRoomOwner")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, user_b):
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="owner", desc_prefix="owner")
     try:
@@ -718,6 +849,12 @@ def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, u
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.remove_attributes.success")
+@pytest.mark.api("ChatRoomManager.removeChatRoomAttributes")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="remove_attrs", desc_prefix="remove_attrs")
     attr_key = f"room_attr_remove_{uuid.uuid4().hex[:8]}"
@@ -764,6 +901,12 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chatroom.remove_attributes_non_forced.success")
+@pytest.mark.api("ChatRoomManager.removeChatRoomAttributes")
+@pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, user_a):
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="remove_attrs_nf", desc_prefix="remove_attrs_nf")
     attr_key = f"room_attr_remove_nf_{uuid.uuid4().hex[:8]}"
