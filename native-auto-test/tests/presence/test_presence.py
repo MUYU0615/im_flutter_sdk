@@ -152,6 +152,13 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.publish_empty_desc_then_fetch.current_result")
+@pytest.mark.api("PresenceManager.publishPresenceWithDescription")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.api("PresenceManager.fetchPresenceStatus")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, user_a):
     """
     A 发布空 desc 的在线状态，B 订阅 A 后 fetchPresenceStatus，断言 statusDescription 为空。
@@ -188,7 +195,7 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
             "result": [{"statusDescription": "", "publisher": "{{publisher}}"}],
         },
         context={"device": "deviceB", "publisher": user_a},
-        ignore_keys={"lastTime", "expiryTime", "statusDetails"},
+        ignore_keys={"sequence", "lastTime", "expiryTime", "statusDetails"},
     )
 
 
@@ -196,6 +203,11 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
 DESC_128K = "x" * (128 * 1024)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.publish_128k_desc.error")
+@pytest.mark.api("PresenceManager.publishPresenceWithDescription")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_presence_publish_128k_desc(device_a, device_b, assert_api):
     """
     A 发布 128KB 大小 desc 的在线状态
@@ -217,10 +229,16 @@ def test_presence_publish_128k_desc(device_a, device_b, assert_api):
 		        "code": 1100
 	        },
         },
-        context={"device": "deviceA"}
+        context={"device": "deviceA"},
+        ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.subscribe_nonexistent_user.current_result")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_nonexistent_user(device_a, assert_api):
     """
     订阅不存在用户：B 对不存在用户发起 presenceSubscribe。
@@ -239,9 +257,15 @@ def test_presence_subscribe_nonexistent_user(device_a, assert_api):
             "result": [{"statusDescription": "", "publisher": "{{publisher}}", "expiryTime": gt(0),"statusDetails":{},"lastTime":0}],
         },
         context={"device": "deviceA", "publisher": USER_NONEXISTENT},
+        ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.subscribe_expiry_over_30_days.error")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_expiry_over_30_days(device_a, device_b, assert_api, user_a):
     """
     订阅存在用户但过期时间大于 30 天：B 订阅 A，expiry 设为超过 30 天，预期返回错误。
@@ -266,6 +290,11 @@ def test_presence_subscribe_expiry_over_30_days(device_a, device_b, assert_api, 
 PRESENCE_SUBSCRIBE_MAX_MEMBERS = 100
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.subscribe_over_100_members.error")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_over_100_members(device_a, assert_api):
     """
     订阅超过 100 个用户：presenceSubscribe 传入超过 100 个 members，预期返回错误。
@@ -287,10 +316,16 @@ def test_presence_subscribe_over_100_members(device_a, assert_api):
                 "code": 1100
             },
         },
-        context={"device": "deviceA"}
+        context={"device": "deviceA"},
+        ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.unsubscribe_over_100_members.error")
+@pytest.mark.api("PresenceManager.presenceUnsubscribe")
+@pytest.mark.clients("receiver")
+@pytest.mark.roles_mode("ordered")
 def test_presence_unsubscribe_over_100_members(device_b, assert_api):
     """
     取消订阅超过 100 个用户：presenceUnsubscribe 传入超过 100 个 members，预期返回错误。
@@ -312,12 +347,20 @@ def test_presence_unsubscribe_over_100_members(device_b, assert_api):
                 "code": 1100
             },
         },
-        context={"device": "deviceB"}
+        context={"device": "deviceB"},
+        ignore_keys={"sequence"},
     )
 
 # ---------- fetchSubscribedMembersWithPageNum 分页测试 ----------
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.fetch_subscribed_members.pagination.success")
+@pytest.mark.api("PresenceManager.publishPresenceWithDescription")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, user_a):
     """
     分页查询订阅列表：B 订阅 A 后，第 1 页有数据，第 2 页为空。
@@ -351,6 +394,7 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
             "result": ["{{publisher}}"],
         },
         context={"device": "deviceB", "publisher": user_a},
+        ignore_keys={"sequence"},
     )
 
     # 第 2 页：应为空列表
@@ -368,9 +412,17 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
             "result": [],
         },
         context={"device": "deviceB"},
+        ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.fetch_subscribed_members.page_size_one.success")
+@pytest.mark.api("PresenceManager.publishPresenceWithDescription")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, assert_api, user_a):
     """
     分页 pageSize=1：第 1 页 1 条，第 2 页 0 条。
@@ -402,6 +454,7 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
             "result": ["{{publisher}}"],
         },
         context={"device": "deviceB", "publisher": user_a},
+        ignore_keys={"sequence"},
     )
 
     resp_2 = device_b.call(
@@ -418,9 +471,15 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
             "result": [],
         },
         context={"device": "deviceB"},
+        ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.fetch_subscribed_members.invalid_pagination.current_result")
+@pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
+@pytest.mark.clients("receiver")
+@pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_a):
     """
     非法分页参数：pageNum=0 或 pageSize=0，预期返回错误。
@@ -440,6 +499,7 @@ def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_
             "result": ["{{publisher}}"],
         },
         context={"device": "deviceB", "publisher": user_a},
+        ignore_keys={"sequence"},
     )
 
     resp_zero_size = device_b.call(
