@@ -29,6 +29,11 @@ def build_android_runner_commands(
         raise ValueError("--platform-matrix android-android 只能搭配 android client")
     case_results = f"{output_root}/test-results/{run_id}-case-results.json"
     gap_backlog = f"{output_root}/api-coverage/{run_id}-gap-backlog.csv"
+    pytest_report = f"{output_root}/log/android/{run_id}-android-pytest.html"
+    android_version = resolve_client_versions(
+        [parse_client_arg(value) for value in client_args],
+        dict(parse_sdk_version_arg(value) for value in sdk_version_args),
+    )[0].sdk_version
     runner = [
         sys.executable,
         "-m",
@@ -50,6 +55,12 @@ def build_android_runner_commands(
         case_results,
         "--output",
         gap_backlog,
+        "--pytest-report",
+        pytest_report,
+        "--platform",
+        "android",
+        "--sdk-version",
+        android_version or "",
     ]
     return [runner, coverage]
 

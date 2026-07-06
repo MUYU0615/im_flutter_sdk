@@ -27,6 +27,15 @@ def marker_value(item: Any, name: str) -> str:
     return str(marker.args[0])
 
 
+def marker_values(item: Any, name: str) -> list[str]:
+    markers = item.iter_markers(name)
+    values: list[str] = []
+    for marker in markers:
+        for arg in marker.args:
+            values.append(str(arg))
+    return values
+
+
 def split_api(api: str) -> tuple[str, str]:
     if "." not in api:
         return "", api

@@ -106,6 +106,8 @@ def test_contact_get_block_list_from_db_after_server_sync(
 
 @pytest.mark.android
 @pytest.mark.real_e2e
+@pytest.mark.case_id("contact.save_black_list.server.success")
+@pytest.mark.api("ContactManager.saveBlackList")
 @pytest.mark.skipif(
     "config.getoption('--target-platform') != 'android'",
     reason="ContactManager.saveBlackList Android wrapper is only implemented on Android",

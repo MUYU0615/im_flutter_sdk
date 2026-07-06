@@ -351,6 +351,10 @@ def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, us
 
 
 @pytest.mark.real_e2e
+@pytest.mark.case_id("user_info.subscribe_fetch_unsubscribe.success")
+@pytest.mark.api("UserInfoManager.subscribeUsersInfo")
+@pytest.mark.api("UserInfoManager.fetchSubscribedUsers")
+@pytest.mark.api("UserInfoManager.unsubscribeUsersInfo")
 def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
     device_a, assert_api, user_b
 ):

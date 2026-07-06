@@ -141,6 +141,11 @@ def _find_shared_file(files: list[dict], *, file_name: str, before_ids: set[str 
 
 @pytest.mark.android
 @pytest.mark.real_e2e
+@pytest.mark.case_id("group.shared_file.upload_list_download_remove.success")
+@pytest.mark.api("GroupManager.uploadGroupSharedFile")
+@pytest.mark.api("GroupManager.getGroupFileListFromServer")
+@pytest.mark.api("GroupManager.downloadGroupSharedFile")
+@pytest.mark.api("GroupManager.removeGroupSharedFile")
 def test_group_shared_file_upload_list_download_remove_positive_flow(
     device_a,
     assert_api,

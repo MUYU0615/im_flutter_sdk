@@ -33,7 +33,7 @@ from src.tools.ws_client import (
     DeviceConnection,
 )
 from src.tools import assertions
-from src.tools.e2e_case_results import CaseResult, marker_value, split_api, write_case_results
+from src.tools.e2e_case_results import CaseResult, marker_value, marker_values, split_api, write_case_results
 from src import Cmd
 
 # 未配置 REST 用户管理时的回退账号（仅当不创建用户时使用）
@@ -777,21 +777,25 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     if report.when != "call":
         return
-    api_name = marker_value(item, "api")
-    manager, method_key = split_api(api_name)
-    item.config._e2e_case_results.append(
-        CaseResult(
-            run_id=os.environ.get("NATIVE_AUTO_TEST_RUN_ID", ""),
-            nodeid=item.nodeid,
-            case_id=marker_value(item, "case_id"),
-            api=api_name,
-            manager=manager,
-            method_key=method_key,
-            outcome=report.outcome,
-            duration=float(report.duration),
-            failure_summary=str(report.longrepr)[:1000] if report.failed else "",
+    api_names = marker_values(item, "api") or [""]
+    failure_summary = ""
+    if report.failed or report.skipped:
+        failure_summary = str(report.longrepr)[:1000]
+    for api_name in api_names:
+        manager, method_key = split_api(api_name)
+        item.config._e2e_case_results.append(
+            CaseResult(
+                run_id=os.environ.get("NATIVE_AUTO_TEST_RUN_ID", ""),
+                nodeid=item.nodeid,
+                case_id=marker_value(item, "case_id"),
+                api=api_name,
+                manager=manager,
+                method_key=method_key,
+                outcome=report.outcome,
+                duration=float(report.duration),
+                failure_summary=failure_summary,
+            )
         )
-    )
 
 
 def pytest_sessionfinish(session, exitstatus):

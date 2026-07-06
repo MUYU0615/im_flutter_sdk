@@ -9,6 +9,9 @@ from src import Cmd
 pytestmark = [pytest.mark.client, pytest.mark.real_e2e]
 
 
+@pytest.mark.case_id("client.login.current_user.success")
+@pytest.mark.api("Client.login")
+@pytest.mark.api("Client.getCurrentUser")
 def test_single_device_login_and_get_current_user(device_a, user_a, assert_api):
     """Verify one launched native test app can log in and answer Client calls."""
     current_before = device_a.call("Client", Cmd.getCurrentUser.value, info={})

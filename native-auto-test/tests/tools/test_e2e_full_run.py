@@ -50,7 +50,15 @@ def test_full_run_android_matrix_delegates_to_real_android_runner():
     assert "android-20260706-153000" in commands[0]
     assert "--" in commands[0]
     assert commands[0][-6:] == ["tests", "--target-platform", "android", "-m", "real_e2e and not web", "-q"]
-    assert commands[1][-2:] == ["--output", "out/api-coverage/android-20260706-153000-gap-backlog.csv"]
+    assert commands[1][-6:] == [
+        "--pytest-report",
+        "out/log/android/android-20260706-153000-android-pytest.html",
+        "--platform",
+        "android",
+        "--sdk-version",
+        "4.23.0",
+    ]
+    assert "out/api-coverage/android-20260706-153000-gap-backlog.csv" in commands[1]
 
 
 def test_full_run_android_matrix_requires_android_clients():
