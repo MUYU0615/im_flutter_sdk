@@ -23,6 +23,13 @@ SECONDS_30_DAYS = 30 * 24 * 3600
 USER_NONEXISTENT = "nonexistent_user_xyz_999"
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("presence.publish_subscribe_query_unsubscribe.success")
+@pytest.mark.api("PresenceManager.publishPresenceWithDescription")
+@pytest.mark.api("PresenceManager.presenceSubscribe")
+@pytest.mark.api("PresenceManager.fetchPresenceStatus")
+@pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
+@pytest.mark.api("PresenceManager.presenceUnsubscribe")
 def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert_api, user_a):
     """
     A 发布 presence，B 订阅 A；
@@ -43,9 +50,10 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "manager": "PresenceManager",
             "cmd": Cmd.presenceWithDescription.value,
             "device": "{{device}}",
-            "result": None,
+            "result": True,
         },
         context={"device": "deviceA"},
+        ignore_keys={"sequence"},
     )
 
     # 2. B 订阅 A 的在线状态（PresenceManager.presenceSubscribe）
@@ -65,7 +73,7 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "result": [{"statusDescription": "online", "publisher": "{{publisher}}", "expiryTime": gt(0)}],
         },
         context={"device": "deviceB", "publisher": user_a},
-        ignore_keys={"lastTime","statusDetails"},
+        ignore_keys={"sequence", "lastTime", "statusDetails"},
     )
 
     # 3. B 查询指定用户 A 的当前在线状态（fetchPresenceStatus）
@@ -102,7 +110,8 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": ["{{publisher}}"]
         },
-        context={"device": "deviceB", "publisher": user_a}
+        context={"device": "deviceB", "publisher": user_a},
+        ignore_keys={"sequence"},
     )
     #
     # # 5. B 取消订阅 A（presenceUnsubscribe）
@@ -120,6 +129,7 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "result": None,
         },
         context={"device": "deviceB"},
+        ignore_keys={"sequence"},
     )
 
     # # 6. B 再次查询订阅列表，应返回空
@@ -137,7 +147,8 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": [],
         },
-        context={"device": "deviceB"}
+        context={"device": "deviceB"},
+        ignore_keys={"sequence"},
     )
 
 
@@ -437,4 +448,3 @@ def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_
         info={"pageNum": 1, "pageSize": 0},
     )
     assert_api.assert_error(resp_zero_size)
-

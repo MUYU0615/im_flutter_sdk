@@ -64,6 +64,11 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
     raise AssertionError(f"B 端未收到目标消息: msgId={real_id}, events={seen_events}")
 
 
+@pytest.mark.case_id("chat.pin_unpin_fetch_pinned_messages.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.pinMessage")
+@pytest.mark.api("ChatManager.fetchPinnedMessages")
+@pytest.mark.api("ChatManager.unpinMessage")
 def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, assert_api, user_a, user_b):
     """pinMessage/unpinMessage/fetchPinnedMessages：发送消息后置顶、拉取置顶列表、取消置顶并确认列表清空。"""
     content = f"chat-pin-msg-{uuid.uuid4().hex[:8]}"
@@ -165,6 +170,11 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("message.get_pin_info_after_pin.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.pinMessage")
+@pytest.mark.api("MessageManager.getPinInfo")
 def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, user_a, user_b):
     """getPinInfo：发送消息后置顶，再通过 MessageManager 查询置顶操作者与时间。"""
     content = f"message-pin-info-{uuid.uuid4().hex[:8]}"
@@ -192,6 +202,9 @@ def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, 
     assert result.get("pinTime"), f"pinTime 应存在: {result}"
 
 
+@pytest.mark.case_id("chat.recall_message.receiver_event.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.recallMessage")
 def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, device_b, assert_api, user_a, user_b):
     """recallMessage：发送方撤回已送达单聊消息，接收方收到 onMessagesRecalledInfo 事件并携带撤回消息 ID。"""
     content = f"chat-recall-event-{uuid.uuid4().hex[:8]}"

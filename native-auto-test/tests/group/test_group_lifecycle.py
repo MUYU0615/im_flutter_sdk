@@ -17,6 +17,8 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+@pytest.mark.case_id("group.create_group.invite_member.success")
+@pytest.mark.api("GroupManager.createGroup")
 def test_group_create_group(device_a, device_b, assert_api, user_a, user_b):
     group_name = new_group_name("create")
     group_id = ""
@@ -61,6 +63,9 @@ def test_group_create_group(device_a, device_b, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.case_id("group.get_group.local.success")
+@pytest.mark.api("GroupManager.createGroup")
+@pytest.mark.api("GroupManager.getGroupWithId")
 def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
     group_name = new_group_name("local")
     group_id = ""
@@ -87,6 +92,9 @@ def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.case_id("group.get_group_from_server.success")
+@pytest.mark.api("GroupManager.createGroup")
+@pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
 def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, user_b):
     group_name = new_group_name("server")
     group_id = ""
@@ -117,6 +125,10 @@ def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, use
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.case_id("group.get_group_from_server_after_destroy.error")
+@pytest.mark.api("GroupManager.createGroup")
+@pytest.mark.api("GroupManager.destroyGroup")
+@pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
 def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_api, user_a):
     group_name = new_group_name("server_after_destroy")
     group_id = ""
