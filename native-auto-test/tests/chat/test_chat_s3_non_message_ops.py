@@ -340,6 +340,11 @@ def test_chat_pin_conversation_invalid_conv_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.pin_conversation.empty_conv_id.error")
+@pytest.mark.api("ChatManager.pinConversation")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
     resp = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": "", "isPinned": True})
     _assert_error_with_envelope(

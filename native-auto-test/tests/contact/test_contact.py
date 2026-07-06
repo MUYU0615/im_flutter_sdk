@@ -29,6 +29,11 @@ assert len(REMARK_SPECIAL_101) == 101
 # ---------- addContact ----------
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.add_contact.nonexistent_user.error")
+@pytest.mark.api("ContactManager.addContact")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_add_nonexistent_user(device_a, assert_api):
     """addContact：目标用户不存在，预期失败（顶层 error）。"""
     resp = device_a.call(
@@ -39,6 +44,11 @@ def test_contact_add_nonexistent_user(device_a, assert_api):
     assert_api.assert_error(resp, code=204, description="User does not exist")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.add_contact.empty_user_id.error")
+@pytest.mark.api("ContactManager.addContact")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_add_empty_user_id(device_a, assert_api):
     """addContact：userId 为空字符串，预期参数非法类错误。"""
     resp = device_a.call(
@@ -551,6 +561,11 @@ def test_contact_set_contact_remark_non_friend(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.get_block_list_from_server.empty_or_list.success")
+@pytest.mark.api("ContactManager.getBlockListFromServer")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
     """getBlockListFromServer：从服务器拉黑名单，result 为列表（可为空）。"""
     resp = device_a.call(
@@ -721,6 +736,11 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
 # ---------- fetchContacts（异常：文档 pageSize ∈ [1,50]）----------
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.fetch_contacts.page_size_zero.boundary")
+@pytest.mark.api("ContactManager.fetchContacts")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
     """fetchContacts：pageSize 为 0，超出允许范围，预期失败。"""
     resp = device_a.call(
@@ -734,11 +754,16 @@ def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
             "manager": "ContactManager",
             "cmd": Cmd.fetchContacts.value,
             "device": "deviceA",
-            "result": {"cursor":"","list":[]},
+            "result": {"list": []},
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "cursor"},
     )
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.fetch_contacts.page_size_exceeds_50.error")
+@pytest.mark.api("ContactManager.fetchContacts")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
     """fetchContacts：pageSize 大于 50，超出允许范围，预期失败。"""
     resp = device_a.call(
@@ -753,6 +778,11 @@ def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.fetch_contacts.page_size_negative.boundary")
+@pytest.mark.api("ContactManager.fetchContacts")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
     """fetchContacts：pageSize 为负数，预期失败。"""
     resp = device_a.call(
@@ -875,6 +905,11 @@ def test_contact_remove_from_block_list_when_not_blocked(
     flow.delete_friend(device_a, user_b)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.remove_from_block_list.nonexistent_user.idempotent")
+@pytest.mark.api("ContactManager.removeUserFromBlockList")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_contact_remove_from_block_list_nonexistent_user(device_a, assert_api):
     """removeUserFromBlockList：目标用户不存在，服务端幂等返回成功（HTTP 200），result 为用户名。"""
     resp = device_a.call(
