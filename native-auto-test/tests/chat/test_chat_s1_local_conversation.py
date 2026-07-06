@@ -276,7 +276,7 @@ def test_chat_mark_all_as_read_idempotent(device_b, assert_api):
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -365,6 +365,11 @@ def test_chat_load_all_conversations_contains_then_not_contains(device_a, device
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.native_load_all_conversations.local_after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.loadAllConversationsFromDB")
+@pytest.mark.api("ChatManager.getAllConversations")
 def test_chat_native_get_and_load_all_conversations_success(device_a, device_b, assert_api, user_a, user_b):
     _ = device_a.call(
         "ChatManager",
@@ -418,6 +423,10 @@ def test_chat_native_get_and_load_all_conversations_success(device_a, device_b, 
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.get_conversations_by_type.local_after_send.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.getConversationsByType")
 def test_chat_get_conversations_by_type_after_sending(device_a, device_b, assert_api, user_a, user_b):
     """getConversationsByType：发送单聊消息后按 Chat 类型查询本地会话列表。"""
     _ = device_a.call(
@@ -529,6 +538,11 @@ def test_chat_clean_conversations_memory_cache_keeps_local_conversations(device_
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.delete_conversation.local_existing.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.deleteConversation")
+@pytest.mark.api("ChatManager.getConversation")
 def test_chat_delete_conversation_existing_then_not_found(device_a, device_b, assert_api, user_a, user_b):
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s1-del-conv-{uuid.uuid4().hex[:6]}")
 
