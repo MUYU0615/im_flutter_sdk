@@ -65,6 +65,13 @@ def _assert_push_action_result(assert_api, resp: dict):
     }
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.fetch_configs_update_nickname_and_style.current_result")
+@pytest.mark.api("PushManager.getImPushConfigFromServer")
+@pytest.mark.api("PushManager.updatePushNickname")
+@pytest.mark.api("PushManager.updateImPushStyle")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
     """fetchPushConfigsFromServer / updatePushNickname / updatePushDisplayStyle：拉取推送配置并更新昵称和展示样式。"""
     configs_resp = device_a.call("PushManager", Cmd.getImPushConfigFromServer.value, info={})
@@ -103,6 +110,11 @@ def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
     _assert_push_config_update_result(assert_api, style_resp, cmd=Cmd.updateImPushStyle.value)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.report_push_action.click.current_result")
+@pytest.mark.api("PushManager.reportPushAction")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_api):
     """reportPushAction：上报点击行为参数到 Android SDK；厂商推送环境不稳定时允许已知环境失败。"""
     resp = device_a.call(
@@ -119,6 +131,11 @@ def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_a
     _assert_push_action_result(assert_api, resp)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.report_push_action.requires_action.error")
+@pytest.mark.api("PushManager.reportPushAction")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_requires_action(device_a, assert_api):
     """reportPushAction：缺少 action 时返回参数错误，不默认按 CLICK 上报。"""
     resp = device_a.call(
@@ -130,6 +147,11 @@ def test_push_report_push_action_requires_action(device_a, assert_api):
 
 
 @pytest.mark.parametrize("action", ["ARRIVED", "foo", 2, -1])
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.report_push_action.invalid_action.error")
+@pytest.mark.api("PushManager.reportPushAction")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_rejects_invalid_action(device_a, assert_api, action):
     """reportPushAction：未知 action 字符串和不支持的数字值返回参数错误。"""
     resp = device_a.call(
@@ -143,6 +165,12 @@ def test_push_report_push_action_rejects_invalid_action(device_a, assert_api, ac
     assert_api.assert_error(resp, code=110, description="'action' is invalid")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.global_silent_mode_flow.success")
+@pytest.mark.api("PushManager.setSilentModeForAll")
+@pytest.mark.api("PushManager.fetchSilentModeForAll")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_global_silent_mode_flow(device_a, assert_api):
     """setSilentModeForAll / fetchSilentModeForAll：设置全局离线推送提醒类型，并拉取全局设置。"""
     set_resp = device_a.call(
@@ -172,6 +200,14 @@ def test_push_global_silent_mode_flow(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.conversation_silent_mode_flow.success")
+@pytest.mark.api("PushManager.setConversationSilentMode")
+@pytest.mark.api("PushManager.fetchConversationSilentMode")
+@pytest.mark.api("PushManager.fetchSilentModeForConversations")
+@pytest.mark.api("PushManager.removeConversationSilentMode")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_conversation_silent_mode_flow(device_a, assert_api, user_b):
     """set/fetch/removeConversationSilentMode：对单聊会话设置、查询、移除离线推送设置。"""
     conv_id = user_b
@@ -242,6 +278,14 @@ def test_push_conversation_silent_mode_flow(device_a, assert_api, user_b):
     _assert_success_null(assert_api, remove_resp, cmd=Cmd.removeConversationSilentMode.value)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.preferred_language_and_template.success")
+@pytest.mark.api("PushManager.setPreferredNotificationLanguage")
+@pytest.mark.api("PushManager.fetchPreferredNotificationLanguage")
+@pytest.mark.api("PushManager.setPushTemplate")
+@pytest.mark.api("PushManager.getPushTemplate")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_preferred_language_and_template(device_a, assert_api):
     """set/fetchPreferredNotificationLanguage 与 set/getPushTemplate：设置并查询推送语言和模板名称。"""
     set_lang_resp = device_a.call(
@@ -307,6 +351,13 @@ def test_push_preferred_language_and_template(device_a, assert_api):
         ),
     ],
 )
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.vendor_token_update.current_environment")
+@pytest.mark.api("PushManager.updateHMSPushToken")
+@pytest.mark.api("PushManager.updateFCMPushToken")
+@pytest.mark.api("PushManager.bindDeviceToken")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_vendor_token_update_current_environment(device_a, assert_api, cmd, info, expected_result):
     """update*PushToken / bindDeviceToken：使用测试 token 调用，冻结当前模拟器环境下的真实返回语义。"""
     resp = device_a.call("PushManager", cmd, info=info)
@@ -322,6 +373,11 @@ def test_push_vendor_token_update_current_environment(device_a, assert_api, cmd,
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.apns_token_update_android_missing_plugin.error")
+@pytest.mark.api("PushManager.updateAPNsPushToken")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_apns_token_update_android_missing_plugin(device_a, assert_api):
     """updateAPNsPushToken：Android 模拟器调用 APNs token 更新，冻结 MissingPlugin 当前环境语义。"""
     resp = device_a.call(
@@ -332,6 +388,11 @@ def test_push_apns_token_update_android_missing_plugin(device_a, assert_api):
     assert_api.assert_error(resp, code=-1, description="MissingPluginException")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("push.sync_conversations_silent_mode.current_environment")
+@pytest.mark.api("PushManager.syncSilentModels")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_push_sync_conversations_silent_mode_current_environment(device_a, assert_api):
     """syncSilentModels：同步所有会话免打扰信息，冻结当前模拟器返回语义。"""
     resp = device_a.call("PushManager", Cmd.syncSilentModels.value, info={})
