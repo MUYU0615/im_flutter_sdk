@@ -12,6 +12,7 @@ import sys
 import pytest
 
 from src import Cmd
+from src.rest_api.user_api import get_user_access_token
 from src.test_flow import ContactTestFlow
 
 
@@ -114,25 +115,119 @@ def test_contact_get_block_list_from_db_after_server_sync(
     flow.delete_friend(device_a, user_b, wait_event=False)
 
 
-@pytest.mark.android
 @pytest.mark.real_e2e
+@pytest.mark.no_global_login
 @pytest.mark.case_id("contact.save_black_list.server.success")
 @pytest.mark.api("ContactManager.saveBlackList")
 @pytest.mark.skipif(
-    "config.getoption('--target-platform') != 'android'",
-    reason="ContactManager.saveBlackList Android wrapper is only implemented on Android",
+    "config.getoption('--target-platform') not in {'android', 'web'}",
+    reason="ContactManager.saveBlackList 当前仅在 Android/Web wrapper 暴露",
 )
 def test_contact_save_black_list_then_fetch_from_server(
-    device_a, device_b, assert_api, user_a, user_b
+    primary_device, secondary_device, assert_api, user_a, user_b
 ):
     """saveBlackList：批量保存黑名单列表后，从服务端查询黑名单包含目标用户。"""
     flow = ContactTestFlow(assert_api)
     friend_established = False
     try:
-        flow.establish_friends(device_a, device_b, user_a, user_b, reason="save_black_list")
+        token_a = get_user_access_token(user_a, "1")
+        token_b = get_user_access_token(user_b, "1")
+        for device in (primary_device, secondary_device):
+            logout = device.call(
+                "Client",
+                Cmd.logout.value,
+                info={"unbindToken": False},
+            )
+            assert_api.assert_response_matches(
+                logout,
+                expected={
+                    "manager": "Client",
+                    "cmd": Cmd.logout.value,
+                    "result": True,
+                },
+                ignore_keys={"sequence", "device"},
+            )
+
+        login_a = primary_device.call(
+            "Client",
+            Cmd.loginWithAgoraToken.value,
+            info={"userId": user_a, "agoraToken": token_a},
+        )
+        assert_api.assert_response_matches(
+            login_a,
+            expected={
+                "manager": "Client",
+                "cmd": Cmd.loginWithAgoraToken.value,
+                "device": "webA",
+                "result": user_a,
+            },
+            ignore_keys={"sequence"},
+        )
+        login_b = secondary_device.call(
+            "Client",
+            Cmd.loginWithAgoraToken.value,
+            info={"userId": user_b, "agoraToken": token_b},
+        )
+        assert_api.assert_response_matches(
+            login_b,
+            expected={
+                "manager": "Client",
+                "cmd": Cmd.loginWithAgoraToken.value,
+                "device": "webB",
+                "result": user_b,
+            },
+            ignore_keys={"sequence"},
+        )
+
+        for device in (primary_device, secondary_device):
+            reset = device.call("Client", "webReset", info={})
+            assert_api.assert_response_matches(
+                reset,
+                expected={
+                    "manager": "Client",
+                    "cmd": "webReset",
+                    "result": True,
+                },
+                ignore_keys={"sequence", "device"},
+            )
+
+        primary_device.drain_events(timeout=0.5)
+        secondary_device.drain_events(timeout=0.5)
+
+        add_resp = primary_device.call(
+            "ContactManager",
+            Cmd.addContact.value,
+            info={"userId": user_b, "reason": "save_black_list"},
+        )
+        assert_api.assert_response_matches(
+            add_resp,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.addContact.value,
+                "device": "webA",
+                "result": user_b,
+            },
+            ignore_keys={"sequence"},
+        )
+
+        accept_resp = secondary_device.call(
+            "ContactManager",
+            Cmd.acceptInvitation.value,
+            info={"userId": user_a},
+        )
+        assert_api.assert_response_matches(
+            accept_resp,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.acceptInvitation.value,
+                "device": "webB",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
         friend_established = True
 
-        save_resp = device_a.call(
+        save_resp = primary_device.call(
             "ContactManager",
             Cmd.saveBlackList.value,
             info={"userIds": [user_b]},
@@ -142,13 +237,13 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.saveBlackList.value,
-                "device": "deviceA",
+                "device": "webA",
                 "result": True,
             },
             ignore_keys={"sequence"},
         )
 
-        server_resp = device_a.call(
+        server_resp = primary_device.call(
             "ContactManager",
             Cmd.getBlockListFromServer.value,
             info={},
@@ -158,7 +253,7 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getBlockListFromServer.value,
-                "device": "deviceA",
+                "device": "webA",
                 "result": [user_b],
             },
             ignore_keys={"sequence"},
@@ -168,11 +263,11 @@ def test_contact_save_black_list_then_fetch_from_server(
         cleanup_errors = []
         if friend_established:
             try:
-                assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
+                assert_api.assert_success(flow.remove_from_block_list(primary_device, user_b))
             except Exception as exc:
                 cleanup_errors.append(exc)
             try:
-                flow.delete_friend(device_a, user_b, wait_event=False)
+                flow.delete_friend(primary_device, user_b, wait_event=False)
             except Exception as exc:
                 cleanup_errors.append(exc)
         if cleanup_errors and original_exc_type is None:

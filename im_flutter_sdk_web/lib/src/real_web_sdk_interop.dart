@@ -7,7 +7,16 @@ const _realSdkGlobalNames = <String>[
   'IMSDK'
 ];
 
-Map<String, dynamic> realWebSdkStatus() {
+@JS('Object.keys')
+external JSArray<JSAny?> _jsObjectKeys(JSAny? object);
+
+@JS('Object.getOwnPropertyNames')
+external JSArray<JSAny?> _jsGetOwnPropertyNames(JSAny? object);
+
+@JS('Object.getPrototypeOf')
+external JSAny? _jsGetPrototypeOf(JSAny? object);
+
+  Map<String, dynamic> realWebSdkStatus() {
   for (final name in _realSdkGlobalNames) {
     final sdk = globalContext.getProperty<JSAny?>(name.toJS);
     if (sdk != null && !sdk.isUndefinedOrNull) {
@@ -26,6 +35,63 @@ Map<String, dynamic> realWebSdkStatus() {
         'Real Web SDK is not loaded. Load easemob-websdk/Easemob-chat.js before running real_sdk E2E.',
     'checkedGlobals': _realSdkGlobalNames,
   };
+}
+
+Map<String, dynamic> realWebSdkSyncState(Object? client) {
+  if (client == null) {
+    return {
+      'available': false,
+      'reason': 'client_unavailable',
+    };
+  }
+  final serverUrls =
+      js_util.callMethod<Object?>(client, 'getServerUrlsConfig', const []);
+  final sessionListSyncWsUrls = js_util.callMethod<Object?>(
+    client,
+    'getSessionListSyncWsUrls',
+    const [],
+  );
+  final contactSyncWsUrls =
+      js_util.getProperty<Object?>(client, 'contactSyncWsUrls');
+  final contactSyncDnsResolved =
+      js_util.getProperty<Object?>(client, 'contactSyncDnsResolved');
+  return {
+    'available': true,
+    'serverUrls': _toDartMapOrNull(serverUrls),
+    'sessionListSyncWsUrls': _toStringList(sessionListSyncWsUrls),
+    'contactSyncWsUrls': _toStringList(contactSyncWsUrls),
+    'contactSyncDnsResolved': contactSyncDnsResolved == true,
+  };
+}
+
+List<String> realWebSdkBufferedLogs() {
+  try {
+    final loggerModule = globalContext.getProperty<JSAny?>('IMSDK'.toJS);
+    if (loggerModule == null || loggerModule.isUndefinedOrNull) {
+      return const <String>[];
+    }
+    final logs = js_util.callMethod<Object?>(
+      loggerModule,
+      'getBufferedLogs',
+      const [],
+    );
+    return _toStringList(logs);
+  } catch (_) {
+    return const <String>[];
+  }
+}
+
+Map<String, dynamic>? _toDartMapOrNull(Object? value) {
+  final dart = js_util.dartify(value);
+  return dart is Map ? Map<String, dynamic>.from(dart) : null;
+}
+
+List<String> _toStringList(Object? value) {
+  final dart = js_util.dartify(value);
+  if (dart is List) {
+    return dart.map((item) => item.toString()).toList(growable: false);
+  }
+  return const <String>[];
 }
 
 class RealWebSdkClient {
@@ -75,23 +141,38 @@ class RealWebSdkClient {
   Object? _connection;
   Object? _highLevelClient;
   String? _currentUser;
+  String? _configuredSyncWsFallbackUrl;
   final List<Map<String, dynamic>> _debugEvents = [];
   final Map<String, Map<String, dynamic>> _messageIndex = {};
   final Map<String, List<Map<String, dynamic>>> _uploadedGroupSharedFiles = {};
+  bool _webSocketProbeInstalled = false;
+
+  void recordExternalDebugEvent(String type, [Map<String, dynamic>? payload]) {
+    _recordDebug(type, payload ?? const <String, dynamic>{});
+  }
 
   Future<void> init(Map<String, dynamic> options) async {
+    _installWebSocketProbe();
+    _recordDebug('init_enter', {
+      'appKeyPresent': (options['appKey']?.toString().isNotEmpty ?? false),
+      'checkedGlobals': _realSdkGlobalNames,
+    });
     final imsdk = _imSdkObject();
     if (imsdk != null) {
+      _recordDebug('init_runtime_selected', {'runtime': 'imsdk'});
       await _initImSdkClient(options, imsdk);
       _installEventHandler();
       return;
     }
     final webIm = _webImObject();
     if (webIm == null) {
+      _recordDebug('init_runtime_missing', {});
       throw StateError(realWebSdkStatus()['description'].toString());
     }
+    _recordDebug('init_runtime_selected', {'runtime': 'legacy_webim'});
     final connectionCtor = js_util.getProperty<Object?>(webIm, 'connection');
     if (connectionCtor == null) {
+      _recordDebug('init_connection_ctor_missing', {'runtime': 'legacy_webim'});
       throw StateError('Real Web SDK global WebIM.connection is missing.');
     }
     final appKey = options['appKey']?.toString() ?? '';
@@ -108,6 +189,121 @@ class RealWebSdkClient {
     _connection =
         js_util.callConstructor(connectionCtor, [js_util.jsify(params)]);
     _installEventHandler();
+    _recordDebug('legacy_webim_init_success', {
+      'hasConnection': _connection != null,
+    });
+  }
+
+  void _installWebSocketProbe() {
+    if (_webSocketProbeInstalled) {
+      return;
+    }
+    _webSocketProbeInstalled = true;
+    try {
+      final original =
+          js_util.getProperty<Object?>(globalContext, 'WebSocket');
+      if (original == null) {
+        _recordDebug('websocket_probe_install_skipped', {
+          'reason': 'missing_global',
+        });
+        return;
+      }
+      final self = this;
+      JSAny? probeFactory(JSAny? url, [JSAny? protocols]) {
+        final socket = protocols == null
+            ? js_util.callConstructor(
+                original,
+                [url],
+              )
+            : js_util.callConstructor(
+                original,
+                [url, protocols],
+              );
+        try {
+          final rawUrl = url?.toString() ?? '';
+          if (rawUrl.contains('8086') ||
+              rawUrl.contains('/ws') ||
+              rawUrl.contains('sync')) {
+            self._recordDebug('websocket_probe_create', {
+              'url': rawUrl,
+            });
+            js_util.callMethod(
+              socket,
+              'addEventListener',
+              [
+                'open',
+                ((JSAny? _) {
+                  self._recordDebug('websocket_probe_open', {
+                    'url': rawUrl,
+                  });
+                }).toJS,
+              ],
+            );
+            js_util.callMethod(
+              socket,
+              'addEventListener',
+              [
+                'error',
+                ((JSAny? event) {
+                  self._recordDebug('websocket_probe_error', {
+                    'url': rawUrl,
+                    'event': js_util.dartify(event),
+                  });
+                }).toJS,
+              ],
+            );
+            js_util.callMethod(
+              socket,
+              'addEventListener',
+              [
+                'close',
+                ((JSAny? event) {
+                  final target = event!;
+                  self._recordDebug('websocket_probe_close', {
+                    'url': rawUrl,
+                    'code': js_util.getProperty<Object?>(target, 'code'),
+                    'reason': js_util.getProperty<Object?>(target, 'reason'),
+                    'wasClean':
+                        js_util.getProperty<Object?>(target, 'wasClean') == true,
+                  });
+                }).toJS,
+              ],
+            );
+          }
+        } catch (e) {
+          self._recordDebug('websocket_probe_listener_error', {
+            'error': _jsErrorDescription(e),
+          });
+        }
+        return socket as JSAny?;
+      }
+
+      final wrapper = js_util.callMethod<JSAny?>(
+        globalContext,
+        'Function',
+        [
+          'factory',
+          'return function WebSocket(url, protocols) { return factory(url, protocols); }',
+        ],
+      );
+      final wrappedCtor = js_util.callMethod<Object?>(
+        wrapper as Object,
+        'call',
+        [null, probeFactory.toJS],
+      );
+      if (wrappedCtor != null) {
+        final originalPrototype = js_util.getProperty<Object?>(original, 'prototype');
+        if (originalPrototype != null) {
+          js_util.setProperty(wrappedCtor, 'prototype', originalPrototype);
+        }
+        js_util.setProperty(globalContext, 'WebSocket', wrappedCtor);
+        _recordDebug('websocket_probe_installed', {});
+      }
+    } catch (e) {
+      _recordDebug('websocket_probe_install_error', {
+        'error': _jsErrorDescription(e),
+      });
+    }
   }
 
   Future<void> _initImSdkClient(
@@ -131,8 +327,16 @@ class RealWebSdkClient {
         js_util.getProperty<Object?>(imsdk, 'ContactManager');
     final userInfoManager =
         js_util.getProperty<Object?>(imsdk, 'UserInfoManager');
+    final serviceConfig = _buildImSdkServiceConfig(options);
+    _configuredSyncWsFallbackUrl = _normalizedWsUrl(
+      options['syncDataWebSocketServer'],
+      options['syncDataWebSocketPort'],
+    );
     final initConfig = <String, Object?>{
       'appKey': options['appKey']?.toString() ?? '',
+      if (options['enableAutoSyncContacts'] == true)
+        'enableSyncData': const ['contact'],
+      if (serviceConfig.isNotEmpty) 'serviceConfig': serviceConfig,
       'managers': [
         if (chatManager != null) chatManager,
         if (groupManager != null) groupManager,
@@ -147,6 +351,8 @@ class RealWebSdkClient {
     _recordDebug('imsdk_init_config', {
       'appKey': initConfig['appKey'],
       'enableDNSConfig': options['enableDNSConfig'] != false,
+      'enableSyncData': initConfig['enableSyncData'],
+      'serviceConfig': serviceConfig,
     });
     final initMethod = js_util.getProperty<Object?>(chatClient, 'init');
     if (initMethod == null) {
@@ -182,6 +388,7 @@ class RealWebSdkClient {
     useManager(userInfoManager);
     _highLevelClient = client;
     _connection = client;
+    _installImSdkSyncWsFallback(client);
     _recordDebug('imsdk_init_success', {
       'hasChatManager': js_util.hasProperty(client, 'chatManager'),
       'hasGroupManager': js_util.hasProperty(client, 'groupManager'),
@@ -189,6 +396,136 @@ class RealWebSdkClient {
       'hasChatRoomManager': js_util.hasProperty(client, 'chatRoomManager'),
       'hasPresenceManager': js_util.hasProperty(client, 'presenceManager'),
     });
+  }
+
+  Map<String, Object?> _buildImSdkServiceConfig(Map<String, dynamic> options) {
+    final restServer = options['restServer']?.toString();
+    final webSocketServer = options['webSocketServer']?.toString();
+    final webSocketPort = options['webSocketPort'];
+    final syncWsServer = options['syncDataWebSocketServer']?.toString();
+    final syncWsPort = options['syncDataWebSocketPort'];
+    final dnsUrl = options['dnsUrl']?.toString();
+    final enableDNSConfig = options['enableDNSConfig'] != false;
+
+    final restApiUrl = _normalizedHttpUrl(restServer);
+    final wsUrl = _normalizedWsUrl(webSocketServer, webSocketPort);
+    final syncWsUrl = _normalizedWsUrl(syncWsServer, syncWsPort);
+
+    final config = <String, Object?>{};
+    if (restApiUrl != null && wsUrl != null) {
+      final serverUrls = <String, Object?>{
+        'restApiUrl': restApiUrl,
+        'wsUrl': wsUrl,
+      };
+      if (syncWsUrl != null) {
+        serverUrls['syncWsUrl'] = syncWsUrl;
+      }
+      config['serverUrls'] = serverUrls;
+      config['mode'] = 'fixed';
+    } else if (enableDNSConfig) {
+      config['mode'] = 'dns';
+      if (dnsUrl != null && dnsUrl.isNotEmpty) {
+        config['dnsConfigUrls'] = [dnsUrl];
+      }
+    }
+    return config;
+  }
+
+  void _installImSdkSyncWsFallback(Object client) {
+    final fallbackUrl = _configuredSyncWsFallbackUrl;
+    if (fallbackUrl == null || fallbackUrl.isEmpty) {
+      return;
+    }
+    final serverUrls = _toDartMapOrNull(
+      js_util.callMethod<Object?>(client, 'getServerUrlsConfig', const []),
+    );
+    if (serverUrls != null) {
+      _recordDebug('imsdk_sync_ws_fallback_skipped', {
+        'reason': 'fixed_server_urls_in_use',
+        'fallbackUrl': fallbackUrl,
+      });
+      return;
+    }
+    try {
+      js_util.setProperty(client, 'contactSyncWsUrls', [fallbackUrl]);
+      js_util.setProperty(client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
+      js_util.setProperty(client, 'contactSyncDnsResolved', true);
+      _recordDebug('imsdk_sync_ws_fallback_injected', {
+        'fallbackUrl': fallbackUrl,
+      });
+    } catch (e) {
+      _recordDebug('imsdk_sync_ws_fallback_error', {
+        'fallbackUrl': fallbackUrl,
+        'error': _jsErrorDescription(e),
+      });
+    }
+  }
+
+  void _reapplyImSdkSyncWsFallbackAfterLogin(Object client) {
+    final fallbackUrl = _configuredSyncWsFallbackUrl;
+    if (fallbackUrl == null || fallbackUrl.isEmpty) {
+      return;
+    }
+    final serverUrls = _toDartMapOrNull(
+      js_util.callMethod<Object?>(client, 'getServerUrlsConfig', const []),
+    );
+    if (serverUrls != null) {
+      return;
+    }
+    final currentContactSyncWsUrls = _toStringList(
+      js_util.getProperty<Object?>(client, 'contactSyncWsUrls'),
+    );
+    final currentSessionSyncWsUrls = _toStringList(
+      js_util.getProperty<Object?>(client, 'syncConversationListConfigWsUrls'),
+    );
+    if (currentContactSyncWsUrls.isNotEmpty || currentSessionSyncWsUrls.isNotEmpty) {
+      _recordDebug('imsdk_sync_ws_fallback_reapply_skipped', {
+        'reason': 'runtime_urls_already_present',
+        'contactSyncWsUrls': currentContactSyncWsUrls,
+        'sessionSyncWsUrls': currentSessionSyncWsUrls,
+      });
+      return;
+    }
+    try {
+      js_util.setProperty(client, 'contactSyncWsUrls', [fallbackUrl]);
+      js_util.setProperty(client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
+      js_util.setProperty(client, 'contactSyncDnsResolved', true);
+      _recordDebug('imsdk_sync_ws_fallback_reapplied_after_login', {
+        'fallbackUrl': fallbackUrl,
+      });
+    } catch (e) {
+      _recordDebug('imsdk_sync_ws_fallback_reapply_error', {
+        'fallbackUrl': fallbackUrl,
+        'error': _jsErrorDescription(e),
+      });
+    }
+  }
+
+  String? _normalizedHttpUrl(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    return 'https://$value';
+  }
+
+  String? _normalizedWsUrl(Object? rawHost, Object? rawPort) {
+    final host = rawHost?.toString().trim();
+    if (host == null || host.isEmpty) {
+      return null;
+    }
+    if (host.startsWith('ws://') || host.startsWith('wss://')) {
+      return host;
+    }
+    final port = rawPort is int ? rawPort : int.tryParse(rawPort?.toString() ?? '');
+    final scheme = port == 443 ? 'wss' : 'ws';
+    if (port != null && port > 0) {
+      return '$scheme://$host:$port';
+    }
+    return '$scheme://$host';
   }
 
   Future<void> login({
@@ -228,6 +565,7 @@ class RealWebSdkClient {
       }
       _currentUser = userId;
       await _waitForHighLevelConnected();
+      _reapplyImSdkSyncWsFallbackAfterLogin(highLevelClient);
       _recordDebug('login_success', {
         'userId': userId,
         'runtime': 'imsdk',
@@ -316,10 +654,15 @@ class RealWebSdkClient {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
     final highLevelClient = _highLevelClient;
     if (highLevelClient != null) {
-      js_util.callMethod<Object?>(highLevelClient, 'logout', const []);
+      final result = js_util.callMethod<Object?>(
+        highLevelClient,
+        'logout',
+        const [],
+      );
+      await _awaitMaybePromise(result);
       _currentUser = null;
       return;
     }
@@ -3821,34 +4164,38 @@ class RealWebSdkClient {
   }
 
   Future<List<String>> getContactIds() async {
+    if (_highLevelClient != null) {
+      final contacts = await _getImSdkContactSnapshotItems();
+      final ids = contacts
+          .map((item) => item['userId']?.toString() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toList()
+        ..sort();
+      _recordDebug('getContactIds_success', {
+        'runtime': 'imsdk',
+        'result': ids,
+      });
+      return ids;
+    }
     final result = await _callRealSdk('getContacts', const []);
     final value = js_util.dartify(result);
-    if (value is List) {
-      return value.map(_contactIdFromRealSdkItem).whereType<String>().toList()
-        ..sort();
-    }
-    if (value is Map) {
-      final data = value['data'];
-      if (data is List) {
-        return data.map(_contactIdFromRealSdkItem).whereType<String>().toList()
-          ..sort();
-      }
-    }
-    return const [];
+    return _contactIdsFromRealValue(value);
   }
 
   Future<List<Map<String, dynamic>>> getContacts() async {
+    if (_highLevelClient != null) {
+      final contacts = await _getImSdkContactSnapshotItems();
+      _recordDebug('getContacts_success', {
+        'runtime': 'imsdk',
+        'result': contacts,
+      });
+      return contacts;
+    }
     final result = await _callRealSdk('getAllContacts', const []);
     final value = js_util.dartify(result);
-    final rawList = value is Map ? value['data'] : value;
-    if (rawList is List) {
-      return rawList
-          .map(_contactFromRealSdkItem)
-          .whereType<Map<String, dynamic>>()
-          .toList()
-        ..sort((a, b) => (a['userId'] ?? '')
-            .toString()
-            .compareTo((b['userId'] ?? '').toString()));
+    final contacts = _contactsFromRealValue(value);
+    if (contacts.isNotEmpty) {
+      return contacts;
     }
     final ids = await getContactIds();
     return ids.map((userId) => {'userId': userId}).toList();
@@ -3858,6 +4205,26 @@ class RealWebSdkClient {
     required int pageSize,
     required String cursor,
   }) async {
+    if (_highLevelClient != null) {
+      final contacts = await _getImSdkContactSnapshotItems();
+      final start = int.tryParse(cursor) ?? 0;
+      final page = contacts.skip(start).take(pageSize).toList();
+      final next = start + page.length;
+      final nextCursor = next >= contacts.length ? '' : next.toString();
+      _recordDebug('getContactsWithCursor_success', {
+        'runtime': 'imsdk',
+        'cursor': cursor,
+        'pageSize': pageSize,
+        'result': {
+          'cursor': nextCursor,
+          'list': page,
+        },
+      });
+      return {
+        'cursor': nextCursor,
+        'list': page,
+      };
+    }
     final result = await _callRealSdk('getContactsWithCursor', [
       {'pageSize': pageSize, 'cursor': cursor},
     ]);
@@ -3888,8 +4255,93 @@ class RealWebSdkClient {
     ]);
   }
 
+  Future<List<Map<String, dynamic>>> _getImSdkContactSnapshotItems() async {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <Map<String, dynamic>>[];
+    }
+    if (js_util.hasProperty(client, 'refreshContactSnapshot')) {
+      try {
+        final result = js_util.callMethod<Object?>(
+          client,
+          'refreshContactSnapshot',
+          const [],
+        );
+        await _awaitMaybePromise(result);
+        _recordDebug('refreshContactSnapshot_success', {'runtime': 'imsdk'});
+      } catch (e) {
+        _recordDebug('refreshContactSnapshot_error', {
+          'runtime': 'imsdk',
+          'error': _jsErrorDescription(e),
+        });
+      }
+    }
+    final snapshot =
+        js_util.callMethod<Object?>(client, 'getContactSnapshot', const []);
+    final value = js_util.dartify(snapshot);
+    final items = value is Map ? value['items'] : null;
+    final contacts = _contactsFromRealValue(items);
+    _recordDebug('contactSnapshot_success', {
+      'runtime': 'imsdk',
+      'result': value,
+    });
+    return contacts;
+  }
+
+  List<String> _contactIdsFromRealValue(Object? value) {
+    if (value is List) {
+      return value.map(_contactIdFromRealSdkItem).whereType<String>().toList()
+        ..sort();
+    }
+    if (value is Map) {
+      final data = value['data'];
+      if (data is List) {
+        return data.map(_contactIdFromRealSdkItem).whereType<String>().toList()
+          ..sort();
+      }
+      final contacts = value['contacts'];
+      if (contacts is List) {
+        return contacts
+            .map(_contactIdFromRealSdkItem)
+            .whereType<String>()
+            .toList()
+          ..sort();
+      }
+    }
+    return const [];
+  }
+
+  List<Map<String, dynamic>> _contactsFromRealValue(Object? value) {
+    final rawList = value is Map ? (value['data'] ?? value['contacts']) : value;
+    if (rawList is List) {
+      return rawList
+          .map(_contactFromRealSdkItem)
+          .whereType<Map<String, dynamic>>()
+          .toList()
+        ..sort((a, b) => (a['userId'] ?? '')
+            .toString()
+            .compareTo((b['userId'] ?? '').toString()));
+    }
+    return const [];
+  }
+
   Future<List<String>> getBlockList() async {
-    final result = await _callRealSdk('getBlocklist', const []);
+    Object? result;
+    if (_highLevelClient != null) {
+      final contactManager =
+          js_util.getProperty<Object?>(_highLevelClient!, 'contactManager');
+      if (contactManager == null) {
+        throw StateError('Real Web SDK contactManager is not available.');
+      }
+      final raw = js_util.callMethod<Object?>(
+        contactManager,
+        'getBlocklist',
+        const [],
+      );
+      result = await _awaitMaybePromise(raw);
+    } else {
+      result = await _callRealSdk('getBlocklist', const []);
+    }
     final value = js_util.dartify(result);
     final rawList = value is Map ? value['data'] : value;
     if (rawList is List) {
@@ -4943,6 +5395,21 @@ class RealWebSdkClient {
     await _callRealSdk(method, args);
   }
 
+  Future<Object?> _awaitMaybePromise(Object? result) async {
+    if (result == null) {
+      return null;
+    }
+    try {
+      final then = js_util.getProperty<Object?>(result, 'then');
+      if (then != null) {
+        return await js_util.promiseToFuture<Object?>(result);
+      }
+    } catch (_) {
+      // Fall through to direct synchronous value.
+    }
+    return result;
+  }
+
   Object _requireChatThreadManager() {
     final highLevelClient = _highLevelClient;
     if (highLevelClient == null) {
@@ -5118,6 +5585,16 @@ class RealWebSdkClient {
             'presences': _presenceListFromResponse(value),
             'operation': 'presence_status_changed',
           });
+        }).toJS,
+        'onSyncDataStart': ((JSAny? event) {
+          final value = js_util.dartify(event);
+          _recordDebug(
+              'onSyncDataStart', {'payload': value, 'runtime': 'imsdk'});
+        }).toJS,
+        'onSyncDataFinished': ((JSAny? event) {
+          final value = js_util.dartify(event);
+          _recordDebug(
+              'onSyncDataFinished', {'payload': value, 'runtime': 'imsdk'});
         }).toJS,
         'onContactAdded': ((JSAny? event) {
           final value = js_util.dartify(event);
@@ -7382,6 +7859,115 @@ class RealWebSdkClient {
 
   List<Map<String, dynamic>> debugEvents() {
     return List.unmodifiable(_debugEvents);
+  }
+
+  Object? get rawClient => _highLevelClient;
+
+  List<String> dumpContactManagerMethods() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String>[];
+    }
+    final manager = js_util.getProperty<Object?>(client, 'contactManager');
+    if (manager == null) {
+      return const <String>[];
+    }
+    final result = <String>{};
+    try {
+      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+        final text = key?.toString();
+        if (text != null && text.isNotEmpty) {
+          result.add(text);
+        }
+      }
+    } catch (_) {}
+    try {
+      JSAny? current = manager as JSAny?;
+      for (var depth = 0; depth < 5 && current != null; depth++) {
+        for (final key
+            in js_util.dartify(_jsGetOwnPropertyNames(current)) as List) {
+          final text = key?.toString();
+          if (text != null && text.isNotEmpty) {
+            result.add(text);
+          }
+        }
+        current = _jsGetPrototypeOf(current);
+      }
+    } catch (_) {}
+    final sorted = result.toList()..sort();
+    _recordDebug('contactManager_methods', {
+      'runtime': 'imsdk',
+      'methods': sorted,
+    });
+    return sorted;
+  }
+
+  Map<String, dynamic> dumpContactSnapshot() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String, dynamic>{'available': false};
+    }
+    try {
+      final snapshot =
+          js_util.callMethod<Object?>(client, 'getContactSnapshot', const []);
+      final value = js_util.dartify(snapshot);
+      if (value is Map) {
+        return <String, dynamic>{
+          'available': true,
+          'snapshot': Map<String, dynamic>.from(value),
+        };
+      }
+      return <String, dynamic>{'available': true, 'snapshot': value};
+    } catch (e) {
+      return <String, dynamic>{
+        'available': true,
+        'error': _jsErrorDescription(e),
+      };
+    }
+  }
+
+  Map<String, dynamic> dumpContactCacheState() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String, dynamic>{'available': false};
+    }
+    try {
+      final cacheManager = js_util.callMethod<Object?>(
+        client,
+        'getCacheManager',
+        const [],
+      );
+      if (cacheManager == null) {
+        return const <String, dynamic>{'available': true, 'cacheManager': false};
+      }
+      final meta = js_util.callMethod<Object?>(
+        cacheManager,
+        'loadContactCacheMeta',
+        const [],
+      );
+      final versionState = js_util.callMethod<Object?>(
+        cacheManager,
+        'loadContactVersionState',
+        const [],
+      );
+      final relations = js_util.callMethod<Object?>(
+        cacheManager,
+        'loadContactRelationRecords',
+        const [],
+      );
+      return <String, dynamic>{
+        'available': true,
+        'cacheManager': true,
+        'meta': js_util.dartify(meta),
+        'versionState': js_util.dartify(versionState),
+        'relations': js_util.dartify(relations),
+      };
+    } catch (e) {
+      return <String, dynamic>{
+        'available': true,
+        'error': _jsErrorDescription(e),
+      };
+    }
   }
 
   Map<String, dynamic>? messageById(String msgId) {

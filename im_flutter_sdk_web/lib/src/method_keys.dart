@@ -112,6 +112,7 @@ class _MethodKeys {
   static const String getAllContactsFromServer = 'getAllContactsFromServer';
   static const String getAllContactsFromDB = 'getAllContactsFromDB';
   static const String addUserToBlockList = 'addUserToBlockList';
+  static const String saveBlackList = 'saveBlackList';
   static const String removeUserFromBlockList = 'removeUserFromBlockList';
   static const String getBlockListFromServer = 'getBlockListFromServer';
   static const String getBlockListFromDB = 'getBlockListFromDB';

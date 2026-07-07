@@ -553,6 +553,9 @@ def web_state_reset(request, target_platform):
     if bool(request.config.getoption("--skip-global-login")):
         yield
         return
+    if request.node.get_closest_marker("no_global_login") is not None:
+        yield
+        return
     if request.node.get_closest_marker("web") is None:
         yield
         return

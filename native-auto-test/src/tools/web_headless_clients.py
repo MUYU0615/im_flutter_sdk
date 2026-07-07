@@ -87,7 +87,13 @@ def _terminate(processes: list[subprocess.Popen[bytes]]) -> None:
             proc.kill()
 
 
-def _is_ready_response(raw: str, *, request_id: str, device: str) -> bool:
+def _is_ready_response(
+    raw: str,
+    *,
+    request_id: str,
+    device: str,
+    expected_cmd: str,
+) -> bool:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError:
@@ -100,9 +106,9 @@ def _is_ready_response(raw: str, *, request_id: str, device: str) -> bool:
         return False
     if payload.get("device") not in (None, device):
         return False
-    return payload.get("manager") in (None, "Client") and payload.get("cmd") in (
-        None,
-        "isConnected",
+    return (
+        payload.get("manager") in (None, "Client")
+        and payload.get("cmd") in (None, expected_cmd)
     )
 
 
@@ -117,11 +123,12 @@ async def _probe_device_ready_once(
     topic: str,
     device: str,
     timeout: float,
+    ready_cmd: str,
 ) -> bool:
     request_id = f"ready-{device}-{uuid.uuid4().hex}"
     request = {
         "manager": "Client",
-        "cmd": "isConnected",
+        "cmd": ready_cmd,
         "info": {},
         "id": request_id,
         "device": device,
@@ -133,7 +140,12 @@ async def _probe_device_ready_once(
             while time.monotonic() < deadline:
                 remaining = max(0.1, deadline - time.monotonic())
                 raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
-                if _is_ready_response(raw, request_id=request_id, device=device):
+                if _is_ready_response(
+                    raw,
+                    request_id=request_id,
+                    device=device,
+                    expected_cmd=ready_cmd,
+                ):
                     return True
     except Exception:
         return False
@@ -145,6 +157,7 @@ def _wait_for_bridge_ready(
     bridge_url: str,
     devices: list[str],
     timeout: float,
+    ready_cmd: str,
 ) -> None:
     deadline = time.monotonic() + timeout
     pending = set(devices)
@@ -157,6 +170,7 @@ def _wait_for_bridge_ready(
                     topic=topic,
                     device=device,
                     timeout=2.0,
+                    ready_cmd=ready_cmd,
                 )
             ):
                 print(f"{device} bridge ready", flush=True)
@@ -241,6 +255,9 @@ def main() -> int:
     signal.signal(signal.SIGTERM, _handle_signal)
 
     try:
+        ready_cmd = (
+            "getRealSdkStatus" if args.web_sdk_mode == "real_sdk" else "isConnected"
+        )
         for device in args.devices:
             topic = get_topic(device)
             url = _build_url(
@@ -278,6 +295,7 @@ def main() -> int:
                 bridge_url=bridge_url,
                 devices=list(args.devices),
                 timeout=args.startup_wait,
+                ready_cmd=ready_cmd,
             )
         except TimeoutError as exc:
             print(str(exc), file=sys.stderr, flush=True)

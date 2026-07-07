@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
 import signal
 import socket
@@ -11,6 +12,9 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+
+from .sdk_options_resolver import resolve_sdk_init_options
+from .ws_client import DeviceConnection
 
 
 @dataclass(frozen=True)
@@ -43,9 +47,26 @@ def _build_commands(
     web_sdk_mode: str | None,
     web_sdk_runtime: str | None,
     chrome_headed: bool,
+    chrome_verbose: bool,
 ) -> WebE2ECommands:
     env = os.environ.copy()
     env["NATIVE_AUTO_TEST_RUN_ID"] = run_id
+    env["NATIVE_AUTO_TEST_WS_BASE_URL"] = f"ws://{host}:{port}/iov/websocket/dual"
+    effective_web_sdk_runtime = web_sdk_runtime or (
+        "imsdk" if web_sdk_mode == "real_sdk" else None
+    )
+    effective_pytest_args = list(pytest_args)
+    if (
+        "--target-platform" not in effective_pytest_args
+        and not any(arg.startswith("--target-platform=") for arg in effective_pytest_args)
+    ):
+        effective_pytest_args.extend(["--target-platform", "web"])
+    if (
+        effective_web_sdk_runtime
+        and "--web-sdk-runtime" not in effective_pytest_args
+        and not any(arg.startswith("--web-sdk-runtime=") for arg in effective_pytest_args)
+    ):
+        effective_pytest_args.extend(["--web-sdk-runtime", effective_web_sdk_runtime])
     return WebE2ECommands(
         env=env,
         relay=[
@@ -73,21 +94,24 @@ def _build_commands(
             "src.tools.web_headless_clients",
             "--app-url",
             app_url,
+            "--bridge-url",
+            f"ws://{host}:{port}/iov/websocket/dual",
             "--startup-wait",
             str(headless_startup_wait),
             *(["--headed"] if chrome_headed else []),
+            *(["--verbose"] if chrome_verbose else []),
             *(
                 ["--web-sdk-mode", web_sdk_mode]
                 if web_sdk_mode
                 else []
             ),
             *(
-                ["--web-sdk-runtime", web_sdk_runtime]
-                if web_sdk_runtime
+                ["--web-sdk-runtime", effective_web_sdk_runtime]
+                if effective_web_sdk_runtime
                 else []
             ),
         ],
-        pytest=["pytest", *pytest_args],
+        pytest=["pytest", *effective_pytest_args],
     )
 
 
@@ -209,6 +233,48 @@ def _run_platform_api_support_report(
     return int(completed.returncode)
 
 
+@contextlib.contextmanager
+def _temporary_env(overrides: dict[str, str]):
+    original = {key: os.environ.get(key) for key in overrides}
+    os.environ.update(overrides)
+    try:
+        yield
+    finally:
+        for key, value in original.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _init_web_bridge_devices(*, env: dict[str, str]) -> None:
+    options = resolve_sdk_init_options("web")
+    options["webSdkMode"] = "real_sdk"
+    options["enableAutoSyncContacts"] = True
+    with _temporary_env(
+        {
+            "NATIVE_AUTO_TEST_RUN_ID": env["NATIVE_AUTO_TEST_RUN_ID"],
+            "NATIVE_AUTO_TEST_WS_BASE_URL": env["NATIVE_AUTO_TEST_WS_BASE_URL"],
+        }
+    ):
+        for device in ("webA", "webB"):
+            conn = DeviceConnection(device=device, debug=False)
+            conn.start()
+            try:
+                resp = conn.call("Client", "init", info=options)
+                result = resp.get("result")
+                ok = (
+                    result is True
+                    or result == {"init": True}
+                    or result == {"init": True, "init": True}
+                    or (isinstance(result, dict) and result.get("init") is True)
+                )
+                if not ok:
+                    raise RuntimeError(f"{device} Client.init failed: {resp}")
+            finally:
+                conn.stop()
+
+
 def run(args: argparse.Namespace) -> int:
     repo_dir = _repo_dir()
     native_auto_test_dir = repo_dir / "native-auto-test"
@@ -233,6 +299,7 @@ def run(args: argparse.Namespace) -> int:
         web_sdk_mode=args.web_sdk_mode,
         web_sdk_runtime=args.web_sdk_runtime,
         chrome_headed=args.chrome_headed,
+        chrome_verbose=args.chrome_verbose,
     )
     processes: list[subprocess.Popen] = []
 
@@ -266,6 +333,8 @@ def run(args: argparse.Namespace) -> int:
             name="headless clients",
         )
 
+        _init_web_bridge_devices(env=commands.env)
+
         print("+ " + " ".join(commands.pytest), flush=True)
         completed = subprocess.run(
             commands.pytest,
@@ -298,6 +367,7 @@ def main() -> int:
         default=None,
     )
     parser.add_argument("--chrome-headed", action="store_true")
+    parser.add_argument("--chrome-verbose", action="store_true")
     parser.add_argument(
         "--no-html-report",
         dest="html_report",

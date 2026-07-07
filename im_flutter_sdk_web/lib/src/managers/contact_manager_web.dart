@@ -99,6 +99,20 @@ class ContactManagerWeb extends ContactManager {
         }
         _blockList.add(userId);
         return {method: userId};
+      case _MethodKeys.saveBlackList:
+        final userIds =
+            (map['userIds'] as List? ?? const [])
+                .map((e) => e?.toString() ?? '')
+                .where((e) => e.isNotEmpty)
+                .toList();
+        if (realSdk != null) {
+          for (final userId in userIds) {
+            await realSdk.addUserToBlockList(userId);
+          }
+          return {method: true};
+        }
+        _blockList.addAll(userIds);
+        return {method: true};
       case _MethodKeys.removeUserFromBlockList:
         final userId = map['userId']?.toString() ?? '';
         if (realSdk != null) {

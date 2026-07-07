@@ -125,7 +125,14 @@ class ClientWeb extends Client {
             onDisconnected: _emitRealDisconnected,
             onConversationRead: _chatManager.emitRealConversationRead,
           );
+          _realSdk!.recordExternalDebugEvent('bridge_init_requested', {
+            'sdkMode': _sdkMode,
+            'appKeyPresent': (map['appKey']?.toString().isNotEmpty ?? false),
+          });
           await _realSdk!.init(map);
+          _realSdk!.recordExternalDebugEvent('bridge_init_completed', {
+            'sdkMode': _sdkMode,
+          });
         }
         return {method: true};
       case 'getSdkMode':
@@ -134,6 +141,20 @@ class ClientWeb extends Client {
         return {method: realWebSdkStatus()};
       case 'getRealSdkDebug':
         return {method: _realSdk?.debugEvents() ?? <Map<String, dynamic>>[]};
+      case 'getRealSdkContactSnapshot':
+        return {
+          method: _realSdk?.dumpContactSnapshot() ?? <String, dynamic>{},
+        };
+      case 'getRealSdkContactCacheState':
+        return {
+          method: _realSdk?.dumpContactCacheState() ?? <String, dynamic>{},
+        };
+      case 'getRealSdkSyncState':
+        return {
+          method: realWebSdkSyncState(_realSdk?.rawClient),
+        };
+      case 'dumpRealSdkContactManagerMethods':
+        return {method: _realSdk?.dumpContactManagerMethods() ?? <String>[]};
       case _MethodKeys.createAccount:
         if (_sdkMode == 'real_sdk') {
           final userId = map['userId']?.toString() ?? '';
@@ -207,7 +228,7 @@ class ClientWeb extends Client {
         return {method: true};
       case _MethodKeys.logout:
         if (_sdkMode == 'real_sdk') {
-          _realSdk?.logout();
+          await _realSdk?.logout();
         }
         _currentUser = null;
         _token = null;
