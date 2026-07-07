@@ -125,10 +125,10 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: ChatManager
     api: updateParticipant
-    action: expose_wrapper
-    priority: P1
-    batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
+    action: platform_native_missing
+    priority: P2
+    batch: chat_platform_gap
+    reason_zh: "Android 原生 SDK 暴露本地 participant 映射更新能力，但 iOS/Web 当前未发现同等原生能力入口，应记录为 Android 平台特有差异。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: voiceFileToText
