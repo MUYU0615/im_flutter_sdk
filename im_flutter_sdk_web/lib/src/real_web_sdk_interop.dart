@@ -8074,6 +8074,45 @@ class RealWebSdkClient {
     return sorted;
   }
 
+  List<String> dumpGroupManagerMethods() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String>[];
+    }
+    final manager = js_util.getProperty<Object?>(client, 'groupManager');
+    if (manager == null) {
+      return const <String>[];
+    }
+    final result = <String>{};
+    try {
+      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+        final text = key?.toString();
+        if (text != null && text.isNotEmpty) {
+          result.add(text);
+        }
+      }
+    } catch (_) {}
+    try {
+      JSAny? current = manager as JSAny?;
+      for (var depth = 0; depth < 5 && current != null; depth++) {
+        for (final key
+            in js_util.dartify(_jsGetOwnPropertyNames(current)) as List) {
+          final text = key?.toString();
+          if (text != null && text.isNotEmpty) {
+            result.add(text);
+          }
+        }
+        current = _jsGetPrototypeOf(current);
+      }
+    } catch (_) {}
+    final sorted = result.toList()..sort();
+    _recordDebug('groupManager_methods', {
+      'runtime': 'imsdk',
+      'methods': sorted,
+    });
+    return sorted;
+  }
+
   Map<String, dynamic> dumpContactSnapshot() {
     final client = _highLevelClient;
     if (client == null) {

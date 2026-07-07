@@ -2727,33 +2727,32 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-group-block-flow2
-        --app-url http://127.0.0.1:8116 --web-sdk-mode real_sdk --headless-startup-wait
-        120 --startup-timeout 180 --flutter-timeout 240 --
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-recheck-20260707-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 --
         tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
         --target-platform web -q -s
-      reason: Flutter blockGroup is documented as blocking delivery of group
-        messages to the current user, but after calling the Web SDK mapped
-        disableSendGroupMsg path the blocked member still receives a real group
-        message, so the Web behavior does not satisfy the Flutter contract.
-      reason_zh: Flutter 的 `blockGroup` 语义是屏蔽当前用户接收群消息，但 Web
-        映射后的真实调用并没有阻止被屏蔽用户继续收到群消息，因此 Web 行为不满足
-        Flutter / iOS / Android 同名 API 契约。
+      reason: The current real Web IMSDK high-level groupManager does not expose
+        disableSendGroupMsg, so the Flutter blockGroup mapping fails immediately
+        with a runtime TypeError before any message-delivery contract can be verified.
+      reason_zh: 当前真实 Web IMSDK 的高层 groupManager 没有暴露 disableSendGroupMsg，
+        因此 Flutter 的 blockGroup 映射会先在运行时直接报 TypeError，尚未进入
+        “是否屏蔽接收群消息”的语义验证阶段。
     unblockGroup:
       real_e2e_status: blocked
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-group-block-flow2
-        --app-url http://127.0.0.1:8116 --web-sdk-mode real_sdk --headless-startup-wait
-        120 --startup-timeout 180 --flutter-timeout 240 --
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-recheck-20260707-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 --
         tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
         --target-platform web -q -s
-      reason: Because the mapped Web disable/enableSendGroupMsg behavior never
-        established the Flutter blockGroup delivery contract in the first place,
-        unblockGroup cannot be counted as supported either.
-      reason_zh: 由于 `blockGroup` 对应的 Web 行为本身就没有建立 Flutter 所要求的
-        “屏蔽接收群消息”契约，因此 `unblockGroup` 也不能算支持项。
+      reason: The current real Web IMSDK high-level groupManager does not expose
+        enableSendGroupMsg, so the Flutter unblockGroup mapping is not callable
+        in the same runtime path either.
+      reason_zh: 当前真实 Web IMSDK 的高层 groupManager 没有暴露 enableSendGroupMsg，
+        因此 Flutter 的 unblockGroup 映射在同一条运行时路径下同样不可调用。
     updateGroupOwner:
       real_e2e_status: supported
       tests:

@@ -65,6 +65,16 @@ def test_real_web_dump_chatroom_manager_methods_without_global_login(
     assert result, result
 
 
+def test_real_web_dump_group_manager_methods_without_global_login(
+    primary_device,
+    assert_api,
+):
+    methods = primary_device.call("Client", "dumpRealSdkGroupManagerMethods", info={})
+    result = assert_api.get_result(methods)
+    assert isinstance(result, list)
+    assert result, result
+
+
 def test_real_web_create_chatroom_probe_without_global_login(
     primary_device,
     assert_api,
