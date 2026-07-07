@@ -1506,12 +1506,13 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "emitStreamMessagesReceived|stream_messages_received" im_flutter_test/lib/bridge
-      reason: Current Web coverage emits this event locally in im_websocket_bridge
-        when the returned message contains streamChunk; there is no verified real
-        Web SDK streaming callback path wired into the bridge, so it must not be
-        counted as real E2E.
-      reason_zh: 当前 `onStreamMessagesReceived` 是 bridge 看到返回消息里包含
-        `streamChunk` 后本地合成发出的，并不是来自真实 Web SDK 的流式消息回调。
+      reason: Current Web coverage emits this event locally only in the non-real_sdk
+        bridge branch when a returned message carries streamChunk; there is no
+        verified real Web SDK streaming callback path wired into the Web real
+        runtime/bridge.
+      reason_zh: 当前 `onStreamMessagesReceived` 只会在非 `real_sdk` 的 bridge
+        分支里、看到返回消息携带 `streamChunk` 时本地合成发出；Web real
+        runtime/bridge 没有接入可验证的真实流式消息回调。
     onCmdMessagesReceived:
       real_e2e_status: supported
       tests:
@@ -1670,31 +1671,37 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "emitMessageProgress|onMessageProgress" im_flutter_test/lib/bridge
-      reason: Current Web coverage emits onMessageProgress locally after bridge-managed
-        browser download helpers finish; it is not sourced from a real Web SDK
-        media-transfer progress callback.
-      reason_zh: 当前 `onMessageProgress` 来源于 bridge 自己的浏览器下载辅助逻辑，
-        不是来自真实 Web SDK 的媒体传输进度回调。
+      reason: Current Web coverage emits onMessageProgress locally from
+        im_websocket_bridge after bridge-managed browser download helpers finish;
+        it is not sourced from a verified real Web SDK media-transfer progress
+        callback.
+      reason_zh: 当前 `onMessageProgress` 是 `im_websocket_bridge` 在浏览器下载
+        辅助逻辑完成后本地发出的，并不是来自可验证的真实 Web SDK
+        媒体传输进度回调。
     onMessageProgressUpdate:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "emitMessageProgressUpdate|onMessageProgressUpdate" im_flutter_test/lib/bridge
-      reason: Current Web coverage emits onMessageProgressUpdate locally after bridge-managed
-        browser download helpers finish; it is not sourced from a real Web SDK
-        media-transfer progress callback.
-      reason_zh: 当前 `onMessageProgressUpdate` 来源于 bridge 自己的浏览器下载辅助
-        逻辑，不是来自真实 Web SDK 的媒体传输进度回调。
+      reason: Current Web coverage emits onMessageProgressUpdate locally from
+        im_websocket_bridge after bridge-managed browser download helpers finish;
+        it is not sourced from a verified real Web SDK media-transfer progress
+        callback.
+      reason_zh: 当前 `onMessageProgressUpdate` 是 `im_websocket_bridge` 在浏览器下载
+        辅助逻辑完成后本地发出的，并不是来自可验证的真实 Web SDK
+        媒体传输进度回调。
     onMessageError:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "emitMessageError|onMessageError" im_flutter_test/lib/bridge
-      reason: Current Web coverage emits onMessageError locally from bridge-side
-        browser download helper failures; it is not sourced from a real Web SDK
-        message-transfer error callback.
-      reason_zh: 当前 `onMessageError` 是浏览器下载辅助逻辑失败后由本地 bridge
-        发出的，不是来自真实 Web SDK 的消息传输错误回调。
+      reason: Current Web coverage emits onMessageError locally from
+        im_websocket_bridge when bridge-side browser download helpers fail; it
+        is not sourced from a verified real Web SDK message-transfer error
+        callback.
+      reason_zh: 当前 `onMessageError` 是 `im_websocket_bridge` 在浏览器下载辅助逻辑
+        失败后本地发出的，并不是来自可验证的真实 Web SDK
+        消息传输错误回调。
     onMessageSuccess:
       real_e2e_status: supported
       tests:
