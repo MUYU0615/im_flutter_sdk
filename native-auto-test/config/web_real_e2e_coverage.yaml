@@ -709,14 +709,22 @@ web_real_e2e:
         combine 场景也已能创建并发送真实合并消息，接收端可拿到带 `remotePath/url/secret`
         的合并消息体，供后续解析使用。
     resendMessage:
-      real_e2e_status: blocked
-      tests: []
-      verified_by: []
-      reason: Current Web ChatManager implementation only reuses the local cached
-        message and marks status in memory; there is no real Web SDK resend API
-        path in this adapter.
-      reason_zh: 当前 `resendMessage` 只会复用本地缓存消息并修改本地发送状态，没有进入
-        真实 Web SDK 或服务端重发链路，因此与移动端能力未对齐。
+      real_e2e_status: supported
+      tests:
+      - tests/web_real/test_real_web_chat_smoke.py::test_real_web_resend_text_a_to_b
+      verified_by:
+      - make web-real-e2e ARGS="--run-id web-resend-smoke-20260707-000002 --web-sdk-mode
+        real_sdk --web-sdk-runtime imsdk --headless-startup-wait 60 --startup-timeout
+        120 --flutter-timeout 180 -- tests/web_real/test_real_web_chat_smoke.py::test_real_web_resend_text_a_to_b
+        --target-platform web -q"
+      reason: Under the real Web IMSDK runtime, resendMessage re-enters the real
+        send path and produces a new outbound message that is delivered to the peer.
+        The current real behavior is not in-place resend; it creates a new msgId,
+        emits a success callback, and the peer receives the resent text through
+        onMessagesReceived.
+      reason_zh: 在真实 Web IMSDK runtime 下，`resendMessage` 已经重新进入真实发送链路，
+        并把文本消息再次送达对端。当前真实语义不是原消息原地重发，而是生成一条新的
+        `msgId`；发送端会收到成功回调，接收端会通过 `onMessagesReceived` 收到重发后的文本消息。
     ackMessageRead:
       real_e2e_status: supported
       tests:
