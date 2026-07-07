@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -13,6 +14,7 @@ from src.tools.android_e2e_runner import (
     _required_device_count,
     _wait_for_bridge_device,
 )
+from tests.conftest import pytest_collection_modifyitems
 
 
 pytestmark = pytest.mark.no_global_login
@@ -161,6 +163,30 @@ def test_default_android_pytest_args_use_only_android_directories():
         "real_e2e",
         "-q",
     ]
+
+
+def test_android_target_does_not_promote_real_web_cases_to_real_e2e():
+    class _FakeConfig:
+        def getoption(self, name):
+            assert name == "--target-platform"
+            return "android"
+
+    class _FakeItem:
+        def __init__(self):
+            self.path = SimpleNamespace(as_posix=lambda: "/tmp/tests/web_real/test_real_web_chat_room.py")
+            self._markers = {"real_web": object()}
+            self.added_markers = []
+
+        def get_closest_marker(self, name):
+            return self._markers.get(name)
+
+        def add_marker(self, marker):
+            self.added_markers.append(marker)
+
+    item = _FakeItem()
+    pytest_collection_modifyitems(_FakeConfig(), [item])
+
+    assert item.added_markers == []
 
 
 def test_direct_chat_send_success_event_ignores_android_423_optional_message_fields():

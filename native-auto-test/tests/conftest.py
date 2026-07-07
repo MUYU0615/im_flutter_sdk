@@ -759,8 +759,13 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     """把历史 marker 归一到新的执行层 marker，避免覆盖统计拆分时漏算。"""
+    target_platform = config.getoption("--target-platform")
     for item in items:
-        if item.get_closest_marker("real_web") and not item.get_closest_marker("real_e2e"):
+        if (
+            target_platform == "web"
+            and item.get_closest_marker("real_web")
+            and not item.get_closest_marker("real_e2e")
+        ):
             item.add_marker(pytest.mark.real_e2e)
         if (
             item.get_closest_marker("web")
