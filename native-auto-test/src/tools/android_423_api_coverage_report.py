@@ -1210,7 +1210,7 @@ def scan_android() -> dict[tuple[str, str], dict[str, str]]:
             continue
         text = _read(path)
         matches = re.finditer(
-            r"MethodKey\.(\w+)\.equals\(call\.method\)\)\s*\{\s*([A-Za-z_]\w*)\s*\(",
+            r"MethodKey\.(\w+)\.equals\(\s*\(?\s*call\.method\s*\)?\s*\)\)\s*\{\s*([A-Za-z_]\w*)\s*\(",
             text,
             re.S,
         )
