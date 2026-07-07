@@ -103,6 +103,46 @@ class EventBridgeHandler {
         },
       ),
     );
+    EMClient.getInstance.chatThreadManager.addEventHandler(
+      _handlerId,
+      EMChatThreadEventHandler(
+        onChatThreadCreate: (event) {
+          emitChatThreadCreated(
+            thread: Map<String, dynamic>.from(
+              (event.chatThread?.toJson() ?? <String, dynamic>{}),
+            ),
+            userId: event.from,
+          );
+        },
+        onChatThreadUpdate: (event) {
+          emitChatThreadCreated(
+            thread: Map<String, dynamic>.from(
+              (event.chatThread?.toJson() ?? <String, dynamic>{}),
+            ),
+            operation: 'update',
+            userId: event.from,
+          );
+        },
+        onChatThreadDestroy: (event) {
+          emitChatThreadCreated(
+            thread: Map<String, dynamic>.from(
+              (event.chatThread?.toJson() ?? <String, dynamic>{}),
+            ),
+            operation: 'destroy',
+            userId: event.from,
+          );
+        },
+        onUserKickOutOfChatThread: (event) {
+          emitChatThreadCreated(
+            thread: Map<String, dynamic>.from(
+              (event.chatThread?.toJson() ?? <String, dynamic>{}),
+            ),
+            operation: 'user_kicked',
+            userId: event.from,
+          );
+        },
+      ),
+    );
     if (emitConnectedOnRegister) {
       emitConnected(deviceName: deviceName);
     }
@@ -771,6 +811,7 @@ class EventBridgeHandler {
   void unregisterAllHandlers() {
     EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
     EMClient.getInstance.contactManager.removeEventHandler(_handlerId);
+    EMClient.getInstance.chatThreadManager.removeEventHandler(_handlerId);
     _registered = false;
     _sendEvent = null;
   }

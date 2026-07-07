@@ -186,20 +186,12 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
                 "type": "event",
                 "eventType": Cmd.onChatThreadCreate.value,
                 "data": {
-                    "event": {
-                        "type": 1,
-                        "from": user_a,
-                        "thread": {
-                            "threadId": thread_id,
-                            "threadName": thread_name,
-                            "owner": "",
-                            "parentId": group_id,
-                            "msgId": parent_msg_id,
-                            "memberCount": 0,
-                            "messageCount": 0,
-                            "createAt": ne(None),
-                        },
-                    },
+                    "threadId": thread_id,
+                    "threadName": thread_name,
+                    "owner": "",
+                    "parentId": group_id,
+                    "userId": user_a,
+                    "operation": "create",
                 },
             },
             ignore_keys={"timestamp"},
@@ -483,6 +475,16 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
         _cleanup_thread_context(device_a, device_b, assert_api, context)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("thread.update_and_leave.after_create_join.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatThreadManager.createChatThread")
+@pytest.mark.api("ChatThreadManager.joinChatThread")
+@pytest.mark.api("ChatThreadManager.updateChatThreadSubject")
+@pytest.mark.api("ChatThreadManager.leaveChatThread")
+@pytest.mark.api("ChatThreadManager.fetchJoinedChatThreadsWithParentId")
+@pytest.mark.clients("owner", "member")
+@pytest.mark.roles_mode("ordered")
 def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_a, user_b):
     """updateChatThreadSubject / leaveChatThread：更新子区名称后，B 退出子区并从已加入列表消失。"""
     context: dict = {}
@@ -517,20 +519,12 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
                 "type": "event",
                 "eventType": Cmd.onChatThreadUpdate.value,
                 "data": {
-                    "event": {
-                        "type": 2,
-                        "from": user_a,
-                        "thread": {
-                            "threadId": thread_id,
-                            "threadName": new_name,
-                            "owner": "",
-                            "parentId": group_id,
-                            "msgId": context["parent_msg_id"],
-                            "memberCount": 0,
-                            "messageCount": 0,
-                            "createAt": 0,
-                        },
-                    },
+                    "threadId": thread_id,
+                    "threadName": new_name,
+                    "owner": "",
+                    "parentId": group_id,
+                    "userId": user_a,
+                    "operation": "update",
                 },
             },
             ignore_keys={"timestamp"},
@@ -592,6 +586,14 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
         _cleanup_thread_context(device_a, device_b, assert_api, context)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("thread.destroy_event.after_create_join.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatThreadManager.createChatThread")
+@pytest.mark.api("ChatThreadManager.joinChatThread")
+@pytest.mark.api("ChatThreadManager.destroyChatThread")
+@pytest.mark.clients("owner", "member")
+@pytest.mark.roles_mode("ordered")
 def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, assert_api, user_a, user_b):
     """destroyChatThread：子区创建后由 owner 解散，群成员收到 onChatThreadDestroy 事件并携带子区信息。"""
     context: dict = {}
@@ -624,20 +626,12 @@ def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, 
                 "type": "event",
                 "eventType": Cmd.onChatThreadDestroy.value,
                 "data": {
-                    "event": {
-                        "type": 3,
-                        "from": user_a,
-                        "thread": {
-                            "threadId": thread_id,
-                            "threadName": context["thread_name"],
-                            "owner": "",
-                            "parentId": context["group_id"],
-                            "msgId": context["parent_msg_id"],
-                            "memberCount": 0,
-                            "messageCount": 0,
-                            "createAt": 0,
-                        },
-                    },
+                    "threadId": thread_id,
+                    "threadName": context["thread_name"],
+                    "owner": "",
+                    "parentId": context["group_id"],
+                    "userId": user_a,
+                    "operation": "destroy",
                 },
             },
             ignore_keys={"timestamp"},

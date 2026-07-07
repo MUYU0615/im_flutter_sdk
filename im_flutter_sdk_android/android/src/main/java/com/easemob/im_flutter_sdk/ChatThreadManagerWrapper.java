@@ -210,22 +210,30 @@ public class ChatThreadManagerWrapper extends Wrapper implements MethodChannel.M
         chatThreadChangeListener = new EMChatThreadChangeListener() {
             @Override
             public void onChatThreadCreated(EMChatThreadEvent event) {
-                post(() -> channel.invokeMethod(MethodKey.onChatThreadCreate, ChatThreadEventHelper.toJson(event)));
+                ListenerHandle.getInstance().addHandle(
+                        () -> post(() -> channel.invokeMethod(MethodKey.onChatThreadCreate, ChatThreadEventHelper.toJson(event)))
+                );
             }
 
             @Override
             public void onChatThreadUpdated(EMChatThreadEvent event) {
-                post(() -> channel.invokeMethod(MethodKey.onChatThreadUpdate, ChatThreadEventHelper.toJson(event)));
+                ListenerHandle.getInstance().addHandle(
+                        () -> post(() -> channel.invokeMethod(MethodKey.onChatThreadUpdate, ChatThreadEventHelper.toJson(event)))
+                );
             }
 
             @Override
             public void onChatThreadDestroyed(EMChatThreadEvent event) {
-                post(() -> channel.invokeMethod(MethodKey.onChatThreadDestroy, ChatThreadEventHelper.toJson(event)));
+                ListenerHandle.getInstance().addHandle(
+                        () -> post(() -> channel.invokeMethod(MethodKey.onChatThreadDestroy, ChatThreadEventHelper.toJson(event)))
+                );
             }
 
             @Override
             public void onChatThreadUserRemoved(EMChatThreadEvent event) {
-                post(() -> channel.invokeMethod(MethodKey.onUserKickOutOfChatThread, ChatThreadEventHelper.toJson(event)));
+                ListenerHandle.getInstance().addHandle(
+                        () -> post(() -> channel.invokeMethod(MethodKey.onUserKickOutOfChatThread, ChatThreadEventHelper.toJson(event)))
+                );
             }
         };
 
