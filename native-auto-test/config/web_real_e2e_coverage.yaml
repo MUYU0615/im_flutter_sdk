@@ -3626,24 +3626,25 @@ web_real_e2e:
       real_e2e_status: blocked
       tests: []
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-thread-lastmsg-current
-        --app-url http://127.0.0.1:8282 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 120 --startup-timeout 180 --flutter-timeout
-        240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_last_message_server_state
-        --target-platform web --web-sdk-runtime imsdk -q -s
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-thread-lastmsg-debug2
-        --web-sdk-mode real_sdk --headless-startup-wait 150 --startup-timeout
-        240 --flutter-timeout 300 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_last_message_server_state
+      - python3 -m src.tools.web_e2e_runner --run-id web-thread-last-message-recheck-20260707-000003
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_last_message_server_state
         --target-platform web -q -s
-      reason: Real Web SDK getChatThreadLastMessage is callable and returns entities[].
-        For a thread just created from a real parent group message, the bundled Web
-        SDK returns an empty result and the thread detail shows messageCount 0.
-        The current Flutter Web sendMessage adapter has no verified thread-message
-        conversation type to create a real message inside the thread, so there is
-        no verifiable real last-message server state to assert.
-      reason_zh: fetchLastMessageWithChatThreads 的真实 Web SDK 调用已经成功发起，
-        但对刚创建的线程读回时，返回的 lastMessage 仍然是空对象 {}，无法形成
-        可验证的真实服务端最后一条消息闭环，因此当前执行未通过。
+      - python3 -m src.tools.web_e2e_runner --run-id web-chat-thread-methods-probe-20260707-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chat_thread_manager_methods_without_global_login
+        --target-platform web -q -s
+      reason: The current real Web IMSDK high-level chatThreadManager does expose
+        getChatThreadLastMessageList, and the real fetchLastMessageWithChatThreads
+        path now invokes it successfully. But for a thread just created from a real
+        parent group message, the runtime still returns an empty result {} and the
+        created thread shows messageCount 0, so there is still no verifiable real
+        last-message server state to assert.
+      reason_zh: 当前真实 Web IMSDK 的高层 chatThreadManager 已经暴露
+        getChatThreadLastMessageList，fetchLastMessageWithChatThreads 真实链路也已成功
+        调到这条高层接口；但对刚创建的线程读回时，运行时仍然返回空对象 {}，且线程
+        自身 messageCount 仍为 0，因此当前依然无法形成可验证的真实“最后一条消息”
+        服务端闭环。
     removeMemberFromChatThread:
       real_e2e_status: supported
       tests:
