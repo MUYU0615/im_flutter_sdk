@@ -130,6 +130,23 @@ def test_real_web_change_chatroom_owner_probe_without_global_login(
     user_a,
     user_b,
 ):
+    token_a = get_user_access_token(user_a, "1")
+
+    logout = primary_device.call("Client", Cmd.logout.value, info={"unbindToken": False})
+    assert_api.assert_result_equals(logout, True)
+    login = primary_device.call(
+        "Client",
+        Cmd.loginWithAgoraToken.value,
+        info={"userId": user_a, "agoraToken": token_a},
+    )
+    assert_api.assert_result_equals(login, user_a)
+
+    rest_context = primary_device.call("Client", "dumpRealSdkRestContextState", info={})
+    rest_context_result = assert_api.get_result(rest_context)
+    assert isinstance(rest_context_result, dict)
+    assert rest_context_result.get("hasHighLevelClient") is True
+    assert rest_context_result.get("hasGetRestContext") is True
+
     room_id, _ = create_chatroom_or_skip(
         owner=user_a,
         name_prefix=f"web-real-owner-probe-{uuid.uuid4().hex[:8]}",
@@ -141,7 +158,14 @@ def test_real_web_change_chatroom_owner_probe_without_global_login(
             Cmd.changeChatRoomOwner.value,
             info={"roomId": room_id, "newOwner": user_b},
         )
-        result = assert_api.get_result(changed)
+        assert_api.assert_result_equals(changed, None)
+
+        detail = primary_device.call(
+            "ChatRoomManager",
+            Cmd.fetchChatRoomInfoFromServer.value,
+            info={"roomId": room_id},
+        )
+        result = assert_api.get_result(detail)
         assert isinstance(result, dict)
         assert result.get("roomId") == room_id
         assert result.get("owner") == user_b

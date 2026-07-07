@@ -166,6 +166,10 @@ class ClientWeb extends Client {
         return {
           method: realWebSdkSyncState(_realSdk?.rawClient),
         };
+      case 'dumpRealSdkRestContextState':
+        return {
+          method: _realSdk?.dumpRestContextState() ?? <String, dynamic>{},
+        };
       case 'getPendingRealClientEvents':
         return {
           method: _pendingRealClientEvents

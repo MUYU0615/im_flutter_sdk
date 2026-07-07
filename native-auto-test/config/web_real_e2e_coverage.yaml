@@ -2249,26 +2249,24 @@ web_real_e2e:
         unmuteChatRoomMember and verifies the user is removed from server mute
         list.
     changeChatRoomOwner:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_login_probe.py::test_real_web_change_chatroom_owner_probe_without_global_login
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-owner-probe-20260708-000002
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-owner-fix-20260708-000003
         --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
         --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         240 -- tests/web_real/test_real_web_login_probe.py::test_real_web_change_chatroom_owner_probe_without_global_login
         --target-platform web -q -s
       reason: >-
-        The latest focused real probe shows changeChatRoomOwner is no longer
-        blocked by the old runtime TypeError. The current Web path reaches a
-        REST-backed owner-transfer implementation, but it fails immediately with
-        `ValidationError: restBaseUrl is required`, so the blocker has moved to
-        missing REST context rather than missing runtime method exposure.
+        The latest focused real probe logs in through real IMSDK runtime, verifies
+        rest context is available, transfers chat room ownership through the
+        real Web REST-backed path, and then fetches room info from server to
+        confirm owner changed to the target user.
       reason_zh: >-
-        最新 focused real probe 已经证明 changeChatRoomOwner 不再卡在旧的
-        runtime TypeError。当前 Web 路径已经走到 REST-backed 的 owner 转移实现，
-        但会立刻报 `ValidationError: restBaseUrl is required`，因此当前阻塞点已经变成
-        REST context 缺失，而不是运行时入口不存在。
+        最新 focused real probe 在真实 IMSDK runtime 下完成登录，确认 REST
+        context 可用，通过真实 Web 的 REST-backed 路径执行聊天室 owner 转移，
+        然后再次从服务端读取聊天室详情，确认 owner 已变更为目标用户。
     addChatRoomAdmin:
       real_e2e_status: supported
       tests:

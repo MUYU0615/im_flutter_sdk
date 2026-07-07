@@ -3728,6 +3728,72 @@ class RealWebSdkClient {
     required String roomId,
     required String newOwner,
   }) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final context = js_util.callMethod<Object?>(
+        highLevelClient,
+        'getRestContext',
+        const [],
+      );
+      final contextMap = _asMap(js_util.dartify(context));
+      final restBaseUrl = contextMap['restBaseUrl']?.toString() ?? '';
+      final appKey = contextMap['appKey']?.toString() ?? '';
+      final token = contextMap['token']?.toString() ?? '';
+      final clientResource = contextMap['clientResource']?.toString() ?? '';
+      if (restBaseUrl.isEmpty ||
+          appKey.isEmpty ||
+          token.isEmpty ||
+          clientResource.isEmpty) {
+        throw StateError(
+          'Real Web SDK changeChatRoomOwner requires restBaseUrl/appKey/token/clientResource.',
+        );
+      }
+      final appKeyParts = appKey.split('#');
+      if (appKeyParts.length != 2) {
+        throw StateError('Invalid appKey for changeChatRoomOwner: $appKey');
+      }
+      final orgName = Uri.encodeComponent(appKeyParts[0]);
+      final appName = Uri.encodeComponent(appKeyParts[1]);
+      final uri = Uri.parse(
+        '$restBaseUrl/$orgName/$appName/chatrooms/${Uri.encodeComponent(roomId)}',
+      ).replace(
+        queryParameters: <String, String>{
+          'resource': clientResource,
+        },
+      );
+      final response = await web.window.fetch(
+        uri.toString().toJS,
+        web.RequestInit(
+          method: 'PUT',
+          headers: js_util.jsify({
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          }),
+          body: jsonEncode(<String, dynamic>{
+            'newowner': newOwner,
+          }).toJS,
+        ),
+      ).toDart;
+      final statusCode = response.status;
+      final body = (await response.text().toDart).toString();
+      if (statusCode < 200 || statusCode >= 300) {
+        _recordDebug('changeChatRoomOwner_error', {
+          'runtime': 'imsdk',
+          'statusCode': statusCode,
+          'body': body,
+        });
+        throw StateError(
+          'Real Web SDK changeChatRoomOwner failed: HTTP $statusCode $body',
+        );
+      }
+      _recordDebug('changeChatRoomOwner_success', {
+        'runtime': 'imsdk',
+        'roomId': roomId,
+        'newOwner': newOwner,
+      });
+      return;
+    }
     await _callRealSdkVoid('changeChatRoomOwner', [
       {
         'chatRoomId': roomId,
@@ -7532,11 +7598,11 @@ class RealWebSdkClient {
         '';
     final affiliations = _asMapList(item['affiliations']);
     final ownerIds = _chatRoomAffiliationIds(affiliations, 'owner');
-    final owner = item['owner']?.toString() ??
-        fallback['owner']?.toString() ??
+    final owner = _chatRoomUserId(item['owner']) ??
+        _chatRoomUserId(fallback['owner']) ??
         (ownerIds.isNotEmpty ? ownerIds.first : '');
     final memberList = <String>{
-      ..._asStringList(item['memberList'] ?? item['members']),
+      ..._chatRoomUserIds(item['memberList'] ?? item['members']),
       ..._chatRoomAffiliationIds(affiliations, 'member'),
       if (owner.isNotEmpty) owner,
     }.toList()
@@ -7583,6 +7649,39 @@ class RealWebSdkClient {
           0,
       'muteExpireTimestamp': _asInt(item['muteExpireTimestamp']) ?? 0,
     };
+  }
+
+  String? _chatRoomUserId(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is Map) {
+      final map = _asMap(value);
+      final userId = map['userId']?.toString() ??
+          map['memberId']?.toString() ??
+          map['username']?.toString() ??
+          map['user']?.toString();
+      if (userId != null && userId.isNotEmpty) {
+        return userId;
+      }
+    }
+    final text = value.toString();
+    return text.isEmpty ? null : text;
+  }
+
+  List<String> _chatRoomUserIds(Object? raw) {
+    final result = <String>{};
+    if (raw is List) {
+      for (final item in raw) {
+        final userId = _chatRoomUserId(item);
+        if (userId != null && userId.isNotEmpty) {
+          result.add(userId);
+        }
+      }
+      final sorted = result.toList()..sort();
+      return sorted;
+    }
+    return _asStringList(raw);
   }
 
   List<String> _chatRoomAffiliationIds(
@@ -8400,6 +8499,56 @@ class RealWebSdkClient {
       'methods': sorted,
     });
     return sorted;
+  }
+
+  Map<String, dynamic> dumpRestContextState() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String, dynamic>{
+        'hasHighLevelClient': false,
+        'hasGetRestContext': false,
+      };
+    }
+    final getRestContext = js_util.getProperty<Object?>(client, 'getRestContext');
+    final result = <String, dynamic>{
+      'hasHighLevelClient': true,
+      'hasGetRestContext': getRestContext != null,
+    };
+    if (getRestContext == null) {
+      _recordDebug('restContext_state', {
+        'runtime': 'imsdk',
+        ...result,
+      });
+      return result;
+    }
+    try {
+      final context = js_util.callMethod<Object?>(
+        client,
+        'getRestContext',
+        const [],
+      );
+      final contextMap = _asMap(js_util.dartify(context));
+      result.addAll({
+        'getRestContextThrows': false,
+        'hasRestBaseUrl':
+            contextMap['restBaseUrl']?.toString().isNotEmpty == true,
+        'hasAppKey': contextMap['appKey']?.toString().isNotEmpty == true,
+        'hasUserId': contextMap['userId']?.toString().isNotEmpty == true,
+        'hasToken': contextMap['token']?.toString().isNotEmpty == true,
+        'hasClientResource':
+            contextMap['clientResource']?.toString().isNotEmpty == true,
+      });
+    } catch (e) {
+      result.addAll({
+        'getRestContextThrows': true,
+        'error': _jsErrorDescription(e),
+      });
+    }
+    _recordDebug('restContext_state', {
+      'runtime': 'imsdk',
+      ...result,
+    });
+    return result;
   }
 
   Map<String, dynamic> dumpContactSnapshot() {
