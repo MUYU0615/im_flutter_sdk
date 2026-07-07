@@ -22,11 +22,11 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
   - manager: ChatManager
     api: asyncFilterConversationsFromDB
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_conversations_sort.py
+    reason_zh: "Android 原生 asyncFilterConversationsFromDB 已由 Flutter ChatManager.filterConversationsFromDB 等价暴露；Android wrapper 调用真实本地会话过滤接口，自动化覆盖过滤条件与非法 mark 参数。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: asyncRecallMessage
     action: direct_e2e_case
@@ -118,11 +118,12 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_crud.py
   - manager: ChatManager
     api: setVoiceMessageListened
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 setVoiceMessageListened 已由 Flutter ChatManager.setVoiceMessageListened 同名暴露；Android wrapper 真实更新本地语音消息已播放状态，自动化覆盖保存语音消息后读回 isListened 变化。"
+    target_case: native-auto-test/tests/chat/test_chat_crud.py
   - manager: ChatManager
     api: updateParticipant
     action: platform_native_missing
@@ -132,18 +133,19 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: voiceFileToText
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+    reason_zh: "Android 原生 voiceFileToText 已由 Flutter ChatManager.voiceFileToText 同名暴露；Android wrapper 调用真实语音转写接口，自动化覆盖非法音频参数错误路径。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: voiceMessageToText
-    action: expose_wrapper
+    action: direct_e2e_case
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 SDK 提供聊天/会话业务能力，属于 App 可用能力，需要补 Flutter wrapper 并补双端 E2E。"
-    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+    requires_positive_case: true
+    reason_zh: "Android 原生 voiceMessageToText 已由 Flutter ChatManager.voiceMessageToText 同名暴露；Android wrapper 调用真实语音消息转写接口，自动化覆盖本地语音消息转写链路。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatRoomManager
     api: asyncAddChatRoomAdmin
     action: direct_e2e_case
