@@ -423,6 +423,22 @@ make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5558 --run-id an
 ```text
 out/log/android/<run_id>-android-pytest.html
 out/log/android/<run_id>-allure-results/
+out/test-results/<run_id>-case-results.json
+out/test-results/<run_id>-case-results.csv
+```
+
+Android 三个入口的产物差异：
+
+| 入口 | 主要用途 | HTML / Allure | case-results | API gap backlog |
+|---|---|---:|---:|---:|
+| `make e2e-full-run` | 正式发版 E2E。`android-android` 会委托 Android runner，执行后继续生成覆盖缺口。 | 是 | 是 | 是，`out/api-coverage/<run_id>-gap-backlog.csv` |
+| `make android-real-sanity` | 固定 Android 代表性健康检查。 | 是 | 是 | 否 |
+| `make android-real-e2e` | 底层 Android runner 调试、单 case 验证或设备链路排查。 | 是 | 是 | 否 |
+
+如果需要从 `android-real-sanity` 或 `android-real-e2e` 的结果补生成 API gap backlog，应在该 run 完成后显式执行：
+
+```bash
+make e2e-api-coverage ARGS="--run-id <run_id> --case-results out/test-results/<run_id>-case-results.json --output out/api-coverage/<run_id>-gap-backlog.csv --pytest-report out/log/android/<run_id>-android-pytest.html --platform android --sdk-version <version>"
 ```
 
 如果只想直接复用已在线客户端执行 pytest，可使用 `make test-allure`；这种方式不会负责设备启动、旧 App 卸载、SDK init 或 WebSocket topic 编排。
