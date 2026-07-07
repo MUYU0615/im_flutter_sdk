@@ -3177,7 +3177,7 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-group-changed-recheck-20260707-000003
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-changed-recheck-20260708-000001
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
         --target-platform web --web-sdk-runtime imsdk -q -s
