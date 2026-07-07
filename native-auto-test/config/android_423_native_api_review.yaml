@@ -627,6 +627,62 @@ native_api_review:
     batch: conversation_model_review
     reason_zh: "该 Android 原生会话对象方法已由现有会话消息插入/搜索类 wrapper 流程间接覆盖，统计应绑定到对应 E2E。"
     target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getAllMessages
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getExtField
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getMessage
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getMessageAttachmentPath
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getPinnedTime
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: getType
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: isChatThread
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ConversationManager
+    api: isGroup
+    action: model_property_covered
+    priority: P2
+    batch: conversation_model_review
+    reason_zh: "该 API 是 EMConversation 对象状态/字段能力，Flutter 侧通过会话查询、会话标记和序列化断言覆盖，不需要独立暴露原生对象方法。"
+    target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
   - manager: ChatThreadManager
     api: createChatThread
     action: direct_e2e_case

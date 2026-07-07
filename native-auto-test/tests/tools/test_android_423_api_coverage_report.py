@@ -722,3 +722,20 @@ def test_review_actions_can_override_wrapper_missing_conclusion():
     assert mapping_row["review_action"] == "not_applicable"
     assert mapping_row["coverage_conclusion"] == "not_applicable"
     assert mapping_row["native_test_requirement"] == "not_applicable"
+
+
+def test_covered_by_case_rows_default_to_direct_e2e_review_action_when_unreviewed():
+    rows = build_rows()
+    if not any(row["row_kind"] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "native_android_api"
+    }
+
+    row = row_by_key[("ChatManager", "ackMessageRead")]
+    assert row["coverage_conclusion"] == "covered_by_case"
+    assert row["native_test_requirement"] == "direct_e2e"
+    assert row["review_action"] == "direct_e2e_case"

@@ -1665,13 +1665,16 @@ def build_rows() -> list[dict[str, str]]:
             is_automation_covered = has_required_automation if review.get("action") == "direct_e2e_case" and wrappers else automation_positive_refs > 0
         else:
             is_automation_covered = bool(automation_infos) or assessment["coverage_conclusion"] == "indirect_covered_by_case"
+        row_review_action = review.get("action", "")
+        if not row_review_action and assessment["coverage_conclusion"] == "covered_by_case" and assessment["native_test_requirement"] == "direct_e2e":
+            row_review_action = "direct_e2e_case"
         rows.append(
             {
                 "manager": manager,
                 "api": method,
                 "row_kind": "native_android_api",
                 **assessment,
-                "review_action": review.get("action", ""),
+                "review_action": row_review_action,
                 "review_priority": review.get("priority", ""),
                 "review_batch": review.get("batch", ""),
                 "review_requires_positive_case": review.get("requires_positive_case", "").lower(),
