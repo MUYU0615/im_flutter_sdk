@@ -1246,7 +1246,7 @@ def scan_ios() -> dict[tuple[str, str], dict[str, str]]:
             continue
         text = _read(path)
         matches = re.finditer(
-            r"\[\s*(\w+)\s+isEqualToString:call\.method\s*\]\)\s*\{\s*\[self\s+([A-Za-z_]\w*)",
+            r"\[\s*(\w+)\s+isEqual(?:ToString)?:call\.method\s*\]\)\s*\{\s*\[self\s+([A-Za-z_]\w*)",
             text,
             re.S,
         )
@@ -1263,7 +1263,7 @@ def scan_ios() -> dict[tuple[str, str], dict[str, str]]:
                 "ios_line": str(_line_no(text, match.start())),
                 "ios_evidence": evidence or "入口存在；实现体未扫描到直接 EMClient/EM* SDK 调用。",
             }
-        for match in re.finditer(r"\[\s*(\w+)\s+isEqualToString:call\.method\s*\]", text):
+        for match in re.finditer(r"\[\s*(\w+)\s+isEqual(?:ToString)?:call\.method\s*\]", text):
             api = keys.get(match.group(1))
             if api and (manager, api) not in output:
                 output[(manager, api)] = {
