@@ -671,6 +671,68 @@ def test_chat_manager_update_participant_invalid_required_params(device_a, asser
     )
 
 
+@pytest.mark.case_id("chat.filter_conversations_from_db.current_behavior")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.asyncFilterConversationsFromDB")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_filter_conversations_from_db_current_behavior(device_a, device_b, assert_api, user_a, user_b):
+    """asyncFilterConversationsFromDB：发送消息创建本地会话后，按本地 filter 查询会话列表。"""
+    _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-filter-db-{uuid.uuid4().hex[:8]}")
+
+    resp = device_a.call(
+        "ChatManager",
+        Cmd.asyncFilterConversationsFromDB.value,
+        info={"hasUnread": False, "pageSize": 1, "sort": True},
+    )
+    result = resp.get("result") or []
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.asyncFilterConversationsFromDB.value,
+            "device": "deviceA",
+            "result": result,
+        },
+        ignore_keys={"sequence"},
+    )
+    assert isinstance(result, list), f"asyncFilterConversationsFromDB 应返回 list: {resp}"
+    assert len(result) <= 1, f"pageSize=1 时最多返回 1 条会话: {result}"
+    if result:
+        assert_api.assert_response_matches(
+            result[0],
+            expected={
+                "type": 0,
+                "isThread": False,
+            },
+            ignore_keys={"convId", "isPinned", "pinnedTime", "marks", "ext"},
+        )
+
+
+@pytest.mark.case_id("chat.filter_conversations_from_db.invalid_mark")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.asyncFilterConversationsFromDB")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_filter_conversations_from_db_invalid_mark(device_a, assert_api):
+    """asyncFilterConversationsFromDB：非法 mark 返回参数错误，不应伪装成 MissingPlugin。"""
+    resp = device_a.call(
+        "ChatManager",
+        Cmd.asyncFilterConversationsFromDB.value,
+        info={"mark": 9999, "pageSize": 1, "sort": True},
+    )
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.asyncFilterConversationsFromDB.value,
+            "device": "deviceA",
+            "result": {"code": 110},
+        },
+        ignore_keys={"sequence", "description"},
+    )
+
+
 @pytest.mark.case_id("chat.group_ack_boundary_methods.current_behavior")
 @pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.ackGroupMessageRead")

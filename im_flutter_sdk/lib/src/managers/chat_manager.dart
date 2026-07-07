@@ -1376,6 +1376,55 @@ class EMChatManager {
   }
 
   /// ~english
+  /// Filters conversations from the local database.
+  ///
+  /// Supported filters: [hasUnread], [pinned], [mark], [pageSize], and [sort].
+  ///
+  /// **Return** The filtered local conversations.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 从本地数据库中过滤会话。
+  ///
+  /// 支持 [hasUnread]、[pinned]、[mark]、[pageSize] 和 [sort]。
+  ///
+  /// **Return** 过滤后的本地会话列表。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<List<EMConversation>> filterConversationsFromDB({
+    bool? hasUnread,
+    bool? pinned,
+    ConversationMarkType? mark,
+    int pageSize = 0,
+    bool sort = true,
+  }) async {
+    try {
+      Map req = {
+        if (hasUnread != null) "hasUnread": hasUnread,
+        if (pinned != null) "pinned": pinned,
+        if (mark != null) "mark": mark.index,
+        "pageSize": pageSize,
+        "sort": sort,
+      };
+      Map result = await Client.instance.chatManager.callNativeMethod(
+        ChatMethodKeys.asyncFilterConversationsFromDB,
+        req,
+      );
+      EMError.hasErrorFromResult(result);
+      List<EMConversation> conversationList = [];
+      result[ChatMethodKeys.asyncFilterConversationsFromDB]?.forEach((element) {
+        conversationList.add(EMConversation.fromJson(element));
+      });
+      return conversationList;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
   /// Downloads the thumbnail if the message has not been downloaded before or if the download fails.
   ///
   /// Param [message] The message object.

@@ -95,6 +95,8 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 setVoiceMessageListened(params, call.method, result);
             } else if (MethodKey.updateParticipant.equals(call.method)) {
                 updateParticipant(params, call.method, result);
+            } else if (MethodKey.asyncFilterConversationsFromDB.equals(call.method)) {
+                asyncFilterConversationsFromDB(params, call.method, result);
             } else if (MethodKey.getAllConversations.equals(call.method)) {
                 getAllConversations(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
@@ -536,6 +538,54 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         asyncRunnable(() -> {
             boolean updated = EMClient.getInstance().chatManager().updateParticipant(from, changeTo);
             onSuccess(result, channelName, updated);
+        });
+    }
+
+    private void asyncFilterConversationsFromDB(JSONObject params, String channelName, Result result) throws JSONException {
+        final boolean hasUnread = params.optBoolean("hasUnread", false);
+        final boolean filterUnread = params.has("hasUnread");
+        final boolean pinned = params.optBoolean("pinned", false);
+        final boolean filterPinned = params.has("pinned");
+        final boolean sort = params.optBoolean("sort", true);
+        final int pageSize = params.optInt("pageSize", 0);
+        final Integer mark = params.has("mark") ? params.getInt("mark") : null;
+        if (mark != null && (mark < 0 || mark >= EMConversation.EMMarkType.values().length)) {
+            throw new JSONException("mark out of range: " + mark);
+        }
+
+        EMCustomConversationFilter filter = new EMCustomConversationFilter() {
+            @Override
+            public boolean filter(EMConversation conversation) {
+                if (filterUnread && (conversation.getUnreadMsgCount() > 0) != hasUnread) {
+                    return false;
+                }
+                if (filterPinned && conversation.isPinned() != pinned) {
+                    return false;
+                }
+                if (mark != null) {
+                    Set<EMConversation.EMMarkType> marks = conversation.marks();
+                    if (marks == null || !marks.contains(EMConversation.EMMarkType.values()[mark])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+
+        EMClient.getInstance().chatManager().asyncFilterConversationsFromDB(filter, sort, new EMValueWrapperCallBack<List<EMConversation>>(result, channelName) {
+            @Override
+            public void onSuccess(List<EMConversation> object) {
+                List<Map> conversations = new ArrayList<>();
+                int count = 0;
+                for (EMConversation conversation : object) {
+                    if (pageSize > 0 && count >= pageSize) {
+                        break;
+                    }
+                    conversations.add(ConversationHelper.toJson(conversation));
+                    count++;
+                }
+                updateObject(conversations);
+            }
         });
     }
 
