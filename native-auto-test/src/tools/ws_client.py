@@ -454,19 +454,21 @@ class DeviceConnection:
     def _run_async_loop(self) -> None:
         async def run() -> None:
             try:
-                print(
-                    f"[DeviceConnection] connect topic={self._topic} device={self._device} url={self._url}",
-                    flush=True,
-                )
+                if self._debug_dump:
+                    print(
+                        f"[DeviceConnection] connect topic={self._topic} device={self._device} url={self._url}",
+                        flush=True,
+                    )
                 async with websockets.connect(
                     self._url,
                     open_timeout=get_connect_timeout(),
                     close_timeout=5,
                 ) as ws:
-                    print(
-                        f"[DeviceConnection] connected topic={self._topic} device={self._device}",
-                        flush=True,
-                    )
+                    if self._debug_dump:
+                        print(
+                            f"[DeviceConnection] connected topic={self._topic} device={self._device}",
+                            flush=True,
+                        )
                     loop = asyncio.get_event_loop()
                     response_timeout = get_response_timeout()
 
@@ -534,13 +536,14 @@ class DeviceConnection:
                                 continue
                             req, seq = result
                             try:
-                                print(
-                                    "[DeviceConnection] send "
-                                    f"topic={self._topic} device={self._device} "
-                                    f"manager={req.get('manager')} cmd={req.get('cmd')} "
-                                    f"id={req.get('id')} sequence={req.get('sequence')}",
-                                    flush=True,
-                                )
+                                if self._debug_dump:
+                                    print(
+                                        "[DeviceConnection] send "
+                                        f"topic={self._topic} device={self._device} "
+                                        f"manager={req.get('manager')} cmd={req.get('cmd')} "
+                                        f"id={req.get('id')} sequence={req.get('sequence')}",
+                                        flush=True,
+                                    )
                                 await ws.send(json.dumps(req))
                             except Exception:
                                 with self._lock:
