@@ -306,6 +306,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
                 "needGroupAck": False,
                 "isThread": False,
                 "isContentReplaced": False,
+                "isListened": False,
                 "broadcast": False,
                 "onlineState": True,
                 "body": {"targetLanguages": [], "translations": {}, "type": 0, "content": content},
@@ -336,6 +337,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
                     "needGroupAck": False,
                     "isThread": False,
                     "isContentReplaced": False,
+                    "isListened": False,
                     "deliverOnlineOnly": False,
                     "body": {"type": 0, "content": content, "translations": {}},
                 },
@@ -349,6 +351,14 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
     )
 
 
+@pytest.mark.case_id("chat.conversation_marks_and_fetch_options.success")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.addRemoteAndLocalConversationsMark")
+@pytest.mark.api("ChatManager.fetchConversationsByOptions")
+@pytest.mark.api("ChatManager.deleteRemoteAndLocalConversationsMark")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_conversation_marks_and_fetch_options(device_a, device_b, assert_api, user_a, user_b):
     """addRemoteAndLocalConversationsMark/deleteRemoteAndLocalConversationsMark/fetchConversationsByOptions：添加会话标记后按 options 查询，再移除标记。"""
     _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-mark-{uuid.uuid4().hex[:8]}")
@@ -478,6 +488,13 @@ def test_chat_manager_delete_all_message_and_conversation_local(device_a, device
     )
 
 
+@pytest.mark.case_id("chat.message_object_boundary_methods.current_behavior")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.importMessages")
+@pytest.mark.api("ChatManager.updateChatMessage")
+@pytest.mark.api("ChatManager.resendMessage")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user_a, user_b):
     """resendMessage/updateChatMessage/importMessages：使用本地构造消息对象覆盖重发、更新和导入的边界/当前返回。"""
     msg_id = f"chat-object-{uuid.uuid4().hex[:8]}"
@@ -527,6 +544,7 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
                 "convId": user_b,
                 "chatType": 0,
                 "direction": 0,
+                "isListened": False,
                 "body": updated_body,
             },
         },
@@ -563,6 +581,7 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
                 "convId": user_b,
                 "chatType": 0,
                 "direction": 0,
+                "isListened": False,
                 "body": updated_body,
             },
         },
