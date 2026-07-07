@@ -525,23 +525,31 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "onTokenWillExpire|renewToken" im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real runtime exposes renewToken execution, but neither
-        the runtime event handler nor the JSON bridge wires a verified real Web
-        SDK onTokenWillExpire callback.
-      reason_zh: 当前 Web 真实 runtime 只暴露了 `renewToken` 执行能力，但无论
-        runtime 事件 handler 还是 JSON bridge，都没有接入可验证的真实
-        `onTokenWillExpire` 回调。
+      - rg -n "TOKEN_EXPIRED|renewToken"
+        im_flutter_test/web/vendor/easemob/Easemob-chat.js
+      reason: Current Web real runtime exposes renewToken execution, and the
+        bundled Web SDK still contains low-level auth/session status enums such
+        as TOKEN_EXPIRED, but the high-level IMSDK runtime handler map and JSON
+        bridge do not expose a consumable onTokenWillExpire callback.
+      reason_zh: 当前 Web 真实 runtime 暴露了 `renewToken` 执行能力，vendor Web
+        SDK 里也仍能看到 `TOKEN_EXPIRED` 这类底层鉴权/会话状态枚举，但高层 IMSDK
+        runtime handler 和 JSON bridge 都没有把可消费的
+        `onTokenWillExpire` 回调暴露出来。
     onTokenDidExpire:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "onTokenDidExpire|renewToken" im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real runtime exposes renewToken execution, but neither
-        the runtime event handler nor the JSON bridge wires a verified real Web
-        SDK onTokenDidExpire callback.
-      reason_zh: 当前 Web 真实 runtime 只暴露了 `renewToken` 执行能力，但无论
-        runtime 事件 handler 还是 JSON bridge，都没有接入可验证的真实
-        `onTokenDidExpire` 回调。
+      - rg -n "TOKEN_EXPIRED|renewToken"
+        im_flutter_test/web/vendor/easemob/Easemob-chat.js
+      reason: Current Web real runtime exposes renewToken execution, and the
+        bundled Web SDK still contains low-level auth/session status enums such
+        as TOKEN_EXPIRED, but the high-level IMSDK runtime handler map and JSON
+        bridge do not expose a consumable onTokenDidExpire callback.
+      reason_zh: 当前 Web 真实 runtime 暴露了 `renewToken` 执行能力，vendor Web
+        SDK 里也仍能看到 `TOKEN_EXPIRED` 这类底层鉴权/会话状态枚举，但高层 IMSDK
+        runtime handler 和 JSON bridge 都没有把可消费的
+        `onTokenDidExpire` 回调暴露出来。
     onAppActiveNumberReachLimit:
       real_e2e_status: blocked
       tests: []
