@@ -108,6 +108,52 @@ def test_real_web_chat_room_join_get_all_and_leave(
         safe_delete_chatroom(room_id)
 
 
+def test_real_web_fetch_public_chat_rooms_includes_created_room(
+    secondary_device,
+    assert_api,
+    user_a,
+):
+    room_id, room_name = create_chatroom_or_skip(
+        owner=user_a,
+        name_prefix=f"real_web_public_room_{uuid.uuid4().hex[:8]}",
+        desc_prefix="real_web_public_room",
+    )
+    try:
+        join = secondary_device.call(
+            "ChatRoomManager",
+            Cmd.joinChatRoom.value,
+            info={"roomId": room_id, "leaveOtherRooms": False},
+        )
+        join_result = assert_api.get_result(join)
+        assert isinstance(join_result, dict)
+        assert join_result.get("roomId") == room_id
+        assert join_result.get("name") == room_name
+
+        public_rooms = secondary_device.call(
+            "ChatRoomManager",
+            Cmd.fetchPublicChatRoomsFromServer.value,
+            info={"pageNum": 1, "pageSize": 50},
+        )
+        public_rooms_result = assert_api.get_result(public_rooms)
+        assert isinstance(public_rooms_result, dict)
+        assert public_rooms_result.get("pageNum") == 1
+        assert public_rooms_result.get("pageSize") == 50
+        assert isinstance(public_rooms_result.get("totalSize"), int)
+        public_room_list = public_rooms_result.get("list")
+        assert isinstance(public_room_list, list)
+        if room_id not in _room_ids(public_room_list):
+            debug_after_public = secondary_device.call(
+                "Client", "getRealSdkDebug", info={}
+            )
+            pytest.fail(
+                f"public chat room list did not include created room: "
+                f"room_id={room_id}; result={public_rooms_result!r}; "
+                f"debug={assert_api.get_result(debug_after_public)!r}"
+            )
+    finally:
+        safe_delete_chatroom(room_id)
+
+
 def test_real_web_chat_room_announcement_changed_event_imsdk_runtime(
     primary_device,
     secondary_device,

@@ -2103,32 +2103,24 @@ web_real_e2e:
         ChatRoomManager.leaveChatRoom path and verifies the room no longer appears
         in the joined room list.
     fetchPublicChatRoomsFromServer:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
-      - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
+      - tests/web_real/test_real_web_chat_room.py::test_real_web_fetch_public_chat_rooms_includes_created_room
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-public-recheck-20260708-000002
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-public-focused-20260708-000001
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
-        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_fetch_public_chat_rooms_includes_created_room
         --target-platform web --web-sdk-runtime imsdk -q -s
-      - tests/chatroom/test_chatroom_server_state.py::test_chatroom_fetch_public_chat_rooms_from_server_success
-      reason: The current real Web IMSDK path now resolves to chatRoomManager.getChatRoomList
-        instead of failing on a missing getChatRooms method, but the returned public
-        room page still comes back with an empty list and does not include the newly
-        created server room. The latest focused run also shows the surrounding real
-        room chain already succeeds (joinChatRoom/getChatRoom/fetchChatRoomInfoFromServer)
-        and the Web debug log contains no getChatRoomList runtime error, so the
-        current Web result is a real behavior gap rather than a missing-method
-        failure or an unproven fixture assumption. The same REST-created room
-        shape is already treated as a valid public-room precondition in the
-        cross-platform chatroom server-state suite.
-      reason_zh: 当前真实 Web IMSDK 已经改为调用 chatRoomManager.getChatRoomList，
-        不再因为缺少 getChatRooms 方法直接报错；但返回的公共聊天室分页结果仍然是空列表，
-        新创建的服务端聊天室没有出现在结果中。最新 focused run 也已经证明周边真实房间链路
-        （joinChatRoom / getChatRoom / fetchChatRoomInfoFromServer）都是成功的，
-        且 Web debug 中没有 getChatRoomList 运行时错误，因此当前结论属于真实行为缺口，
-        不是缺方法报错，也不是前置假设未被证明。与此同时，同样由 REST 创建的聊天室前置
-        已经被通用聊天室服务端状态用例当作有效 public-room 造数前提使用。
+      reason: The latest focused real run shows the Web IMSDK high-level
+        chatRoomManager.getChatRoomList raw return already contains the newly
+        created public room in items[], and after aligning the Flutter Web
+        wrapper to accept the current items/total shape, fetchPublicChatRoomsFromServer
+        now returns a non-empty page that includes the REST-created room.
+      reason_zh: 最新 focused real run 已经证明 Web IMSDK 高层
+        chatRoomManager.getChatRoomList 的原始返回 items[] 本身就包含新创建的公共聊天室；
+        在 Flutter Web wrapper 对齐当前 items/total 返回形态后，
+        fetchPublicChatRoomsFromServer 现在已经能够返回非空分页结果，并包含该
+        REST 创建的聊天室。
     fetchChatRoomInfoFromServer:
       real_e2e_status: supported
       tests:
@@ -2152,15 +2144,31 @@ web_real_e2e:
         getChatRoomDetails path and verifies roomId/name against the REST-created
         server room.
     getAllChatRooms:
-      real_e2e_status: supported
+      real_e2e_status: blocked
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-real-chatroom-file5 --web-sdk-mode
-        real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
-      reason: The test queries the real Web SDK joined chat room list after join
-        and again after leave, verifying the server membership state changes.
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-public-fix-20260708-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
+        --target-platform web --web-sdk-runtime imsdk -q -s
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-methods-probe-20260708-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chatroom_manager_methods_without_global_login
+        --target-platform web -q -s
+      reason: The latest real join/public-room run now proves fetchPublicChatRoomsFromServer
+        is working, but getAllChatRooms still fails earlier with TypeError because
+        the current Web real wrapper calls a non-existent joined-room-list entry.
+        The chatRoomManager method probe confirms the high-level runtime exposes
+        getChatRoomList but not getJoinedChatRoomList, so the current blocked
+        reason is a high-level joined-room-list API gap rather than a room-membership
+        assertion failure.
+      reason_zh: 最新真实 join/public-room run 已经证明
+        fetchPublicChatRoomsFromServer 可以工作，但 getAllChatRooms 仍然会更早地因
+        TypeError 失败；根因是当前 Web real wrapper 还在调用一个不存在的 joined-room
+        list 入口。chatRoomManager 方法面 probe 也已经证明高层 runtime 暴露的是
+        getChatRoomList，而不是 getJoinedChatRoomList，因此这条当前 blocked 的性质
+        是高层 joined-room-list API 缺口，不是聊天室加入状态断言失败。
     createChatRoom:
       real_e2e_status: blocked
       tests:
@@ -3704,16 +3712,20 @@ web_real_e2e:
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chat_thread_manager_methods_without_global_login
         --target-platform web -q -s
-      reason: The current real Web IMSDK high-level chatThreadManager does expose
-        getChatThreadLastMessageList, and the real fetchLastMessageWithChatThreads
-        path now invokes it successfully. But for a thread just created from a real
-        parent group message, the latest focused run shows the high-level raw return
-        itself is already `items=[{chatThreadId, lastMessage: None}]`, the wrapped
-        result therefore stays `{}`, and the created thread shows messageCount 0.
-        So there is still no verifiable real last-message server state to assert.
-      reason_zh: 当前真实 Web IMSDK 的高层 chatThreadManager 已经暴露
-        getChatThreadLastMessageList，fetchLastMessageWithChatThreads 真实链路也已成功
-        调到这条高层接口；但最新 focused run 已经证明其高层原始返回本身就是
+      reason: >-
+        The current real Web IMSDK high-level chatThreadManager does expose
+        getChatThreadLastMessageList, and the real
+        fetchLastMessageWithChatThreads path now invokes it successfully. But
+        for a thread just created from a real parent group message, the latest
+        focused run shows the high-level raw return itself is already
+        `items=[{chatThreadId, lastMessage: None}]`, the wrapped result
+        therefore stays `{}`, and the created thread shows messageCount 0. So
+        there is still no verifiable real last-message server state to assert.
+      reason_zh: >-
+        当前真实 Web IMSDK 的高层 chatThreadManager 已经暴露
+        getChatThreadLastMessageList，fetchLastMessageWithChatThreads
+        真实链路也已成功调到这条高层接口；但最新 focused run
+        已经证明其高层原始返回本身就是
         `items=[{chatThreadId, lastMessage: None}]`，因此包装后的结果仍然是空对象
         `{}`，且线程自身 messageCount 仍为 0，所以当前依然无法形成可验证的真实
         “最后一条消息”服务端闭环。

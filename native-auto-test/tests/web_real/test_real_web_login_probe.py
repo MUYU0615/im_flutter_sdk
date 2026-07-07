@@ -63,7 +63,8 @@ def test_real_web_dump_chatroom_manager_methods_without_global_login(
     result = assert_api.get_result(methods)
     assert isinstance(result, list)
     assert result, result
-    assert "destroyChatRoom" not in result or "deleteChatRoom" in result or "destroyChatRoom" in result
+    assert "getChatRoomList" in result
+    assert "getJoinedChatRoomList" not in result
 
 
 def test_real_web_dump_group_manager_methods_without_global_login(

@@ -4032,6 +4032,12 @@ class RealWebSdkClient {
       );
       final result = await js_util.promiseToFuture<Object?>(promise as Object);
       final raw = js_util.dartify(result);
+      _recordDebug('getChatRoomList_raw', {
+        'runtime': 'imsdk',
+        'pageNum': pageNum,
+        'pageSize': pageSize,
+        'raw': raw,
+      });
       final rawMap = raw is Map ? _asMap(raw) : const <String, dynamic>{};
       final data = rawMap['data'];
       final dataMap = _asMap(data);
@@ -4039,16 +4045,21 @@ class RealWebSdkClient {
           ? data
           : dataMap['data'] is List
               ? dataMap['data']
+              : dataMap['items'] is List
+                  ? dataMap['items']
               : dataMap['list'] is List
                   ? dataMap['list']
-                  : rawMap['entities'] is List
-                      ? rawMap['entities']
-                      : const [];
+                  : rawMap['items'] is List
+                      ? rawMap['items']
+                      : rawMap['entities'] is List
+                          ? rawMap['entities']
+                          : const [];
       final rooms = _asMapList(source).map(_normalizeChatRoom).toList();
       return {
         'pageNum': pageNum,
         'pageSize': pageSize,
         'totalSize': _asInt(rawMap['count']) ??
+            _asInt(rawMap['total']) ??
             _asInt(dataMap['count']) ??
             _asInt(dataMap['total']) ??
             rooms.length,
