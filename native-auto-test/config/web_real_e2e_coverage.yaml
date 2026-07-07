@@ -2115,15 +2115,20 @@ web_real_e2e:
       reason: The current real Web IMSDK path now resolves to chatRoomManager.getChatRoomList
         instead of failing on a missing getChatRooms method, but the returned public
         room page still comes back with an empty list and does not include the newly
-        created server room. The same REST-created room shape is already treated as
-        a valid public-room precondition in the cross-platform chatroom server-state
-        suite, so the current Web result is a real behavior gap rather than an
-        unproven fixture assumption.
+        created server room. The latest focused run also shows the surrounding real
+        room chain already succeeds (joinChatRoom/getChatRoom/fetchChatRoomInfoFromServer)
+        and the Web debug log contains no getChatRoomList runtime error, so the
+        current Web result is a real behavior gap rather than a missing-method
+        failure or an unproven fixture assumption. The same REST-created room
+        shape is already treated as a valid public-room precondition in the
+        cross-platform chatroom server-state suite.
       reason_zh: 当前真实 Web IMSDK 已经改为调用 chatRoomManager.getChatRoomList，
         不再因为缺少 getChatRooms 方法直接报错；但返回的公共聊天室分页结果仍然是空列表，
-        新创建的服务端聊天室没有出现在结果中。与此同时，同样由 REST 创建的聊天室前置
-        已经被通用聊天室服务端状态用例当作有效 public-room 造数前提使用，因此当前 Web
-        结果属于真实行为缺口，而不是前置假设未被证明。
+        新创建的服务端聊天室没有出现在结果中。最新 focused run 也已经证明周边真实房间链路
+        （joinChatRoom / getChatRoom / fetchChatRoomInfoFromServer）都是成功的，
+        且 Web debug 中没有 getChatRoomList 运行时错误，因此当前结论属于真实行为缺口，
+        不是缺方法报错，也不是前置假设未被证明。与此同时，同样由 REST 创建的聊天室前置
+        已经被通用聊天室服务端状态用例当作有效 public-room 造数前提使用。
     fetchChatRoomInfoFromServer:
       real_e2e_status: supported
       tests:
