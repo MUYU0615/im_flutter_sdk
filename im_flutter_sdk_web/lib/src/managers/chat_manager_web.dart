@@ -277,10 +277,28 @@ class ChatManagerWeb extends ChatManager {
         }
         return {method: _getThreadConversation(map)};
       case _MethodKeys.loadAllConversations:
+      case _MethodKeys.getAllConversations:
         if (realSdk != null) {
           return {method: await realSdk.getServerConversations()};
         }
         return {method: _conversationList()};
+      case _MethodKeys.getConversationsByType:
+        if (realSdk != null) {
+          final type = _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
+          final all = await realSdk.getServerConversations();
+          return {
+            method: _asMapList(all)
+                .where((item) => (_asInt(item['type']) ?? 0) == type)
+                .toList(),
+          };
+        }
+        return {
+          method: _conversationList().where((item) {
+            return (_asInt(item['type']) ?? 0) == (_asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0);
+          }).toList(),
+        };
+      case _MethodKeys.cleanConversationsMemoryCache:
+        return {method: true};
       case _MethodKeys.getAllConversationsBySort:
       case _MethodKeys.getConversationsFromServer:
         if (realSdk != null) {

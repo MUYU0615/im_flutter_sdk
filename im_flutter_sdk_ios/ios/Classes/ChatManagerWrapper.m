@@ -123,6 +123,18 @@
         [self importMessages:call.arguments
                  channelName:call.method
                       result:result];
+    } else if ([ChatGetAllConversations isEqualToString:call.method]) {
+        [self getAllConversations:call.arguments
+                      channelName:call.method
+                           result:result];
+    } else if ([ChatGetConversationsByType isEqualToString:call.method]) {
+        [self getConversationsByType:call.arguments
+                         channelName:call.method
+                              result:result];
+    } else if ([ChatCleanConversationsMemoryCache isEqualToString:call.method]) {
+        [self cleanConversationsMemoryCache:call.arguments
+                                channelName:call.method
+                                     result:result];
     } else if ([ChatLoadAllConversations isEqualToString:call.method]) {
         [self loadAllConversations:call.arguments
                        channelName:call.method
@@ -748,6 +760,47 @@
         msg.body = body;
     }
     return [msg toJson];
+}
+
+- (void)getAllConversations:(NSDictionary *)param
+                    channelName:(NSString *)aChannelName
+                         result:(FlutterResult)result {
+    NSArray *conversations = [EMClient.sharedClient.chatManager getAllConversations];
+    NSMutableArray *conList = [NSMutableArray array];
+    for (EMConversation *conversation in conversations) {
+        [conList addObject:[conversation toJson]];
+    }
+    [self wrapperCallBack:result
+              channelName:aChannelName
+                    error:nil
+                   object:conList];
+}
+
+- (void)getConversationsByType:(NSDictionary *)param
+                   channelName:(NSString *)aChannelName
+                        result:(FlutterResult)result {
+    EMConversationType type = [EnumTools conversationTypeFromInt:[param[@"type"] intValue]];
+    NSArray *conversations = [EMClient.sharedClient.chatManager getAllConversations];
+    NSMutableArray *conList = [NSMutableArray array];
+    for (EMConversation *conversation in conversations) {
+        if (conversation.type == type) {
+            [conList addObject:[conversation toJson]];
+        }
+    }
+    [self wrapperCallBack:result
+              channelName:aChannelName
+                    error:nil
+                   object:conList];
+}
+
+- (void)cleanConversationsMemoryCache:(NSDictionary *)param
+                          channelName:(NSString *)aChannelName
+                               result:(FlutterResult)result {
+    [EMClient.sharedClient.chatManager clearConversationMemoryCache];
+    [self wrapperCallBack:result
+              channelName:aChannelName
+                    error:nil
+                   object:@YES];
 }
 
 - (void)loadAllConversations:(NSDictionary *)param

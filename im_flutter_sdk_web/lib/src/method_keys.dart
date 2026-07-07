@@ -40,6 +40,9 @@ class _MethodKeys {
   static const String getConversation = 'getConversation';
   static const String getThreadConversation = 'getThreadConversation';
   static const String loadAllConversations = 'loadAllConversations';
+  static const String getAllConversations = 'getAllConversations';
+  static const String getConversationsByType = 'getConversationsByType';
+  static const String cleanConversationsMemoryCache = 'cleanConversationsMemoryCache';
   static const String getAllConversationsBySort = 'getAllConversationsBySort';
   static const String getConversationsFromServer = 'getConversationsFromServer';
   static const String fetchConversationsFromServerWithPage =

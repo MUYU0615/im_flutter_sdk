@@ -1593,6 +1593,68 @@ class EMChatManager {
     }
   }
 
+  /// ~english
+  /// Gets all conversations in local memory.
+  /// ~end
+  /// ~chinese
+  /// 获取当前内存中的全部会话。
+  /// ~end
+  Future<List<EMConversation>> getAllConversations() async {
+    try {
+      Map result = await Client.instance.chatManager
+          .callNativeMethod(ChatMethodKeys.getAllConversations);
+      EMError.hasErrorFromResult(result);
+      List<EMConversation> conversationList = [];
+      result[ChatMethodKeys.getAllConversations]?.forEach((element) {
+        conversationList.add(EMConversation.fromJson(element));
+      });
+      return conversationList;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
+  /// Gets conversations of the specified type from local memory.
+  /// ~end
+  /// ~chinese
+  /// 按会话类型获取当前内存中的会话列表。
+  /// ~end
+  Future<List<EMConversation>> getConversationsByType(
+    EMConversationType type,
+  ) async {
+    try {
+      Map result = await Client.instance.chatManager.callNativeMethod(
+        ChatMethodKeys.getConversationsByType,
+        {"type": type.index},
+      );
+      EMError.hasErrorFromResult(result);
+      List<EMConversation> conversationList = [];
+      result[ChatMethodKeys.getConversationsByType]?.forEach((element) {
+        conversationList.add(EMConversation.fromJson(element));
+      });
+      return conversationList;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
+  /// Clears the local conversation memory cache.
+  /// ~end
+  /// ~chinese
+  /// 清理本地会话内存缓存。
+  /// ~end
+  Future<void> cleanConversationsMemoryCache() async {
+    try {
+      Map result = await Client.instance.chatManager
+          .callNativeMethod(ChatMethodKeys.cleanConversationsMemoryCache);
+      EMError.hasErrorFromResult(result);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   @Deprecated('Use [fetchConversationsByOptions] instead')
 
   /// ~english
