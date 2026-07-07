@@ -396,11 +396,13 @@ web_real_e2e:
       verified_by:
       - rg -n "onUserDidLoginFromOtherDevice|onUserKickedByOtherDevice|onUserDidLoginTooManyDevice"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter does not expose or forward a verified real
-        Web SDK account-session callback for other-device login, and the browser
-        test app has no stable controllable E2E trigger for this event.
-      reason_zh: 当前 Web 真实适配层没有暴露或转发可验证的异地登录会话回调，浏览器
-        测试应用也没有稳定可控的真实 E2E 触发方式，因此与 iOS/Android 未对齐。
+      reason: Current Web real runtime/bridge only wires onConnected and
+        onDisconnected account-session callbacks; it does not expose or forward
+        a verified real Web SDK onUserDidLoginFromOtherDevice callback into the
+        JSON bridge.
+      reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
+        `onDisconnected` 会话回调，并没有把可验证的真实
+        `onUserDidLoginFromOtherDevice` 回调暴露到 JSON bridge。
     onUserDidRemoveFromServer:
       real_e2e_status: blocked
       tests: []
@@ -439,22 +441,26 @@ web_real_e2e:
       verified_by:
       - rg -n "onUserDidLoginFromOtherDevice|onUserKickedByOtherDevice|onUserDidLoginTooManyDevice"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter does not expose or forward a verified real
-        Web SDK too-many-device callback, and the browser test app has no stable
-        controllable E2E trigger for this event.
-      reason_zh: 当前 Web 真实适配层没有暴露或转发可验证的设备数超限回调，浏览器测试
-        应用也没有稳定可控的真实 E2E 触发方式，因此与 iOS/Android 未对齐。
+      reason: Current Web real runtime/bridge only wires onConnected and
+        onDisconnected account-session callbacks; it does not expose or forward
+        a verified real Web SDK onUserDidLoginTooManyDevice callback into the
+        JSON bridge.
+      reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
+        `onDisconnected` 会话回调，并没有把可验证的真实
+        `onUserDidLoginTooManyDevice` 回调暴露到 JSON bridge。
     onUserKickedByOtherDevice:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "onUserDidLoginFromOtherDevice|onUserKickedByOtherDevice|onUserDidLoginTooManyDevice"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter does not expose or forward a verified real
-        Web SDK kicked-by-other-device callback, and the browser test app has no
-        stable controllable E2E trigger for this event.
-      reason_zh: 当前 Web 真实适配层没有暴露或转发可验证的被其他设备踢下线回调，浏览器
-        测试应用也没有稳定可控的真实 E2E 触发方式，因此与 iOS/Android 未对齐。
+      reason: Current Web real runtime/bridge only wires onConnected and
+        onDisconnected account-session callbacks; it does not expose or forward
+        a verified real Web SDK onUserKickedByOtherDevice callback into the JSON
+        bridge.
+      reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
+        `onDisconnected` 会话回调，并没有把可验证的真实
+        `onUserKickedByOtherDevice` 回调暴露到 JSON bridge。
     onUserAuthenticationFailed:
       real_e2e_status: blocked
       tests: []
