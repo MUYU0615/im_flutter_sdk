@@ -2100,16 +2100,23 @@ web_real_e2e:
         方法。直接 create probe 会先报 NoSuchMethodError，因此当前 blocked 的原因不是旧的
         group_authorization 权限错误，而是运行时入口本身不可调用。
     destroyChatRoom:
-      real_e2e_status: supported
+      real_e2e_status: blocked
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_modify_and_destroy_server_state
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-real-chatroom-file5 --web-sdk-mode
+      - make web-real-e2e ARGS="--run-id web-chatroom-destroy-recheck-20260707-000002 --web-sdk-mode
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
-      reason: The test creates a real chat room through REST, destroys it through
-        real Web SDK ChatRoomManager.destroyChatRoom, and verifies the
-        destroyChatRoom_success debug event.
+        180 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_modify_and_destroy_server_state
+        --target-platform web -q -s"
+      - make web-real-e2e ARGS="--run-id web-chatroom-methods-probe-20260707-000002 --web-sdk-mode
+        real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
+        180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chatroom_manager_methods_without_global_login
+        --target-platform web -q -s"
+      reason: The current real Web IMSDK high-level chatRoomManager does not expose
+        a destroyChatRoom method. The focused destroy run fails with runtime
+        TypeError before any successful chat room destroy contract can be established.
+      reason_zh: 当前真实 Web IMSDK 的高层 chatRoomManager 没有暴露 destroyChatRoom
+        方法。聚焦 destroy 复核会先在运行时直接报 TypeError，因此当前还不能算支持项。
     changeChatRoomSubject:
       real_e2e_status: supported
       tests:
@@ -2119,8 +2126,8 @@ web_real_e2e:
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
       reason: The test creates a real chat room through REST, changes its subject
-        through real Web SDK modifyChatRoom, and verifies the updated name through
-        fetchChatRoomInfoFromServer.
+        through the real Web SDK updateChatRoomInfo path, and verifies the updated
+        name through fetchChatRoomInfoFromServer.
     changeChatRoomDescription:
       real_e2e_status: supported
       tests:
@@ -2130,8 +2137,8 @@ web_real_e2e:
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
       reason: The test creates a real chat room through REST, changes its
-        description through real Web SDK modifyChatRoom, and verifies the updated
-        desc through fetchChatRoomInfoFromServer.
+        description through the real Web SDK updateChatRoomInfo path, and verifies
+        the updated desc through fetchChatRoomInfoFromServer.
     fetchChatRoomMembers:
       real_e2e_status: supported
       tests:

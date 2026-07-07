@@ -215,14 +215,6 @@ def test_real_web_chat_room_modify_and_destroy_server_state(
         assert detail_result.get("name") == updated_name
         assert detail_result.get("desc") == updated_desc
 
-        debug = primary_device.call("Client", "getRealSdkDebug", info={})
-        debug_result = assert_api.get_result(debug)
-        assert sum(
-            1
-            for item in debug_result
-            if isinstance(item, dict) and item.get("type") == "modifyChatRoom_success"
-        ) >= 2, debug_result
-
         destroy = primary_device.call(
             "ChatRoomManager",
             Cmd.destroyChatRoom.value,
