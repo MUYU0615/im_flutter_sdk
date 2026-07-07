@@ -270,9 +270,10 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_group_event_for_create
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-group-recheck-20260708-000001
-        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
-        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_group_event_for_create
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-group-bridgecheck-20260708-000001
+        --relay-port 2002 --web-sdk-mode real_sdk --headless-startup-wait 90
+        --startup-timeout 150 --flutter-timeout 240 --
+        tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_group_event_for_create
         --target-platform web --web-sdk-runtime imsdk -q -s
       reason: The Flutter Web bridge now forwards WebSDK2 onMultiDeviceGroup if
         it is emitted, but the real E2E shows that same-user createGroup only
@@ -322,7 +323,7 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_remove_messages_event_for_msg_ids
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-remove-recheck-20260708-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-remove-bridgecheck-20260708-000001
         --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
         --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_remove_messages_event_for_msg_ids
