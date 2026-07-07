@@ -334,6 +334,48 @@ native_api_review:
     reason_zh: "Android 原生 SDK 暴露 RTC token/uid 相关能力，但 iOS/Web 当前缺少同等原生能力，需要作为 Android 可暴露能力记录平台差异。"
     target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
   - manager: Client
+    api: addConnectionListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 startCallback 后接收连接事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
+    api: removeConnectionListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 startCallback 后接收连接事件，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
+    api: addMultiDeviceListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 startCallback 后接收多端事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
+    api: removeMultiDeviceListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 用户通过 startCallback 后接收多端事件，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
+    api: addLogListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 当前不向业务层单独暴露日志监听注册，通过测试桥事件链即可验证回调生效。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
+    api: removeLogListener
+    action: listener_registration_internal
+    priority: P2
+    batch: client_internal_listener
+    reason_zh: "Android 原生 SDK 的 listener 注册/清理属于平台内部回调 wiring；Flutter 当前不向业务层单独暴露日志监听清理，通过测试桥事件链即可验证回调生效。"
+    target_case: native-auto-test/tests/client/test_client_callback_smoke.py
+  - manager: Client
     api: chatManager
     action: manager_getter_internal
     priority: P3
