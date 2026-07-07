@@ -624,10 +624,10 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
   - manager: ConversationManager
     api: searchCustomMsgFromDB
-    action: indirect_e2e_only
-    priority: P2
-    batch: conversation_model_review
-    reason_zh: "该 Android 原生会话对象方法已由现有会话消息插入/搜索类 wrapper 流程间接覆盖，统计应绑定到对应 E2E。"
+    action: direct_e2e_case
+    priority: P1
+    batch: conversation_p1
+    reason_zh: "Android 原生会话对象 searchCustomMsgFromDB 已由 Flutter EMConversation.loadMsgWithKeywords 等价暴露；现有单设备真实 E2E 覆盖关键词消息搜索边界。"
     target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
   - manager: ConversationManager
     api: getAllMessages

@@ -244,6 +244,13 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter ChatManager.reportMessage 调用 Android asyncReportMessage，等价覆盖 4.23 reportMessage 的消息举报能力；现有 E2E 发送真实消息后按真实 msgId 调用并断言成功。",
         }
     ],
+    ("ConversationManager", "searchCustomMsgFromDB"): [
+        {
+            "manager": "ConversationManager",
+            "api": "loadMsgWithKeywords",
+            "reason_zh": "Flutter EMConversation.loadMsgWithKeywords 调用 Android asyncSearchMsgFromDB；等价覆盖 4.23 searchCustomMsgFromDB 的关键词消息搜索能力。",
+        }
+    ],
     ("GroupManager", "asyncUpdateGroupNamecard"): [
         {
             "manager": "GroupManager",
