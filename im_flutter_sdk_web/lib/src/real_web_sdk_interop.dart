@@ -3436,37 +3436,107 @@ class RealWebSdkClient {
   Future<Map<String, dynamic>> createChatRoom(Map<String, dynamic> map) async {
     final highLevelClient = _highLevelClient;
     if (highLevelClient != null) {
-      final chatRoomManager =
-          js_util.getProperty<Object?>(highLevelClient, 'chatRoomManager');
-      if (chatRoomManager == null) {
-        throw StateError('Real Web SDK chatRoomManager is not available.');
-      }
-      final promise = js_util.callMethod<Object?>(
-        chatRoomManager,
-        'createChatRoom',
-        [
-          js_util.jsify({
-            'name': map['subject']?.toString() ??
-                map['name']?.toString() ??
-                'web-real-room-${DateTime.now().millisecondsSinceEpoch}',
-            'description':
-                map['description']?.toString() ?? map['desc']?.toString() ?? '',
-            'maxMembers': _asInt(map['maxUserCount']) ??
-                _asInt(map['maxUsers']) ??
-                _asInt(map['maxusers']) ??
-                200,
-          }),
-        ],
+      final context = js_util.callMethod<Object?>(
+        highLevelClient,
+        'getRestContext',
+        const [],
       );
-      final result = await js_util.promiseToFuture<Object?>(promise as Object);
-      final raw = js_util.dartify(result);
-      final data = _asMap(raw);
-      final roomId = data['chatRoomId']?.toString() ??
+      final contextMap = _asMap(js_util.dartify(context));
+      final restBaseUrl = contextMap['restBaseUrl']?.toString() ?? '';
+      final appKey = contextMap['appKey']?.toString() ?? '';
+      final token = contextMap['token']?.toString() ?? '';
+      final clientResource = contextMap['clientResource']?.toString() ?? '';
+      final userId = contextMap['userId']?.toString() ?? '';
+      if (restBaseUrl.isEmpty ||
+          appKey.isEmpty ||
+          token.isEmpty ||
+          clientResource.isEmpty ||
+          userId.isEmpty) {
+        throw StateError(
+          'Real Web SDK createChatRoom requires restBaseUrl/appKey/token/clientResource/userId.',
+        );
+      }
+      final appKeyParts = appKey.split('#');
+      if (appKeyParts.length != 2) {
+        throw StateError('Invalid appKey for createChatRoom: $appKey');
+      }
+      final roomName = map['subject']?.toString() ??
+          map['name']?.toString() ??
+          'web-real-room-${DateTime.now().millisecondsSinceEpoch}';
+      final description =
+          map['description']?.toString() ?? map['desc']?.toString() ?? '';
+      final maxUsers = _asInt(map['maxUserCount']) ??
+          _asInt(map['maxUsers']) ??
+          _asInt(map['maxusers']) ??
+          200;
+      final orgName = Uri.encodeComponent(appKeyParts[0]);
+      final appName = Uri.encodeComponent(appKeyParts[1]);
+      final uri = Uri.parse('$restBaseUrl/$orgName/$appName/chatrooms');
+      final body = <String, dynamic>{
+        'name': roomName,
+        'description': description,
+        'maxusers': maxUsers,
+        'owner': userId,
+        'members': _asStringList(map['members']),
+        'public': true,
+        'owner_can_leave': true,
+        'allowinvites': false,
+        'membersonly': false,
+      };
+      final response = await web.window.fetch(
+        uri.toString().toJS,
+        web.RequestInit(
+          method: 'POST',
+          headers: js_util.jsify({
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          }),
+          body: jsonEncode(body).toJS,
+        ),
+      ).toDart;
+      final statusCode = response.status;
+      final responseText = (await response.text().toDart).toString();
+      Map<String, dynamic> data = const {};
+      if (responseText.isNotEmpty) {
+        try {
+          data = _asMap(jsonDecode(responseText));
+        } catch (_) {
+          data = {'rawText': responseText};
+        }
+      }
+      if (statusCode < 200 || statusCode >= 300) {
+        _recordDebug('createChatRoom_error', {
+          'runtime': 'imsdk',
+          'statusCode': statusCode,
+          'body': data.isEmpty ? responseText : data,
+        });
+        throw StateError(
+          'Real Web SDK createChatRoom failed: HTTP $statusCode $responseText',
+        );
+      }
+      final roomId = _asMap(data['data'])['id']?.toString() ??
+          data['chatRoomId']?.toString() ??
           data['roomId']?.toString() ??
           data['id']?.toString() ??
           '';
+      _recordDebug('createChatRoom_success', {
+        'runtime': 'imsdk',
+        'roomId': roomId,
+        'raw': data,
+      });
       final detail = roomId.isEmpty ? null : await getChatRoom(roomId);
-      return detail ?? _normalizeChatRoom(data, fallback: map);
+      return detail ??
+          _normalizeChatRoom(
+            <String, dynamic>{
+              ..._asMap(data['data']),
+              if (roomId.isNotEmpty) 'id': roomId,
+              'title': roomName,
+              'description': description,
+              'max_users': maxUsers,
+            },
+            fallback: map,
+          );
     }
     final result = await _callRealSdk('createChatRoom', [
       {
