@@ -251,6 +251,60 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter EMConversation.loadMsgWithKeywords 调用 Android asyncSearchMsgFromDB；等价覆盖 4.23 searchCustomMsgFromDB 的关键词消息搜索能力。",
         }
     ],
+    ("MessageManager", "createSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "saveMessage",
+            "reason_zh": "Flutter ChatManager.saveMessage 会把发送方向消息 JSON 交给 Android MessageHelper.fromJson，真实命中 EMMessage.createSendMessage(Type.*)。",
+        },
+        {
+            "manager": "ChatManager",
+            "api": "importMessages",
+            "reason_zh": "Flutter ChatManager.importMessages 会把发送方向消息 JSON 列表交给 Android MessageHelper.fromJson，真实命中 EMMessage.createSendMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "insertMessage",
+            "reason_zh": "Flutter EMConversation.insertMessage 会把发送方向消息 JSON 交给 Android MessageHelper.fromJson，真实命中 EMMessage.createSendMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "appendMessage",
+            "reason_zh": "Flutter EMConversation.appendMessage 会把发送方向消息 JSON 交给 Android MessageHelper.fromJson，真实命中 EMMessage.createSendMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "updateConversationMessage",
+            "reason_zh": "Flutter EMConversation.updateConversationMessage 会把发送方向消息 JSON 交给 Android MessageHelper.fromJson，真实命中 EMMessage.createSendMessage(Type.*)。",
+        },
+    ],
+    ("MessageManager", "createReceiveMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "saveMessage",
+            "reason_zh": "Flutter ChatManager.saveMessage 处理接收方向本地消息 JSON 时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
+        },
+        {
+            "manager": "ChatManager",
+            "api": "importMessages",
+            "reason_zh": "Flutter ChatManager.importMessages 处理接收方向消息 JSON 列表时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "insertMessage",
+            "reason_zh": "Flutter EMConversation.insertMessage 处理接收方向消息 JSON 时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "appendMessage",
+            "reason_zh": "Flutter EMConversation.appendMessage 处理接收方向消息 JSON 时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
+        },
+        {
+            "manager": "ConversationManager",
+            "api": "updateConversationMessage",
+            "reason_zh": "Flutter EMConversation.updateConversationMessage 处理接收方向消息 JSON 时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
+        },
+    ],
     ("GroupManager", "asyncUpdateGroupNamecard"): [
         {
             "manager": "GroupManager",
@@ -1132,6 +1186,9 @@ def _native_calls_from_java_body(body: str) -> set[tuple[str, str]]:
         if method not in OBJECT_METHODS:
             calls.add(("ConversationManager", method))
     for method in re.findall(r"\bmsg\.(\w+)\s*\(", body):
+        if method not in OBJECT_METHODS:
+            calls.add(("MessageManager", method))
+    for method in re.findall(r"\bEMMessage\.(create\w+)\s*\(", body):
         if method not in OBJECT_METHODS:
             calls.add(("MessageManager", method))
     return calls

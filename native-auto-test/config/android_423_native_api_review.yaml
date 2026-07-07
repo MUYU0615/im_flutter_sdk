@@ -1175,17 +1175,17 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createReceiveMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    reason_zh: "Android 原生 EMMessage.createReceiveMessage 已由 saveMessage/importMessages/insertMessage/appendMessage/updateConversationMessage 等真实 Android 链路命中；现有 E2E 覆盖接收方向消息 JSON 反序列化与序列化断言。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    reason_zh: "Android 原生 EMMessage.createSendMessage 已由 saveMessage/importMessages/insertMessage/appendMessage/updateConversationMessage 等真实 Android 链路命中；现有 E2E 覆盖发送方向消息 JSON 反序列化与序列化断言。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createTextSendMessage
