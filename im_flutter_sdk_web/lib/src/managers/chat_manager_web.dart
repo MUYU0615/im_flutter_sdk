@@ -244,6 +244,12 @@ class ChatManagerWeb extends ChatManager {
           _storeMessage(_normalizeSentMessage(message));
         }
         return {method: true};
+      case _MethodKeys.saveMessage:
+        final message = _asMap(map['message']);
+        if (message.isEmpty) {
+          return {method: null};
+        }
+        return {method: _storeMessage(_normalizeSentMessage(message))};
       case _MethodKeys.getConversation:
         if (realSdk != null) {
           return {

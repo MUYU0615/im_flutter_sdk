@@ -123,6 +123,10 @@
         [self importMessages:call.arguments
                  channelName:call.method
                       result:result];
+    } else if ([ChatSaveMessage isEqualToString:call.method]) {
+        [self saveMessage:call.arguments
+              channelName:call.method
+                   result:result];
     } else if ([ChatGetAllConversations isEqualToString:call.method]) {
         [self getAllConversations:call.arguments
                       channelName:call.method
@@ -518,6 +522,19 @@
                       channelName:aChannelName
                             error:aError
                            object:[aMessage toJson]];
+    }];
+}
+
+- (void)saveMessage:(NSDictionary *)param
+         channelName:(NSString *)aChannelName
+              result:(FlutterResult)result {
+    __weak typeof(self) weakSelf = self;
+    EMChatMessage *message = [EMChatMessage fromJson:param[@"message"]];
+    [[EMClient sharedClient].chatManager saveMessage:message completion:^(EMChatMessage * _Nullable aMessage, EMError * _Nullable aError) {
+        [weakSelf wrapperCallBack:result
+                      channelName:aChannelName
+                            error:aError
+                           object:aMessage ? [aMessage toJson] : nil];
     }];
 }
 
