@@ -434,11 +434,13 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "onUserDidChangePassword" im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter does not expose or forward a verified real
-        Web SDK password-change callback, and the browser test app has no stable
-        controllable E2E trigger for this event.
-      reason_zh: 当前 Web 真实适配层没有暴露或转发可验证的密码变更回调，浏览器测试
-        应用也没有稳定可控的真实 E2E 触发方式，因此与 iOS/Android 未对齐。
+      reason: Current Web real runtime/bridge only wires a small set of session
+        callbacks such as onConnected/onDisconnected, and it does not expose or
+        forward a verified real Web SDK onUserDidChangePassword callback into
+        the JSON bridge.
+      reason_zh: 当前 Web 真实 runtime/bridge 只接入了少量会话回调，例如
+        `onConnected` / `onDisconnected`，并没有把可验证的真实
+        `onUserDidChangePassword` 回调暴露到 JSON bridge。
     onUserDidLoginTooManyDevice:
       real_e2e_status: blocked
       tests: []
