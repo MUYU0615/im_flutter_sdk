@@ -91,6 +91,7 @@ class ChatMethodKeys {
   static const String importMessages = "importMessages";
   static const String saveMessage = "saveMessage";
   static const String setVoiceMessageListened = "setVoiceMessageListened";
+  static const String updateParticipant = "updateParticipant";
   static const String getAllConversations = "getAllConversations";
   static const String loadAllConversations = "loadAllConversations";
   static const String loadAllConversationsFromDB = "loadAllConversationsFromDB";

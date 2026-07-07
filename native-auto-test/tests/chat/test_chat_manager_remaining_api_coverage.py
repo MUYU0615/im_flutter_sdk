@@ -605,6 +605,72 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
     )
 
 
+@pytest.mark.case_id("chat.update_participant.current_behavior")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.updateParticipant")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_update_participant_current_behavior(device_a, assert_api, user_a, user_b):
+    """updateParticipant：覆盖 Android 4.23 原生 EMChatManager.updateParticipant 的当前真实返回。"""
+    resp = device_a.call(
+        "ChatManager",
+        Cmd.updateParticipant.value,
+        info={"from": user_b, "changeTo": user_a},
+    )
+    result = resp.get("result")
+    assert isinstance(result, bool), f"updateParticipant 应返回 bool，实际: {resp}"
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.updateParticipant.value,
+            "device": "deviceA",
+            "result": result,
+        },
+        ignore_keys={"sequence"},
+    )
+
+
+@pytest.mark.case_id("chat.update_participant.invalid_required_params")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.updateParticipant")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_update_participant_invalid_required_params(device_a, assert_api, user_b):
+    """updateParticipant：缺少 from/changeTo 时返回参数错误，不应伪装成 MissingPlugin。"""
+    missing_from = device_a.call(
+        "ChatManager",
+        Cmd.updateParticipant.value,
+        info={"changeTo": user_b},
+    )
+    assert_api.assert_response_matches(
+        missing_from,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.updateParticipant.value,
+            "device": "deviceA",
+            "result": {"code": 110},
+        },
+        ignore_keys={"sequence", "description"},
+    )
+
+    missing_change_to = device_a.call(
+        "ChatManager",
+        Cmd.updateParticipant.value,
+        info={"from": user_b},
+    )
+    assert_api.assert_response_matches(
+        missing_change_to,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.updateParticipant.value,
+            "device": "deviceA",
+            "result": {"code": 110},
+        },
+        ignore_keys={"sequence", "description"},
+    )
+
+
 @pytest.mark.case_id("chat.group_ack_boundary_methods.current_behavior")
 @pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.ackGroupMessageRead")

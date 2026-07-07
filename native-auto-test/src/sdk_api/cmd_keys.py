@@ -90,6 +90,7 @@ class Cmd(str, Enum):
     importMessages = "importMessages"
     saveMessage = "saveMessage"
     setVoiceMessageListened = "setVoiceMessageListened"
+    updateParticipant = "updateParticipant"
     getAllConversations = "getAllConversations"
     loadAllConversations = "loadAllConversations"
     loadAllConversationsFromDB = "loadAllConversationsFromDB"

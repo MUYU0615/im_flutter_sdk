@@ -82,6 +82,7 @@ class EMChatManager {
       EMLog.e('onSendMessageWithType: $e\n$st', tag: 'EMChatManager');
     }
   }
+
   Future<void> _onMessagesReceived(List messages) async {
     List<EMMessage> messageList = [];
     for (var message in messages) {
@@ -408,7 +409,8 @@ class EMChatManager {
         return EMMessage.createTxtSendMessage(
           targetId: payload['targetId'] as String,
           content: payload['content'] as String,
-          targetLanguages: (payload['targetLanguages'] as List?)?.cast<String>(),
+          targetLanguages:
+              (payload['targetLanguages'] as List?)?.cast<String>(),
           chatType: chatType,
         );
       case EMSendMessageType.file:
@@ -485,9 +487,8 @@ class EMChatManager {
         );
       case EMSendMessageType.combine:
         final raw = payload['msgIds'];
-        final msgIds = raw is List
-            ? raw.map((e) => e.toString()).toList()
-            : <String>[];
+        final msgIds =
+            raw is List ? raw.map((e) => e.toString()).toList() : <String>[];
         return EMMessage.createCombineSendMessage(
           targetId: payload['targetId'] as String,
           title: payload['title'] as String?,
@@ -1335,8 +1336,40 @@ class EMChatManager {
   Future<void> setVoiceMessageListened(EMMessage message) async {
     try {
       Map result = await Client.instance.chatManager.callNativeMethod(
-          ChatMethodKeys.setVoiceMessageListened, {"message": message.toJson()});
+          ChatMethodKeys.setVoiceMessageListened,
+          {"message": message.toJson()});
       EMError.hasErrorFromResult(result);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
+  /// Updates the local participant mapping from [from] to [changeTo].
+  ///
+  /// **Return** Whether the local participant mapping was updated.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 更新本地 participant 映射，将 [from] 更新为 [changeTo]。
+  ///
+  /// **Return** 是否更新成功。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<bool> updateParticipant({
+    required String from,
+    required String changeTo,
+  }) async {
+    try {
+      Map result = await Client.instance.chatManager.callNativeMethod(
+        ChatMethodKeys.updateParticipant,
+        {"from": from, "changeTo": changeTo},
+      );
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.updateParticipant);
     } catch (e) {
       rethrow;
     }
