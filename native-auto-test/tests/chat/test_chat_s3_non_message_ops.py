@@ -16,6 +16,7 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
     "deliverOnlineOnly",
     "targetLanguages",
     "translations",
+    "isListened",
 }
 
 
@@ -54,7 +55,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             },
         },
         context={"msgId": str(send_msg_id), "fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result.isListened"},
     )
 
     real_id = str(send_msg_id)

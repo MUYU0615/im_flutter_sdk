@@ -38,6 +38,7 @@ def _expected_sent_message(msg_id: str, user_a: str, user_b: str, content: str, 
         "status": status,
         "chatType": 0,
         "direction": 0,
+        "isListened": False,
         "onlineState": True,
     }
 
@@ -59,6 +60,7 @@ def _expected_received_message(msg_id: str, user_a: str, user_b: str, content: s
         "status": 2,
         "chatType": 0,
         "direction": 1,
+        "isListened": False,
         "onlineState": True,
         "deliverOnlineOnly": False,
         "receiverList": [],
@@ -95,6 +97,7 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
                 "needGroupAck": False,
                 "isThread": False,
                 "isContentReplaced": False,
+                "isListened": False,
                 "body": {
                     "targetLanguages": [],
                     "translations": {},
@@ -297,6 +300,7 @@ def test_conversation_latest_and_last_received_messages(device_a, device_b, asse
                     "convId": user_a,
                     "chatType": 0,
                     "direction": 1,
+                    "isListened": False,
                     "body": {"type": 0, "targetLanguages": [], "translations": {}},
                 },
             },
@@ -770,6 +774,7 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
                 "hasDeliverAck": False,
                 "needGroupAck": False,
                 "isThread": False,
+                "isListened": False,
                 "body": {
                     "targetLanguages": [],
                     "translations": {},

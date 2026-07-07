@@ -52,6 +52,7 @@ def _send_text_and_get_real_id(
                 "needGroupAck": False,
                 "isThread": False,
                 "isContentReplaced": False,
+                "isListened": False,
                 "body": {"type": 0, "content": content},
             },
         },

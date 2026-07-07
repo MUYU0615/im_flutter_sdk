@@ -17,6 +17,7 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
     "deliverOnlineOnly",
     "targetLanguages",
     "translations",
+    "isListened",
 }
 
 
@@ -56,7 +57,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
                 "body": {"type": 0, "content": content},
             },
         },
-        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "targetLanguages", "translations"},
+        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "targetLanguages", "translations", "isListened"},
     )
 
     evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)

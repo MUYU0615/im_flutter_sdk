@@ -16,6 +16,7 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
     "deliverOnlineOnly",
     "targetLanguages",
     "translations",
+    "isListened",
 }
 
 
