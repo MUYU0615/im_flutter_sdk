@@ -18,6 +18,11 @@ from src.test_flow import ContactTestFlow
 pytestmark = [pytest.mark.client, pytest.mark.contact]
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.get_all_contacts_from_db.after_server_sync.success")
+@pytest.mark.api("ContactManager.getAllContactsFromDB")
+@pytest.mark.clients("owner", "peer")
+@pytest.mark.roles_mode("ordered")
 def test_contact_get_all_contacts_from_db_after_server_sync(
     device_a, device_b, assert_api, user_a, user_b
 ):
@@ -57,9 +62,14 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
         ignore_keys={"sequence"},
     )
 
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.get_block_list_from_db.after_server_sync.success")
+@pytest.mark.api("ContactManager.getBlockListFromDB")
+@pytest.mark.clients("owner", "peer")
+@pytest.mark.roles_mode("ordered")
 def test_contact_get_block_list_from_db_after_server_sync(
     device_a, device_b, assert_api, user_a, user_b
 ):
@@ -101,7 +111,7 @@ def test_contact_get_block_list_from_db_after_server_sync(
     )
 
     assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 @pytest.mark.android
@@ -169,6 +179,11 @@ def test_contact_save_black_list_then_fetch_from_server(
             raise cleanup_errors[0]
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.get_self_ids_on_other_platform.single_device.empty")
+@pytest.mark.api("ContactManager.getSelfIdsOnOtherPlatform")
+@pytest.mark.clients("owner")
+@pytest.mark.roles_mode("ordered")
 def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_api):
     """getSelfIdsOnOtherPlatform：获取当前账号其它平台登录 ID，当前单设备登录应返回空列表。"""
     resp = device_a.call(
