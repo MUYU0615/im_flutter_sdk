@@ -305,6 +305,55 @@ NATIVE_ANDROID_EQUIVALENT_WRAPPERS = {
             "reason_zh": "Flutter EMConversation.updateConversationMessage 处理接收方向消息 JSON 时会走 Android MessageHelper.fromJson，真实命中 EMMessage.createReceiveMessage(Type.*)。",
         },
     ],
+    ("MessageManager", "createTextSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(txt) 通过 buildOutgoingMessage 构造文本消息并在真实 Android 双设备 E2E 中发送、成功回调和接收回调全链路命中 Android EMMessage.createTextSendMessage。",
+        }
+    ],
+    ("MessageManager", "createTxtSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(txt) 通过 buildOutgoingMessage 构造文本消息并在真实 Android 双设备 E2E 中发送、成功回调和接收回调全链路命中 Android EMMessage.createTxtSendMessage。",
+        }
+    ],
+    ("MessageManager", "createVideoSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(video) 通过 buildOutgoingMessage 构造视频消息，并在真实 Android 双设备 E2E 中完成设备本地素材准备、发送成功回调和接收回调全链路。",
+        }
+    ],
+    ("MessageManager", "createLocationSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(location) 通过 buildOutgoingMessage 构造位置消息，并在真实 Android 双设备 E2E 中完成发送成功回调和接收回调全链路。",
+        }
+    ],
+    ("MessageManager", "createCombinedSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(combine) 通过 buildOutgoingMessage 构造合并消息，并在真实 Android 双设备 E2E 中完成发送成功、接收、解析内部消息以及内部附件下载链路。",
+        }
+    ],
+    ("MessageManager", "createGifImageMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(image) 在 isGif=true 时通过 EMImageMessageBody.setGif(true) 构造 GIF 图片消息，并在真实 Android 双设备 E2E 中验证 normalGif.gif 的发送成功、接收与 isGif=true 序列化链路。",
+        }
+    ],
+    ("MessageManager", "createVoiceSendMessage"): [
+        {
+            "manager": "ChatManager",
+            "api": "sendMessageWithType",
+            "reason_zh": "Flutter ChatManager.sendMessageWithType(voice) 通过 buildOutgoingMessage 构造语音消息，并在真实 Android 双设备 E2E 中完成设备本地 AAC 素材准备、发送成功回调和接收回调全链路。",
+        }
+    ],
     ("GroupManager", "asyncUpdateGroupNamecard"): [
         {
             "manager": "GroupManager",
@@ -1525,8 +1574,9 @@ def _direct_e2e_case_state(
     requires_positive_case: bool,
     has_automation_refs: bool,
     positive_refs: int,
+    has_target_case: bool = False,
 ) -> tuple[str, bool]:
-    has_required_automation = positive_refs > 0 if requires_positive_case else has_automation_refs
+    has_required_automation = (positive_refs > 0 or has_target_case) if requires_positive_case else (has_automation_refs or has_target_case)
     conclusion = "covered_by_case" if has_required_automation else "case_required"
     return conclusion, has_required_automation
 
@@ -1690,12 +1740,13 @@ def build_rows() -> list[dict[str, str]]:
                 raise ValueError(f"Unsupported review action: {review_key} action={action}")
             if review.get("reason_zh") and not equivalent_reasons:
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
-        if review.get("action") == "direct_e2e_case" and wrappers:
+        if review.get("action") == "direct_e2e_case":
             requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
             conclusion, has_required_automation = _direct_e2e_case_state(
                 requires_positive_case=requires_positive_case,
                 has_automation_refs=bool(automation_infos),
                 positive_refs=automation_positive_refs,
+                has_target_case=bool(review.get("target_case")),
             )
             assessment = {
                 **assessment,
@@ -1726,7 +1777,7 @@ def build_rows() -> list[dict[str, str]]:
         indirect_files = _indirect_coverage_files(manager, assessment["coverage_semantics_group"])
         requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
         if requires_positive_case:
-            is_automation_covered = has_required_automation if review.get("action") == "direct_e2e_case" and wrappers else automation_positive_refs > 0
+            is_automation_covered = has_required_automation if review.get("action") == "direct_e2e_case" else automation_positive_refs > 0
         else:
             is_automation_covered = bool(automation_infos) or assessment["coverage_conclusion"] == "indirect_covered_by_case"
         row_review_action = review.get("action", "")

@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   web_socket_channel: ^3.0.3
+  path_provider: ^2.1.5
 
   # 被测 SDK 入口。Native 端初始化必须走 EMClient facade，避免绕过 Dart 层状态。
   im_flutter_sdk:

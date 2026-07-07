@@ -1140,38 +1140,43 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: MessageManager
     api: createCombinedSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
-    target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createCombinedSendMessage 已由 Flutter ChatManager.sendMessageWithType(combine) 等价覆盖；真实 Android 双设备 E2E 已验证前置图片/视频消息发送、combine 发送成功、接收、解析内部消息以及内部附件下载链路。"
+    target_case: native-auto-test/tests/chat/test_chat_s423_message_callback_and_combine.py
   - manager: MessageManager
     api: createFileSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createFileSendMessage 已由 Flutter ChatManager.sendMessageWithType(file) 等价覆盖；真实 Android 双设备 E2E 已验证设备本地素材准备、发送成功回调和接收消息链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createGifImageMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android GIF 图片发送语义已由 Flutter ChatManager.sendMessageWithType(image) + isGif=true 等价覆盖；真实 Android 双设备 E2E 已验证 normalGif.gif 的发送成功、接收以及 isGif=true 序列化链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createImageSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createImageSendMessage 已由 Flutter ChatManager.sendMessageWithType(image) 等价覆盖；真实 Android 双设备 E2E 已验证设备本地素材准备、发送成功回调和接收消息链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createLocationSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createLocationSendMessage 已由 Flutter ChatManager.sendMessageWithType(location) 等价覆盖；真实 Android 双设备 E2E 已验证发送成功回调和接收消息链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createReceiveMessage
@@ -1189,31 +1194,35 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createTextSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createTextSendMessage 已由 Flutter ChatManager.sendMessageWithType(txt) 等价覆盖；真实 Android 双设备 E2E 已验证发送、onMessageSuccess 和 onMessagesReceived 全链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createTxtSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createTxtSendMessage 已由 Flutter ChatManager.sendMessageWithType(txt) 等价覆盖；真实 Android 双设备 E2E 已验证发送、onMessageSuccess 和 onMessagesReceived 全链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createVideoSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createVideoSendMessage 已由 Flutter ChatManager.sendMessageWithType(video) 等价覆盖；真实 Android 双设备 E2E 已验证设备本地素材准备、发送成功回调和接收消息链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: createVoiceSendMessage
-    action: indirect_e2e_only
-    priority: P2
-    batch: message_factory_review
-    reason_zh: "该 Android 原生 API 是 EMMessage 工厂方法，Flutter 已通过 sendMessageWithType/buildOutgoingMessage 构造并在发送、接收和序列化断言中间接覆盖。"
+    action: direct_e2e_case
+    priority: P1
+    batch: message_factory_p1
+    requires_positive_case: true
+    reason_zh: "Android 原生 EMMessage.createVoiceSendMessage 已由 Flutter ChatManager.sendMessageWithType(voice) 等价覆盖；真实 Android 双设备 E2E 已验证设备本地 AAC 素材准备、发送成功回调和接收消息链路。"
     target_case: native-auto-test/tests/chat/test_chat_send_with_type.py
   - manager: MessageManager
     api: deliverOnlineOnly

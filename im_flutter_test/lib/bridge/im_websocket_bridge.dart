@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'bridge_socket.dart';
 import 'event_bridge_handler.dart';
@@ -46,6 +48,32 @@ class IMWebSocketBridge {
 
   static bool _isLoginMethod(String? method) {
     return method == _login || method == _loginWithAgoraToken;
+  }
+
+  Future<Map<String, dynamic>> _prepareTestMediaAsset(
+    Map<String, dynamic> info,
+  ) async {
+    final assetName = info['assetName']?.toString() ?? '';
+    if (assetName.isEmpty) {
+      throw PlatformException(
+        code: 'invalid_args',
+        message: 'prepareTestMediaAsset requires assetName',
+      );
+    }
+    final assetPath = 'assets/media/$assetName';
+    final data = await rootBundle.load(assetPath);
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$assetName');
+    await file.writeAsBytes(
+      Uint8List.sublistView(data),
+      flush: true,
+    );
+    return {
+      'assetName': assetName,
+      'assetPath': assetPath,
+      'localPath': file.path,
+      'fileSize': await file.length(),
+    };
   }
 
   EMOptions _optionsFromInitInfo(Map<String, dynamic> info) {
@@ -387,6 +415,22 @@ class IMWebSocketBridge {
       return;
     }
 
+    if (managerName == 'Client' && method == 'prepareTestMediaAsset') {
+      final info =
+          args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
+      try {
+        final result = await _prepareTestMediaAsset(info);
+        final resp = _successResponse(request, {method: result}, method);
+        _send(ws, resp);
+        onLog?.call(text, jsonEncode(resp));
+      } catch (e) {
+        final resp = _errorResponse(id, -1, 'prepareTestMediaAsset failed: $e');
+        _send(ws, resp);
+        onLog?.call(text, jsonEncode(resp));
+      }
+      return;
+    }
+
     final manager = _getManager(managerName);
     if (manager == null) {
       final resp = _errorResponse(id, -1, 'Unknown manager: $managerName');
@@ -499,7 +543,26 @@ class IMWebSocketBridge {
         }
       }
 
-      final dynamic result = await manager.callNativeMethod(method, args);
+      final dynamic result;
+      if (managerName == 'ChatManager' && method == 'sendMessageWithType') {
+        final typeStr = args['type']?.toString();
+        final payloadRaw = args['payload'];
+        if (typeStr == null || payloadRaw is! Map) {
+          throw PlatformException(
+            code: 'invalid_args',
+            message: 'sendMessageWithType requires type and payload',
+          );
+        }
+        final type = EMSendMessageType.values.byName(typeStr);
+        final payload = Map<String, dynamic>.from(payloadRaw);
+        final message = await EMClient.getInstance.chatManager.sendMessageWithType(
+          type,
+          payload,
+        );
+        result = {method: message.toJson()};
+      } else {
+        result = await manager.callNativeMethod(method, args);
+      }
       // 返回的 result 是 map 格式，key 是 method，value 是结果 JSON，通过 WebSocket 发送回去。
       if (result is Map<String, dynamic>) {
         response = _successResponse(request, result, method);

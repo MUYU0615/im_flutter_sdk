@@ -8,7 +8,12 @@ import pytest
 from src import Cmd, ge, ne
 from tests.chat._utils import build_text
 
-pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat4_23_0]
+pytestmark = [
+    pytest.mark.client,
+    pytest.mark.chat,
+    pytest.mark.agorachat4_23_0,
+    pytest.mark.real_e2e,
+]
 
 
 def _skip_if_missing_plugin(resp: dict, api_name: str) -> None:
@@ -23,15 +28,35 @@ def _fail_if_error(resp: dict, api_name: str) -> None:
         pytest.fail(f"{api_name} 返回错误: {resp}")
 
 
-def _wait_message_success(device, temp_id: str, *, timeout: float = 20.0) -> dict:
+def _wait_message_success(
+    device,
+    temp_id: str,
+    *,
+    timeout: float = 20.0,
+    body_type: int | None = None,
+    from_user: str | None = None,
+    to_user: str | None = None,
+) -> dict:
     last = None
     for _ in range(8):
         evt = device.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=timeout)
         last = evt
         if not evt:
             continue
-        cand = (evt.get("data") or {}).get("msgId")
-        if str(cand) == str(temp_id):
+        data = evt.get("data") or {}
+        msg = data.get("msg") or {}
+        cand = data.get("msgId")
+        cand_body_type = (msg.get("body") or {}).get("type")
+        if (
+            str(cand) == str(temp_id)
+            or str(msg.get("msgId")) == str(temp_id)
+            or (
+                body_type is not None
+                and cand_body_type == body_type
+                and (from_user is None or msg.get("from") == from_user)
+                and (to_user is None or msg.get("to") == to_user)
+            )
+        ):
             return evt
     pytest.fail(f"未收到匹配 tempId 的 onMessageSuccess: tempId={temp_id}, last={last}")
 
@@ -121,6 +146,7 @@ def _assert_received_attachment_message(
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",
@@ -159,6 +185,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",
@@ -197,7 +224,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
         expected={
             "type": "event",
             "eventType": Cmd.onMessageProgress.value,
-            "data": {"msgId": "{{msgId}}", "progress": ge(0)},
+            "data": {"msgId": "{{msgId}}", "progress": ge(0), "operation": "message_progress"},
         },
         context={"msgId": msg_id},
         ignore_keys={"timestamp", "sequence"},
@@ -209,7 +236,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msgId": "{{msgId}}",
+                "operation": "message_success",
                 "msg": {
                     "msgId": "{{msgId}}",
                     "body": {"type": ne(None), "fileStatus": ne(None)},
@@ -224,6 +251,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",
@@ -281,6 +309,7 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",
@@ -319,7 +348,7 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
         expected={
             "type": "event",
             "eventType": Cmd.onMessageProgress.value,
-            "data": {"msgId": "{{msgId}}", "progress": ge(0)},
+            "data": {"msgId": "{{msgId}}", "progress": ge(0), "operation": "message_progress"},
         },
         context={"msgId": msg_id},
         ignore_keys={"timestamp", "sequence"},
@@ -331,7 +360,7 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msgId": "{{msgId}}",
+                "operation": "message_success",
                 "msg": {
                     "msgId": "{{msgId}}",
                     "body": {"type": ne(None), "fileStatus": ne(None)},
@@ -346,6 +375,7 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",
@@ -380,6 +410,18 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
     )
 
 
+def _prepare_media_asset(device, asset_name: str) -> dict:
+    resp = device.call(
+        "Client",
+        "prepareTestMediaAsset",
+        info={"assetName": asset_name},
+    )
+    _fail_if_error(resp, "prepareTestMediaAsset")
+    result = resp.get("result") or {}
+    assert result.get("localPath"), f"prepareTestMediaAsset 未返回 localPath: {resp}"
+    return result
+
+
 def _send_with_type(device_a, device_b, assert_api, user_a: str, user_b: str, *, type_key: str, payload: dict) -> tuple[dict, dict, dict]:
     info = {"type": type_key, "payload": payload, "chatType": 0}
     resp = device_a.call("ChatManager", Cmd.sendMessageWithType.value, info=info)
@@ -388,7 +430,20 @@ def _send_with_type(device_a, device_b, assert_api, user_a: str, user_b: str, *,
     temp_id = ((resp.get("result") or {}).get("msgId"))
     assert temp_id, f"sendMessageWithType 未返回临时 msgId: {resp}"
 
-    evt_success = _wait_message_success(device_a, temp_id)
+    body_type_by_send_type = {
+        "txt": 0,
+        "image": 1,
+        "video": 2,
+        "combine": 8,
+        "file": 5,
+    }
+    evt_success = _wait_message_success(
+        device_a,
+        temp_id,
+        body_type=body_type_by_send_type.get(type_key),
+        from_user=user_a,
+        to_user=user_b,
+    )
     sent_msg = ((evt_success.get("data") or {}).get("msg") or {})
     real_id = sent_msg.get("msgId")
     assert real_id, f"onMessageSuccess 未返回服务器 msgId: {evt_success}"
@@ -435,6 +490,7 @@ def _send_with_type(device_a, device_b, assert_api, user_a: str, user_b: str, *,
         "localTime",
         "broadcast",
         "onlineState",
+        "isListened",
         "targetLanguages",
         "translations",
         "fileSize",
@@ -480,7 +536,7 @@ def _send_with_type(device_a, device_b, assert_api, user_a: str, user_b: str, *,
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msgId": "{{tempId}}",
+                "operation": "message_success",
                 "msg": {
                     "msgId": "{{realId}}",
                     "from": "{{fromUser}}",
@@ -725,6 +781,7 @@ def test_send_text_message_with_webhook_env(device_a, device_b, assert_api, user
 
 
 def test_combine_forward_send_receive_and_inner_attachment_download(device_a, device_b, assert_api, user_a, user_b):
+    image_media = _prepare_media_asset(device_a, "bigPic.jpg")
     _, image_sent, _ = _send_with_type(
         device_a,
         device_b,
@@ -732,8 +789,15 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
         user_a,
         user_b,
         type_key="image",
-        payload={"targetId": user_b},
+        payload={
+            "targetId": user_b,
+            "filePath": image_media["localPath"],
+            "displayName": "bigPic.jpg",
+            "fileSize": image_media.get("fileSize"),
+        },
     )
+    video_media = _prepare_media_asset(device_a, "video.mov")
+    video_thumb = _prepare_media_asset(device_a, "bigPic.jpg")
     _, video_sent, _ = _send_with_type(
         device_a,
         device_b,
@@ -741,7 +805,14 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
         user_a,
         user_b,
         type_key="video",
-        payload={"targetId": user_b},
+        payload={
+            "targetId": user_b,
+            "filePath": video_media["localPath"],
+            "displayName": "video.mov",
+            "fileSize": video_media.get("fileSize"),
+            "thumbnailLocalPath": video_thumb["localPath"],
+            "duration": 1,
+        },
     )
 
     image_msg_id = image_sent["msgId"]
@@ -801,6 +872,7 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
             "localTime",
             "broadcast",
             "onlineState",
+            "isListened",
             "translations",
             "targetLanguages",
             "receiverList",

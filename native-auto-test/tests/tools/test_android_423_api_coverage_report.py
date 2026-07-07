@@ -718,6 +718,41 @@ def test_review_actions_can_override_wrapper_missing_conclusion():
     assert insert_row["coverage_conclusion"] == "covered_by_case"
     assert insert_row["native_test_requirement"] == "direct_e2e"
 
+    text_row = row_by_key[("MessageManager", "createTextSendMessage")]
+    assert text_row["review_action"] == "direct_e2e_case"
+    assert text_row["coverage_conclusion"] == "covered_by_case"
+    assert text_row["native_test_requirement"] == "direct_e2e"
+
+    txt_row = row_by_key[("MessageManager", "createTxtSendMessage")]
+    assert txt_row["review_action"] == "direct_e2e_case"
+    assert txt_row["coverage_conclusion"] == "covered_by_case"
+    assert txt_row["native_test_requirement"] == "direct_e2e"
+
+    video_row = row_by_key[("MessageManager", "createVideoSendMessage")]
+    assert video_row["review_action"] == "direct_e2e_case"
+    assert video_row["coverage_conclusion"] == "covered_by_case"
+    assert video_row["native_test_requirement"] == "direct_e2e"
+
+    location_row = row_by_key[("MessageManager", "createLocationSendMessage")]
+    assert location_row["review_action"] == "direct_e2e_case"
+    assert location_row["coverage_conclusion"] == "covered_by_case"
+    assert location_row["native_test_requirement"] == "direct_e2e"
+
+    combine_row = row_by_key[("MessageManager", "createCombinedSendMessage")]
+    assert combine_row["review_action"] == "direct_e2e_case"
+    assert combine_row["coverage_conclusion"] == "covered_by_case"
+    assert combine_row["native_test_requirement"] == "direct_e2e"
+
+    gif_row = row_by_key[("MessageManager", "createGifImageMessage")]
+    assert gif_row["review_action"] == "direct_e2e_case"
+    assert gif_row["coverage_conclusion"] == "covered_by_case"
+    assert gif_row["native_test_requirement"] == "direct_e2e"
+
+    voice_row = row_by_key[("MessageManager", "createVoiceSendMessage")]
+    assert voice_row["review_action"] == "direct_e2e_case"
+    assert voice_row["coverage_conclusion"] == "covered_by_case"
+    assert voice_row["native_test_requirement"] == "direct_e2e"
+
     mapping_row = row_by_key[("ConversationManager", "msgType2ConversationType")]
     assert mapping_row["review_action"] == "not_applicable"
     assert mapping_row["coverage_conclusion"] == "not_applicable"
