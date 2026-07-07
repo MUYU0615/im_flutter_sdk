@@ -695,3 +695,30 @@ def test_native_wrapper_missing_summary_counts_only_wrapper_missing_conclusions(
             expected[row["manager"]] = expected.get(row["manager"], 0) + 1
 
     assert summary["missing_native_android_wrapper_by_manager"] == expected
+
+
+def test_review_actions_can_override_wrapper_missing_conclusion():
+    rows = build_rows()
+    if not any(row["row_kind"] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "native_android_api"
+    }
+
+    clear_row = row_by_key[("ConversationManager", "clear")]
+    assert clear_row["review_action"] == "model_property_covered"
+    assert clear_row["coverage_conclusion"] == "indirect_covered_by_case"
+    assert clear_row["native_test_requirement"] == "indirect_e2e"
+
+    insert_row = row_by_key[("ConversationManager", "insertMessage")]
+    assert insert_row["review_action"] == "indirect_e2e_only"
+    assert insert_row["coverage_conclusion"] == "indirect_covered_by_case"
+    assert insert_row["native_test_requirement"] == "indirect_e2e"
+
+    mapping_row = row_by_key[("ConversationManager", "msgType2ConversationType")]
+    assert mapping_row["review_action"] == "not_applicable"
+    assert mapping_row["coverage_conclusion"] == "not_applicable"
+    assert mapping_row["native_test_requirement"] == "not_applicable"

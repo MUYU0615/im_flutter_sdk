@@ -1645,6 +1645,18 @@ def build_rows() -> list[dict[str, str]]:
                 "coverage_semantics_group": "listener",
                 "coverage_conclusion": "indirect_covered_by_case",
             }
+        elif review.get("action") in {"indirect_e2e_only", "model_property_covered", "manager_getter_internal"}:
+            assessment = {
+                **assessment,
+                "native_test_requirement": "indirect_e2e",
+                "coverage_conclusion": "indirect_covered_by_case",
+            }
+        elif review.get("action") in {"not_applicable", "platform_native_missing"}:
+            assessment = {
+                **assessment,
+                "native_test_requirement": "not_applicable",
+                "coverage_conclusion": "not_applicable",
+            }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})
         indirect_files = _indirect_coverage_files(manager, assessment["coverage_semantics_group"])
