@@ -267,6 +267,21 @@ make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id
 - `GroupManager.updateGroupAvatar`
 - `PresenceManager.publishPresenceWithDescription / presenceSubscribe / fetchPresenceStatus / fetchSubscribedMembersWithPageNum / presenceUnsubscribe`
 
+维护规则：
+
+- `config/android_sanity_cases.txt` 是这组 sanity case 的唯一事实源；需要增删 Android 基线 case 时，只改这个文件。
+- `src/tools/android_sanity_runner.py` 只负责读取清单并委托 `android_e2e_runner` 执行，不在代码里硬编码某一条业务 case。
+- 新加入 sanity 的 case 必须已经在真实 Android runner 下稳定通过，并且能代表一个明确的 manager 或链路，不把临时调试 case、discover case 或环境脆弱 case 放进来。
+- 这组 sanity 的目标是快速确认 runner、`Client.init`、登录后 `startCallback`、联系人前置和基础消息链是否可用；它不是 Android 全量发版回归的替代。
+
+产物位置：
+
+- pytest HTML：`out/log/android/<run_id>-android-pytest.html`
+- Allure：`out/log/android/<run_id>-allure-results/`
+- case 结果：`out/test-results/<run_id>-case-results.json`、`out/test-results/<run_id>-case-results.csv`
+
+当 sanity 失败时，应先看 HTML 报告和 `out/log/android/` 下同一 `run_id` 的日志，再决定是否进入更大范围的 `e2e-full-run`。
+
 需要临时追加 pytest 参数时，仍然放到 `ARGS` 末尾，例如：
 
 ```bash
