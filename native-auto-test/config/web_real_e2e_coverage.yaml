@@ -307,20 +307,21 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_thread_event_for_create
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-multidevice-thread-create1
-        --app-url http://127.0.0.1:8285 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 150 --startup-timeout 240 --flutter-timeout
-        360 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_thread_event_for_create
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-thread-recheck-20260708-000003
+        --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
+        --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
+        240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_thread_event_for_create
         --target-platform web --web-sdk-runtime imsdk -q -s
-      reason: The Flutter Web bridge now forwards WebSDK2 onMultiDeviceThread if
-        it is emitted. The real E2E created a real group, sent a real parent
-        message, logged a second Web client into the same user, and created a
-        real chat thread; the second client received normal onChatThreadCreated
-        but no onMultiDeviceThread callback.
-      reason_zh: Flutter Web bridge 已经接入 WebSDK2 的 `onMultiDeviceThread`
-        转发路径。真实 E2E 创建真实群、发送真实父消息、让第二个 Web client 登录同一用户
-        后创建真实 thread；第二端收到普通 `onChatThreadCreated`，但没有收到
-        `onMultiDeviceThread`，因此仍不能算支持。
+      reason: The focused real E2E shows the secondary same-user Web runtime now
+        logs both WebSDK2 onMultiDeviceThread and onChatThreadCreated after a
+        real createChatThread call, but the JSON bridge still did not deliver a
+        consumable onMultiDeviceThreadEvent to the test client. The runtime
+        callback exists; the bridged test-surface event remains unavailable.
+      reason_zh: 最新 focused real E2E 证明，同账号第二个 Web runtime 在真实
+        `createChatThread` 之后，debug 已经能看到 WebSDK2 的
+        `onMultiDeviceThread` 和普通 `onChatThreadCreated`。但 JSON bridge 仍然没有把
+        可消费的 `onMultiDeviceThreadEvent` 投递给测试端，所以当前阻塞点已经不是 runtime
+        没有 callback，而是 bridge 测试面还不可用。
     onMultiDeviceRemoveMessagesEvent:
       real_e2e_status: blocked
       tests:
