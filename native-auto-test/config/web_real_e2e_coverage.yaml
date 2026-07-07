@@ -409,26 +409,37 @@ web_real_e2e:
       verified_by:
       - rg -n "onUserDidRemoveFromServer|onUserDidForbidByServer|onUserAuthenticationFailed"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
+      - rg -n "USER_REMOVED"
+        im_flutter_test/web/vendor/easemob/Easemob-chat.js
       reason: Current Web real runtime/bridge only wires onConnected and
-        onDisconnected account-session callbacks; it does not expose or forward
-        a verified real Web SDK onUserDidRemoveFromServer callback into the JSON
-        bridge.
+        onDisconnected account-session callbacks. The bundled Web SDK still
+        contains low-level StatisticsBody session-operation enums such as
+        USER_REMOVED, but the high-level IMSDK runtime handler map and JSON
+        bridge do not expose a consumable onUserDidRemoveFromServer callback.
       reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
-        `onDisconnected` 会话回调，并没有把可验证的真实
-        `onUserDidRemoveFromServer` 回调暴露到 JSON bridge。
+        `onDisconnected` 会话回调。vendor Web SDK 里仍能看到
+        `USER_REMOVED` 这类底层 StatisticsBody 会话操作枚举，但高层 IMSDK
+        runtime handler 和 JSON bridge 都没有把可消费的
+        `onUserDidRemoveFromServer` 回调暴露出来。
     onUserDidForbidByServer:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "onUserDidRemoveFromServer|onUserDidForbidByServer|onUserAuthenticationFailed"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
+      - rg -n "IM_FORBIDDEN|PERMISSION_DENIED"
+        im_flutter_test/web/vendor/easemob/Easemob-chat.js
       reason: Current Web real runtime/bridge only wires onConnected and
-        onDisconnected account-session callbacks; it does not expose or forward
-        a verified real Web SDK onUserDidForbidByServer callback into the JSON
-        bridge.
+        onDisconnected account-session callbacks. The bundled Web SDK still
+        contains low-level session/provision status enums such as IM_FORBIDDEN
+        and PERMISSION_DENIED, but the high-level IMSDK runtime handler map and
+        JSON bridge do not expose a consumable onUserDidForbidByServer
+        callback.
       reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
-        `onDisconnected` 会话回调，并没有把可验证的真实
-        `onUserDidForbidByServer` 回调暴露到 JSON bridge。
+        `onDisconnected` 会话回调。vendor Web SDK 里仍能看到
+        `IM_FORBIDDEN`、`PERMISSION_DENIED` 这类底层会话/Provision 状态枚举，
+        但高层 IMSDK runtime handler 和 JSON bridge 都没有把可消费的
+        `onUserDidForbidByServer` 回调暴露出来。
     onUserDidChangePassword:
       real_e2e_status: blocked
       tests: []
@@ -484,13 +495,19 @@ web_real_e2e:
       verified_by:
       - rg -n "onUserDidRemoveFromServer|onUserDidForbidByServer|onUserAuthenticationFailed"
         im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
+      - rg -n "UNAUTHORIZED|TOKEN_EXPIRED|FAIL"
+        im_flutter_test/web/vendor/easemob/Easemob-chat.js
       reason: Current Web real runtime/bridge only wires onConnected and
-        onDisconnected account-session callbacks; it does not expose or forward
-        a verified real Web SDK onUserAuthenticationFailed callback into the
-        JSON bridge.
+        onDisconnected account-session callbacks. The bundled Web SDK still
+        contains low-level auth/session failure status enums such as
+        UNAUTHORIZED and TOKEN_EXPIRED, but the high-level IMSDK runtime
+        handler map and JSON bridge do not expose a consumable
+        onUserAuthenticationFailed callback.
       reason_zh: 当前 Web 真实 runtime/bridge 仅接入了 `onConnected` /
-        `onDisconnected` 会话回调，并没有把可验证的真实
-        `onUserAuthenticationFailed` 回调暴露到 JSON bridge。
+        `onDisconnected` 会话回调。vendor Web SDK 里仍能看到
+        `UNAUTHORIZED`、`TOKEN_EXPIRED` 这类底层鉴权/会话失败状态枚举，但高层
+        IMSDK runtime handler 和 JSON bridge 都没有把可消费的
+        `onUserAuthenticationFailed` 回调暴露出来。
     onSendDataToFlutter:
       real_e2e_status: blocked
       tests: []
