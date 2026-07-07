@@ -282,45 +282,41 @@ web_real_e2e:
         转发路径，但真实 E2E 证明同账号第二个 Web client 在 createGroup 后只收到普通
         `onGroupMembersJoined`，没有收到 `onMultiDeviceGroup`，因此仍不能算支持。
     onMultiDeviceContactEvent:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_contact_event_for_blocklist
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-contact-recheck-20260708-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-contact-bridgefix-20260708-000001
         --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
         --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_contact_event_for_blocklist
         --target-platform web --web-sdk-runtime imsdk -q -s
-      reason: The focused real E2E now shows the secondary same-user Web runtime
-        logs WebSDK2 onMultiDeviceContact after a real addUserToBlockList call,
-        but the JSON bridge still did not deliver a consumable
-        onMultiDeviceContactEvent to the test client. The runtime callback
-        exists; the bridged test-surface event remains unavailable.
-      reason_zh: 最新 focused real E2E 证明，同账号第二个 Web runtime 在真实
-        `addUserToBlockList` 之后，debug 已经能看到 WebSDK2 的
-        `onMultiDeviceContact`。但 JSON bridge 仍然没有把可消费的
-        `onMultiDeviceContactEvent` 投递给测试端，所以当前阻塞点已经不是 runtime
-        没有 callback，而是 bridge 测试面还不可用。
+      reason: The real E2E now shows the secondary same-user Web runtime logs
+        WebSDK2 onMultiDeviceContact after a real addUserToBlockList call, and
+        the Flutter Web bridge replay path delivers a consumable
+        onMultiDeviceContactEvent to the test client.
+      reason_zh: 最新真实 E2E 证明，同账号第二个 Web runtime 在真实
+        `addUserToBlockList` 之后，既能看到 WebSDK2 的
+        `onMultiDeviceContact`，也能通过 Flutter Web bridge replay 路径把
+        `onMultiDeviceContactEvent` 投递给测试端，因此当前可以算支持。
     onMultiDeviceThreadEvent:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_thread_event_for_create
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-thread-recheck-20260708-000003
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-thread-bridgefix-20260708-000001
         --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
         --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_thread_event_for_create
         --target-platform web --web-sdk-runtime imsdk -q -s
-      reason: The focused real E2E shows the secondary same-user Web runtime now
-        logs both WebSDK2 onMultiDeviceThread and onChatThreadCreated after a
-        real createChatThread call, but the JSON bridge still did not deliver a
-        consumable onMultiDeviceThreadEvent to the test client. The runtime
-        callback exists; the bridged test-surface event remains unavailable.
-      reason_zh: 最新 focused real E2E 证明，同账号第二个 Web runtime 在真实
-        `createChatThread` 之后，debug 已经能看到 WebSDK2 的
-        `onMultiDeviceThread` 和普通 `onChatThreadCreated`。但 JSON bridge 仍然没有把
-        可消费的 `onMultiDeviceThreadEvent` 投递给测试端，所以当前阻塞点已经不是 runtime
-        没有 callback，而是 bridge 测试面还不可用。
+      reason: The real E2E now shows the secondary same-user Web runtime logs
+        both WebSDK2 onMultiDeviceThread and onChatThreadCreated after a real
+        createChatThread call, and the Flutter Web bridge replay path delivers
+        a consumable onMultiDeviceThreadEvent to the test client.
+      reason_zh: 最新真实 E2E 证明，同账号第二个 Web runtime 在真实
+        `createChatThread` 之后，既能看到 WebSDK2 的 `onMultiDeviceThread` 和普通
+        `onChatThreadCreated`，也能通过 Flutter Web bridge replay 路径把
+        `onMultiDeviceThreadEvent` 投递给测试端，因此当前可以算支持。
     onMultiDeviceRemoveMessagesEvent:
       real_e2e_status: blocked
       tests:
@@ -341,25 +337,23 @@ web_real_e2e:
         IMSDK 高层 `chatManager` 成功执行。真实 E2E 证明同账号第二端在删消息后收到
         会话列表更新，但没有收到 `onMultiDeviceMessageRemoved`，因此仍不能算支持。
     onMultiDevicesConversationEvent:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_conversation_event_for_pin
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-conv-recheck-20260708-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-multidevice-conv-bridgefix-20260708-000001
         --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
         --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         240 -- tests/web_real/test_real_web_chat_server.py::test_real_web_multi_device_conversation_event_for_pin
         --target-platform web --web-sdk-runtime imsdk -q -s
-      reason: The focused real E2E now shows the secondary same-user Web runtime
-        logs WebSDK2 onMultiDeviceConversation after a real pinConversation
-        call, but the JSON bridge still did not deliver a consumable
-        onMultiDevicesConversationEvent to the test client. The runtime
-        callback exists; the bridged test-surface event remains unavailable.
-      reason_zh: 最新 focused real E2E 证明，同账号第二个 Web runtime 在真实
-        `pinConversation` 之后，debug 已经能看到 WebSDK2 的
-        `onMultiDeviceConversation`。但 JSON bridge 仍然没有把可消费的
-        `onMultiDevicesConversationEvent` 投递给测试端，所以当前阻塞点已经不是
-        runtime 没有 callback，而是 bridge 测试面还不可用。
+      reason: The real E2E now shows the secondary same-user Web runtime logs
+        WebSDK2 onMultiDeviceConversation after a real pinConversation call,
+        and the Flutter Web bridge replay path delivers a consumable
+        onMultiDevicesConversationEvent to the test client.
+      reason_zh: 最新真实 E2E 证明，同账号第二个 Web runtime 在真实
+        `pinConversation` 之后，既能看到 WebSDK2 的
+        `onMultiDeviceConversation`，也能通过 Flutter Web bridge replay 路径把
+        `onMultiDevicesConversationEvent` 投递给测试端，因此当前可以算支持。
     onConnected:
       real_e2e_status: supported
       tests:

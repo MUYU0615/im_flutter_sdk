@@ -62,6 +62,7 @@ class ClientWeb extends Client {
   String _sdkMode = 'real_sdk';
   Map<String, dynamic>? _pendingConnectedEvent;
   Map<String, dynamic>? _pendingDisconnectedEvent;
+  final List<Map<String, dynamic>> _pendingRealClientEvents = [];
 
   @override
   ChatManager get chatManager => _chatManager;
@@ -165,6 +166,15 @@ class ClientWeb extends Client {
         return {
           method: realWebSdkSyncState(_realSdk?.rawClient),
         };
+      case 'getPendingRealClientEvents':
+        return {
+          method: _pendingRealClientEvents
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(),
+        };
+      case 'clearPendingRealClientEvents':
+        _pendingRealClientEvents.clear();
+        return {method: true};
       case 'dumpRealSdkContactManagerMethods':
         return {method: _realSdk?.dumpContactManagerMethods() ?? <String>[]};
       case 'dumpRealSdkChatRoomManagerMethods':
@@ -350,8 +360,20 @@ class ClientWeb extends Client {
     String method,
     Map<String, dynamic> event,
   ) async {
+    _pendingRealClientEvents.add({
+      'method': method,
+      'event': Map<String, dynamic>.from(event),
+    });
+    _realSdk?.recordExternalDebugEvent('client_emit_real_client_event_begin', {
+      'method': method,
+      'event': event,
+      'callbackStarted': _callbackStarted,
+    });
     if (!_callbackStarted) return;
     await emitClientEvent(method, event);
+    _realSdk?.recordExternalDebugEvent('client_emit_real_client_event_end', {
+      'method': method,
+    });
   }
 
   Future<void> _emitRealConnected([Map<String, dynamic>? event]) async {

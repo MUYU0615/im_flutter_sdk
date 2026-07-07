@@ -54,6 +54,7 @@ class IMWebSocketBridge {
   Timer? _webRealTextFlushTimer;
   final Set<String> _flushedWebRealTextMsgIds = <String>{};
   final Set<String> _flushedWebRealSuccessMsgIds = <String>{};
+  final Set<String> _flushedWebRealClientEventKeys = <String>{};
 
   static bool _isLoginMethod(String? method) {
     return method == _login || method == _loginWithAgoraToken;
@@ -362,6 +363,7 @@ class IMWebSocketBridge {
     _webRealTextFlushTimer = null;
     _flushedWebRealTextMsgIds.clear();
     _flushedWebRealSuccessMsgIds.clear();
+    _flushedWebRealClientEventKeys.clear();
   }
 
   Future<void> _flushPendingWebRealTextMessages() async {
@@ -410,6 +412,40 @@ class IMWebSocketBridge {
         _flushedWebRealSuccessMsgIds.add(msgId);
         _logV('flush pending real web success message: $msgId');
         EventBridgeHandler.instance.emitMessageSuccess(message: message);
+      }
+
+      final clientEventResult = await Client.instance.callNativeMethod(
+        'getPendingRealClientEvents',
+        <String, dynamic>{},
+      );
+      final clientEventMap = clientEventResult is Map<String, dynamic>
+          ? clientEventResult
+          : clientEventResult is Map
+              ? Map<String, dynamic>.from(clientEventResult)
+              : const <String, dynamic>{};
+      final clientEventList = clientEventMap['getPendingRealClientEvents'];
+      if (clientEventList is! List) return;
+      for (final item in clientEventList) {
+        if (item is! Map) continue;
+        final entry = Map<String, dynamic>.from(item);
+        final method = entry['method']?.toString();
+        final event =
+            entry['event'] is Map
+                ? Map<String, dynamic>.from(entry['event'])
+                : <String, dynamic>{};
+        if (method == null || method.isEmpty || event.isEmpty) continue;
+        final dedupeKey = jsonEncode(<String, dynamic>{
+          'method': method,
+          'operation': event['operation'],
+          'category': event['category'],
+          'target': event['target'],
+          'convId': event['convId'],
+          'event': event['event'],
+        });
+        if (_flushedWebRealClientEventKeys.contains(dedupeKey)) continue;
+        _flushedWebRealClientEventKeys.add(dedupeKey);
+        _logV('flush pending real web client event: $method');
+        sendEvent(method, event);
       }
     } catch (e, st) {
       _logE('flush pending real web text messages: $e\n$st');
