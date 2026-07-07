@@ -1577,6 +1577,118 @@ native_api_review:
     batch: message_model_review
     reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: ChatManager
+    api: addConversationListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "消息与会话监听通过 startCallback 后接收消息与会话事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/chat/test_chat_event_coverage.py
+  - manager: ChatManager
+    api: addMessageListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "消息与会话监听通过 startCallback 后接收消息与会话事件，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/chat/test_chat_event_coverage.py
+  - manager: ChatManager
+    api: removeConversationListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "消息与会话监听通过 startCallback 后接收消息与会话事件，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/chat/test_chat_event_coverage.py
+  - manager: ChatManager
+    api: removeMessageListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "消息与会话监听通过 startCallback 后接收消息与会话事件，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/chat/test_chat_event_coverage.py
+  - manager: ChatRoomManager
+    api: addChatRoomChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "聊天室监听属于平台内部回调 wiring，通过 onChatRoomChanged 事件流验证，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_event_coverage.py
+  - manager: ChatRoomManager
+    api: removeChatRoomChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "聊天室监听属于平台内部回调 wiring，通过 onChatRoomChanged 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_event_coverage.py
+  - manager: ChatRoomManager
+    api: removeChatRoomListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "聊天室监听属于平台内部回调 wiring，通过 onChatRoomChanged 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/chatroom/test_chatroom_event_coverage.py
+  - manager: ChatThreadManager
+    api: addChatThreadChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "子区监听属于平台内部回调 wiring，通过 chat thread 创建、更新、销毁、踢出事件验证，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: removeChatThreadChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "子区监听属于平台内部回调 wiring，通过 chat thread 创建、更新、销毁、踢出事件验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ContactManager
+    api: removeContactListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "联系人监听属于平台内部回调 wiring，通过 onContactChanged 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/contact/test_contact_event_helpers.py
+  - manager: GroupManager
+    api: addGroupChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "群组监听属于平台内部回调 wiring，通过 onGroupChanged 事件流验证，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/group/test_group_event_helpers.py
+  - manager: GroupManager
+    api: removeGroupChangeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "群组监听属于平台内部回调 wiring，通过 onGroupChanged 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/group/test_group_event_helpers.py
+  - manager: PresenceManager
+    api: addListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "Presence 监听属于平台内部回调 wiring，通过 onPresenceStatusChanged 事件流验证，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/presence/test_presence.py
+  - manager: PresenceManager
+    api: removeListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "Presence 监听属于平台内部回调 wiring，通过 onPresenceStatusChanged 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/presence/test_presence.py
+  - manager: UserInfoManager
+    api: addUserInfoManagerListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "用户资料监听属于平台内部回调 wiring，通过 user info 事件流验证，不应单独暴露该注册方法。"
+    target_case: native-auto-test/tests/userinfo/test_user_info.py
+  - manager: UserInfoManager
+    api: removeUserInfoManagerListener
+    action: listener_registration_internal
+    priority: P2
+    batch: listener_internal_review
+    reason_zh: "用户资料监听属于平台内部回调 wiring，通过 user info 事件流验证，不应单独暴露该清理方法。"
+    target_case: native-auto-test/tests/userinfo/test_user_info.py
   - manager: PresenceManager
     api: clearListeners
     action: listener_registration_internal
