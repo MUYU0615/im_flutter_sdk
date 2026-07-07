@@ -3151,16 +3151,9 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-group-event-imsdk-verify
-        --app-url http://127.0.0.1:8269 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 120 --startup-timeout 180 --flutter-timeout
-        240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
-        --target-platform web --web-sdk-runtime imsdk -q -s
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-chatroom-group-events-imsdk-final
-        --app-url http://127.0.0.1:8264 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 120 --startup-timeout 180 --flutter-timeout
-        240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_announcement_changed_event_imsdk_runtime
-        tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-changed-recheck-20260707-000003
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_announcement_changed_event_imsdk_runtime
         --target-platform web --web-sdk-runtime imsdk -q -s
       reason: The imsdk runtime registers the groupManager event handler, but a
         focused verification run did not deliver a real onGroupChanged callback
