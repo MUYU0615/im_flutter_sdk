@@ -36,6 +36,15 @@ make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --ru
 
 直接 `pytest` 只用于低层调试，不作为正式发版报告入口。
 
+Android 已有一个固定代表性基线入口：
+
+```bash
+cd native-auto-test
+make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id>"
+```
+
+它会读取 `config/android_sanity_cases.txt`，执行一组已验证过的正式 Android `real_e2e` case，用于快速确认 runner、登录/startCallback、联系人前置和基础消息链是否正常。需要回归更大范围前，优先先跑这组 sanity。
+
 ## 环境和 Case 分层
 
 环境准备负责：

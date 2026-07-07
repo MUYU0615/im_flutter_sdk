@@ -36,6 +36,7 @@
   - 可执行测试只放在 `tests/` 下，不要把文档放进 `tests/`。
 - 工具
   - Makefile 暴露常用任务（`make help`）。WS 调用、REST 用户操作、联系人流程优先使用这些 target。
+  - Android 代表性真实基线优先使用 `make android-real-sanity`；不要每次手拼同一组 sanity case。
 - 编辑器与本地产物
   - `.cursor/`、`.DS_Store`、`allure-results/` 不是事实来源，需通过 `.gitignore` 忽略。
 - 断言：禁止自证式 result 断言；优先断言信封字段 + 关键业务字段，或使用类型/条件与 ignore_keys。
@@ -120,3 +121,4 @@
   - 单例发现：`CASES_DISCOVER=1 WS_DEBUG=1 pytest -q tests/<domain>/test_<topic>.py::test_<name> -s`
   - 模块严格：`pytest -q tests/<domain>/test_<topic>.py -s`
   - 全量：`pytest -q tests -s`
+  - Android sanity：`make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id>"`
