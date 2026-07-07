@@ -3493,6 +3493,68 @@ class RealWebSdkClient {
   }
 
   Future<void> destroyChatRoom(String roomId) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final context = js_util.callMethod<Object?>(
+        highLevelClient,
+        'getRestContext',
+        const [],
+      );
+      final contextMap = _asMap(js_util.dartify(context));
+      final restBaseUrl = contextMap['restBaseUrl']?.toString() ?? '';
+      final appKey = contextMap['appKey']?.toString() ?? '';
+      final token = contextMap['token']?.toString() ?? '';
+      final clientResource = contextMap['clientResource']?.toString() ?? '';
+      if (restBaseUrl.isEmpty ||
+          appKey.isEmpty ||
+          token.isEmpty ||
+          clientResource.isEmpty) {
+        throw StateError(
+          'Real Web SDK destroyChatRoom requires restBaseUrl/appKey/token/clientResource.',
+        );
+      }
+      final appKeyParts = appKey.split('#');
+      if (appKeyParts.length != 2) {
+        throw StateError('Invalid appKey for destroyChatRoom: $appKey');
+      }
+      final orgName = Uri.encodeComponent(appKeyParts[0]);
+      final appName = Uri.encodeComponent(appKeyParts[1]);
+      final uri = Uri.parse(
+        '$restBaseUrl/$orgName/$appName/chatrooms/${Uri.encodeComponent(roomId)}',
+      ).replace(
+        queryParameters: <String, String>{
+          'resource': clientResource,
+          'version': 'v3',
+        },
+      );
+      final response = await web.window.fetch(
+        uri.toString().toJS,
+        web.RequestInit(
+          method: 'DELETE',
+          headers: js_util.jsify({
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          }),
+        ),
+      ).toDart;
+      final statusCode = response.status;
+      final body = (await response.text().toDart).toString();
+      if (statusCode < 200 || statusCode >= 300) {
+        _recordDebug('destroyChatRoom_error', {
+          'runtime': 'imsdk',
+          'statusCode': statusCode,
+          'body': body,
+        });
+        throw StateError(
+          'Real Web SDK destroyChatRoom failed: HTTP $statusCode $body',
+        );
+      }
+      _recordDebug('destroyChatRoom_success', {
+        'runtime': 'imsdk',
+        'roomId': roomId,
+      });
+      return;
+    }
     await _callRealSdkVoid('destroyChatRoom', [
       {'chatRoomId': roomId},
     ]);

@@ -2177,23 +2177,20 @@ web_real_e2e:
         方法。直接 create probe 会先报 NoSuchMethodError，因此当前 blocked 的原因不是旧的
         group_authorization 权限错误，而是运行时入口本身不可调用。
     destroyChatRoom:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_modify_and_destroy_server_state
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-chatroom-destroy-recheck-20260707-000002 --web-sdk-mode
-        real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_modify_and_destroy_server_state
-        --target-platform web -q -s"
-      - make web-real-e2e ARGS="--run-id web-chatroom-methods-probe-20260707-000002 --web-sdk-mode
-        real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chatroom_manager_methods_without_global_login
-        --target-platform web -q -s"
-      reason: The current real Web IMSDK high-level chatRoomManager does not expose
-        a destroyChatRoom method. The focused destroy run fails with runtime
-        TypeError before any successful chat room destroy contract can be established.
-      reason_zh: 当前真实 Web IMSDK 的高层 chatRoomManager 没有暴露 destroyChatRoom
-        方法。聚焦 destroy 复核会先在运行时直接报 TypeError，因此当前还不能算支持项。
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-destroy-fix-20260708-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_modify_and_destroy_server_state
+        --target-platform web --web-sdk-runtime imsdk -q -s
+      reason: The latest focused real run updates the room through the real Web
+        SDK path, destroys it through the real REST-backed Web destroyChatRoom
+        path, and verifies the runtime emits destroyChatRoom_success.
+      reason_zh: 最新 focused real run 已经通过真实 Web 路径更新聊天室信息，再通过
+        真实 REST-backed 的 Web destroyChatRoom 路径销毁聊天室，并验证 runtime
+        发出了 destroyChatRoom_success。
     changeChatRoomSubject:
       real_e2e_status: supported
       tests:
