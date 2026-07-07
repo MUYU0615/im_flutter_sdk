@@ -39,7 +39,7 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
     content = "hello-basic"
     resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
     evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    temp_id = (evt_success.get("data") or {}).get("msgId")
+    temp_id = ((resp_send.get("result") or {}).get("msgId"))
     real_id = ((evt_success.get("data") or {}).get("msg") or {}).get("msgId")
     assert_api.assert_response_matches(
         evt_success,
@@ -47,7 +47,7 @@ def test_chat_send_and_received(device_a, device_b, assert_api, user_a, user_b):
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msgId": "{{tempId}}",
+                "operation": "message_success",
                 "msg": {
                     "msgId": "{{realId}}",
                     "from": "{{fromUser}}",
@@ -143,7 +143,7 @@ def test_chat_send_to_self_event(device_a, assert_api, user_a):
     content = f"self-msg-{uuid.uuid4().hex[:6]}"
     resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_a, content))
     evt = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    temp_id = (evt.get("data") or {}).get("msgId")
+    temp_id = ((resp_send.get("result") or {}).get("msgId"))
     real_id = ((evt.get("data") or {}).get("msg") or {}).get("msgId")
     assert_api.assert_response_matches(
         evt,
@@ -151,7 +151,7 @@ def test_chat_send_to_self_event(device_a, assert_api, user_a):
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
             "data": {
-                "msgId": "{{tempId}}",
+                "operation": "message_success",
                 "msg": {
                     "msgId": "{{realId}}",
                     "from": "{{user}}",
