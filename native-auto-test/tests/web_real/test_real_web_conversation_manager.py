@@ -1206,6 +1206,124 @@ def test_real_web_chat_thread_membership_and_update_server_state(
             )
 
 
+@pytest.mark.xfail(
+    reason=(
+        "imsdk removeMemberFromChatThread succeeds, but the removed secondary "
+        "real Web client may not receive onUserKickOutOfChatThread lifecycle callback"
+    ),
+    strict=False,
+)
+def test_real_web_chat_thread_user_kicked_event_imsdk_runtime(
+    primary_device,
+    secondary_device,
+    assert_api,
+    user_a,
+    user_b,
+):
+    group_id = ""
+    thread_id = ""
+    try:
+        created_group = primary_device.call(
+            "GroupManager",
+            Cmd.createGroup.value,
+            info={
+                "groupName": f"real-web-thread-kick-group-{uuid.uuid4().hex[:8]}",
+                "desc": "real web thread kick events",
+                "inviteMembers": [user_b],
+                "options": {"style": 1, "maxCount": 200},
+            },
+        )
+        group = assert_api.get_result(created_group)
+        assert isinstance(group, dict)
+        group_id = group.get("groupId") or ""
+        assert isinstance(group_id, str) and group_id
+
+        primary_device.call("Client", Cmd.startCallback.value, info={})
+        secondary_device.call("Client", Cmd.startCallback.value, info={})
+        primary_device.drain_events(timeout=0.5)
+        secondary_device.drain_events(timeout=0.5)
+
+        content = f"real-web-thread-kick-parent-{uuid.uuid4().hex[:8]}"
+        sent = primary_device.call(
+            "ChatManager",
+            Cmd.sendMessage.value,
+            info=build_text(user_a, group_id, content, chat_type=1),
+        )
+        sent_message = assert_api.get_result(sent)
+        assert isinstance(sent_message, dict)
+        msg_id = sent_message.get("msgId")
+        assert isinstance(msg_id, str) and msg_id
+        primary_device.receive_message(
+            match_event_type=Cmd.onMessageSuccess.value,
+            timeout=20.0,
+        )
+        secondary_device.receive_message(
+            match_event_type=Cmd.onMessagesReceived.value,
+            timeout=30.0,
+        )
+
+        thread_name = f"real-web-thread-kick-{uuid.uuid4().hex[:8]}"
+        created_thread = primary_device.call(
+            "ChatThreadManager",
+            Cmd.createChatThread.value,
+            info={"name": thread_name, "msgId": msg_id, "parentId": group_id},
+        )
+        thread = assert_api.get_result(created_thread)
+        assert isinstance(thread, dict)
+        thread_id = thread.get("threadId") or ""
+        assert isinstance(thread_id, str) and thread_id
+
+        joined = secondary_device.call(
+            "ChatThreadManager",
+            Cmd.joinChatThread.value,
+            info={"threadId": thread_id},
+        )
+        joined_result = assert_api.get_result(joined)
+        assert isinstance(joined_result, dict)
+        assert joined_result.get("threadId") == thread_id
+
+        removed = primary_device.call(
+            "ChatThreadManager",
+            Cmd.removeMemberFromChatThread.value,
+            info={"threadId": thread_id, "memberId": user_b},
+        )
+        assert_api.assert_success(removed)
+
+        kicked_event = secondary_device.receive_message(
+            match_event_type=Cmd.onUserKickOutOfChatThread.value,
+            timeout=20.0,
+        )
+        if kicked_event is None:
+            debug_b = assert_api.get_result(
+                secondary_device.call("Client", "getRealSdkDebug", info={})
+            )
+            pytest.fail(
+                "missing onUserKickOutOfChatThread event; "
+                f"threadId={thread_id}, debug={debug_b!r}"
+            )
+        assert kicked_event is not None
+        kicked_data = kicked_event.get("data")
+        assert isinstance(kicked_data, dict)
+        assert kicked_data.get("threadId") == thread_id
+        assert kicked_data.get("threadName") == thread_name
+        assert kicked_data.get("parentId") == group_id
+        assert kicked_data.get("userId") == user_b
+        assert kicked_data.get("operation") == "user_kicked"
+    finally:
+        if thread_id:
+            primary_device.call(
+                "ChatThreadManager",
+                Cmd.destroyChatThread.value,
+                info={"threadId": thread_id},
+            )
+        if group_id:
+            primary_device.call(
+                "GroupManager",
+                Cmd.destroyGroup.value,
+                info={"groupId": group_id},
+            )
+
+
 def test_real_web_chat_thread_last_message_server_state(
     primary_device,
     secondary_device,

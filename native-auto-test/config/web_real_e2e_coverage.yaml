@@ -3769,15 +3769,16 @@ web_real_e2e:
         `onChatThreadCreate` 回调。
     onUserKickOutOfChatThread:
       real_e2e_status: blocked
-      tests: []
+      tests:
+      - tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_user_kicked_event_imsdk_runtime
       verified_by:
-      - rg -n "onChatThreadCreate|onChatThreadUpdate|onChatThreadDestroy|onUserKickOutOfChatThread"
-        im_flutter_test/lib/bridge/event_bridge_handler.dart
-      - rg -n "emitChatThreadCreated|createChatThread|updateChatThreadSubject|destroyChatThread|removeMemberFromChatThread"
-        im_flutter_test/lib/bridge/im_websocket_bridge.dart
-      reason: Current Web thread events are emitted by the local bridge after command
-        completion and are not sourced from a real Web SDK chat-thread callback
-        stream, so this cannot be counted as real service E2E.
-      reason_zh: 当前被踢出线程事件是在命令成功后由本地 bridge 合成发出的，并不是来自
-        真实 Web SDK 的 thread 回调流，因此不能算真实服务 E2E，也与移动端回调路径
-        未对齐。
+      - python3 -m src.tools.web_e2e_runner --run-id web-thread-kick-event-recheck-20260707-000002
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_user_kicked_event_imsdk_runtime
+        --target-platform web --web-sdk-runtime imsdk -q -s
+      reason: The real removeMemberFromChatThread call succeeds, but the removed
+        secondary Web IMSDK client still does not receive a verifiable
+        onUserKickOutOfChatThread lifecycle callback.
+      reason_zh: 真实 removeMemberFromChatThread 调用已成功，但被移除的另一端
+        Web IMSDK 客户端仍然没有收到可验证的 `onUserKickOutOfChatThread`
+        生命周期回调。
