@@ -494,22 +494,23 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "onTokenWillExpire|renewToken" im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter exposes renewToken execution but does not
-        forward a verified real Web SDK token-will-expire callback to the JSON bridge,
-        and the browser test app has no stable controllable expiry trigger.
-      reason_zh: 当前 Web 侧虽然支持 `renewToken` 调用，但没有把真实 Web SDK 的
-        token 即将过期回调透传到测试 bridge，浏览器测试应用也没有稳定可控的过期触发方式。
+      reason: Current Web real runtime exposes renewToken execution, but neither
+        the runtime event handler nor the JSON bridge wires a verified real Web
+        SDK onTokenWillExpire callback.
+      reason_zh: 当前 Web 真实 runtime 只暴露了 `renewToken` 执行能力，但无论
+        runtime 事件 handler 还是 JSON bridge，都没有接入可验证的真实
+        `onTokenWillExpire` 回调。
     onTokenDidExpire:
       real_e2e_status: blocked
       tests: []
       verified_by:
       - rg -n "onTokenDidExpire|renewToken" im_flutter_test/lib/bridge im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter does not forward a verified real Web SDK
-        token-expired callback to the JSON bridge, and the browser test app has
-        no stable controllable expiry trigger for this event.
-      reason_zh: 当前 Web 真实适配层没有把真实 Web SDK 的 token 已过期回调透传到
-        测试 bridge，浏览器测试应用也没有稳定可控的过期触发方式，因此与 iOS/Android
-        未对齐。
+      reason: Current Web real runtime exposes renewToken execution, but neither
+        the runtime event handler nor the JSON bridge wires a verified real Web
+        SDK onTokenDidExpire callback.
+      reason_zh: 当前 Web 真实 runtime 只暴露了 `renewToken` 执行能力，但无论
+        runtime 事件 handler 还是 JSON bridge，都没有接入可验证的真实
+        `onTokenDidExpire` 回调。
     onAppActiveNumberReachLimit:
       real_e2e_status: blocked
       tests: []
