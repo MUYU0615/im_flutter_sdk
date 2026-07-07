@@ -1226,6 +1226,44 @@ class EMChatManager {
   }
 
   /// ~english
+  /// Saves a message to the local database.
+  ///
+  /// Param [message] The message to save.
+  ///
+  /// **Return** The saved local message object.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 保存一条消息到本地数据库。
+  ///
+  /// Param [message] 要保存的消息。
+  ///
+  /// **Return** 返回保存后的本地消息对象。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<EMMessage?> saveMessage(EMMessage message) async {
+    try {
+      Map result = await Client.instance.chatManager
+          .callNativeMethod(ChatMethodKeys.saveMessage, {
+        "message": message.toJson(),
+      });
+      EMError.hasErrorFromResult(result);
+      if (result.containsKey(ChatMethodKeys.saveMessage) &&
+          result[ChatMethodKeys.saveMessage] != null) {
+        return EMMessage.fromJson(
+          Map<String, dynamic>.from(result[ChatMethodKeys.saveMessage]),
+        );
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
   /// Downloads the attachment files from the server.
   ///
   /// You can call the method again if the attachment download fails.
@@ -1273,6 +1311,31 @@ class EMChatManager {
     try {
       Map result = await Client.instance.chatManager.callNativeMethod(
           ChatMethodKeys.downloadBigImage, {"message": message.toJson()});
+      EMError.hasErrorFromResult(result);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
+  /// Sets the listened status of a voice message in the local database.
+  ///
+  /// Param [message] The voice message to update.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 设置本地语音消息的已播放状态。
+  ///
+  /// Param [message] 要更新的语音消息。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<void> setVoiceMessageListened(EMMessage message) async {
+    try {
+      Map result = await Client.instance.chatManager.callNativeMethod(
+          ChatMethodKeys.setVoiceMessageListened, {"message": message.toJson()});
       EMError.hasErrorFromResult(result);
     } catch (e) {
       rethrow;

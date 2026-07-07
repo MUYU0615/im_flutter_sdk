@@ -167,6 +167,19 @@ class EMMessage {
   bool hasRead = false;
 
   /// ~english
+  /// Whether the voice message has been listened to.
+  /// - `true`: Yes.
+  /// - `false`: No.
+  /// ~end
+  ///
+  /// ~chinese
+  /// 语音消息是否已播放。
+  /// - `true`：是；
+  /// - `false`：否。
+  /// ~end
+  bool isListened = false;
+
+  /// ~english
   /// The enumeration of chat types.
   ///
   /// There are three chat types: one-to-one chat, group chat, and chat room.
@@ -937,6 +950,7 @@ class EMMessage {
     data.putIfNotNull("status", status.index);
     data.putIfNotNull("isThread", isChatThreadMessage);
     data.putIfNotNull('isContentReplaced', isContentReplaced);
+    data.putIfNotNull('isListened', isListened);
     if (_priority != null) {
       data.putIfNotNull("chatroomMessagePriority", _priority!.index);
     }
@@ -972,6 +986,7 @@ class EMMessage {
       ..receiverList = map["receiverList"]?.cast<String>()
       ..isBroadcast = map["broadcast"] ?? false
       ..isContentReplaced = map["isContentReplaced"] ?? false
+      ..isListened = map["isListened"] ?? false
       ..streamChunk = map["streamChunk"] != null
           ? EMStreamChunk.fromJson(map["streamChunk"])
           : null;

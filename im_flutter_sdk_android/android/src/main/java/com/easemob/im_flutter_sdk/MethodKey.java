@@ -81,6 +81,7 @@ public class MethodKey {
     static final String downloadMessageThumbnailInCombine = "downloadMessageThumbnailInCombine";
     static final String importMessages = "importMessages";
     static final String saveMessage = "saveMessage";
+    static final String setVoiceMessageListened = "setVoiceMessageListened";
     static final String getAllConversations = "getAllConversations";
     static final String loadAllConversations = "loadAllConversations";
     static final String loadAllConversationsFromDB = "loadAllConversationsFromDB";

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 import uuid
 import pytest
@@ -213,6 +214,206 @@ def test_chat_get_message_invalid_id_returns_none(device_a, assert_api):
         expected={"manager": "ChatManager", "cmd": Cmd.getMessage.value, "device": "deviceA", "result": None},
         ignore_keys={"sequence"},
     )
+
+
+@pytest.mark.real_e2e
+@pytest.mark.case_id("chat.set_voice_message_listened.local_voice_message.success")
+@pytest.mark.api("ChatManager.saveMessage")
+@pytest.mark.api("ChatManager.getMessage")
+@pytest.mark.api("ChatManager.setVoiceMessageListened")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_set_voice_message_listened_local_voice_message(device_a, assert_api, user_a, user_b):
+    voice_path = f"/tmp/im_voice_{uuid.uuid4().hex[:8]}.aac"
+    with open(voice_path, "wb") as fh:
+        fh.write(b"fake-aac-data")
+
+    msg_id = None
+    try:
+        save_resp = device_a.call(
+            "ChatManager",
+            Cmd.saveMessage.value,
+            info={
+                "message": {
+                    "from": user_a,
+                    "to": user_b,
+                    "convId": user_b,
+                    "chatType": 0,
+                    "direction": 0,
+                    "status": 0,
+                    "hasRead": True,
+                    "hasReadAck": False,
+                    "hasDeliverAck": False,
+                    "needGroupAck": False,
+                    "isThread": False,
+                    "isContentReplaced": False,
+                    "isListened": False,
+                    "body": {
+                        "type": 4,
+                        "localPath": voice_path,
+                        "displayName": os.path.basename(voice_path),
+                        "fileSize": 13,
+                        "duration": 1,
+                        "fileStatus": 3,
+                    },
+                }
+            },
+        )
+        save_result = save_resp.get("result")
+        assert not (
+            isinstance(save_result, dict)
+            and "code" in save_result
+            and "description" in save_result
+        ), f"saveMessage returned error result: {save_resp}"
+        assert_api.assert_response_matches(
+            save_resp,
+            expected={
+                "manager": "ChatManager",
+                "cmd": Cmd.saveMessage.value,
+                "device": "deviceA",
+                "result": {
+                    "from": user_a,
+                    "to": user_b,
+                    "convId": user_b,
+                    "chatType": 0,
+                    "direction": 0,
+                    "body": {
+                        "type": 4,
+                        "displayName": os.path.basename(voice_path),
+                        "duration": 1,
+                    },
+                    "isListened": False,
+                },
+            },
+            ignore_keys={
+                "sequence",
+                "result.msgId",
+                "result.serverTime",
+                "result.localTime",
+                "result.status",
+                "result.hasRead",
+                "result.hasReadAck",
+                "result.hasDeliverAck",
+                "result.needGroupAck",
+                "result.isThread",
+                "result.isContentReplaced",
+                "result.broadcast",
+                "result.onlineState",
+                "result.body.localPath",
+                "result.body.remotePath",
+                "result.body.secret",
+                "result.body.downloadStatus",
+                "result.body.fileStatus",
+                "result.body.fileSize",
+            },
+        )
+        msg_id = ((save_resp.get("result") or {}).get("msgId"))
+        assert msg_id, f"saveMessage 未返回 msgId: {save_resp}"
+
+        before_resp = device_a.call("ChatManager", Cmd.getMessage.value, info={"msgId": msg_id})
+        assert_api.assert_response_matches(
+            before_resp,
+            expected={
+                "manager": "ChatManager",
+                "cmd": Cmd.getMessage.value,
+                "device": "deviceA",
+                "result": {
+                    "msgId": msg_id,
+                    "body": {"type": 4},
+                    "isListened": False,
+                },
+            },
+            ignore_keys={
+                "sequence",
+                "result.from",
+                "result.to",
+                "result.convId",
+                "result.chatType",
+                "result.direction",
+                "result.status",
+                "result.hasRead",
+                "result.hasReadAck",
+                "result.hasDeliverAck",
+                "result.needGroupAck",
+                "result.isThread",
+                "result.isContentReplaced",
+                "result.serverTime",
+                "result.localTime",
+                "result.broadcast",
+                "result.onlineState",
+                "result.body.localPath",
+                "result.body.remotePath",
+                "result.body.secret",
+                "result.body.downloadStatus",
+                "result.body.fileStatus",
+                "result.body.displayName",
+                "result.body.fileSize",
+                "result.body.duration",
+            },
+        )
+
+        listened_resp = device_a.call(
+            "ChatManager",
+            Cmd.setVoiceMessageListened.value,
+            info={"message": (before_resp.get("result") or {})},
+        )
+        assert_api.assert_response_matches(
+            listened_resp,
+            expected={
+                "manager": "ChatManager",
+                "cmd": Cmd.setVoiceMessageListened.value,
+                "device": "deviceA",
+                "result": True,
+            },
+            ignore_keys={"sequence"},
+        )
+
+        after_resp = device_a.call("ChatManager", Cmd.getMessage.value, info={"msgId": msg_id})
+        assert_api.assert_response_matches(
+            after_resp,
+            expected={
+                "manager": "ChatManager",
+                "cmd": Cmd.getMessage.value,
+                "device": "deviceA",
+                "result": {
+                    "msgId": msg_id,
+                    "body": {"type": 4},
+                    "isListened": True,
+                },
+            },
+            ignore_keys={
+                "sequence",
+                "result.from",
+                "result.to",
+                "result.convId",
+                "result.chatType",
+                "result.direction",
+                "result.status",
+                "result.hasRead",
+                "result.hasReadAck",
+                "result.hasDeliverAck",
+                "result.needGroupAck",
+                "result.isThread",
+                "result.isContentReplaced",
+                "result.serverTime",
+                "result.localTime",
+                "result.broadcast",
+                "result.onlineState",
+                "result.body.localPath",
+                "result.body.remotePath",
+                "result.body.secret",
+                "result.body.downloadStatus",
+                "result.body.fileStatus",
+                "result.body.displayName",
+                "result.body.fileSize",
+                "result.body.duration",
+            },
+        )
+    finally:
+        try:
+            os.remove(voice_path)
+        except FileNotFoundError:
+            pass
 
 
 def test_chat_fetch_support_languages_success(device_a, assert_api):

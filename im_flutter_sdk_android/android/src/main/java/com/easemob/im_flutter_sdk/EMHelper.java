@@ -598,6 +598,7 @@ class MessageHelper {
         data.put("convId", message.conversationId());
         data.put("msgId", message.getMsgId());
         data.put("hasRead", !message.isUnread());
+        data.put("isListened", message.isListened());
         data.put("needGroupAck", message.isNeedGroupAck());
         data.put("onlineState", message.isOnlineState());
         data.put("broadcast", message.isBroadcast());

@@ -89,6 +89,7 @@ class Cmd(str, Enum):
     downloadMessageThumbnailInCombine = "downloadMessageThumbnailInCombine"
     importMessages = "importMessages"
     saveMessage = "saveMessage"
+    setVoiceMessageListened = "setVoiceMessageListened"
     getAllConversations = "getAllConversations"
     loadAllConversations = "loadAllConversations"
     loadAllConversationsFromDB = "loadAllConversationsFromDB"

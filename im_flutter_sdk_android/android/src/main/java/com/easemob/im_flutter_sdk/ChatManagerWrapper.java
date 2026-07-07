@@ -91,6 +91,8 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 importMessages(params, call.method, result);
             } else if (MethodKey.saveMessage.equals(call.method)) {
                 saveMessage(params, call.method, result);
+            } else if (MethodKey.setVoiceMessageListened.equals(call.method)) {
+                setVoiceMessageListened(params, call.method, result);
             } else if (MethodKey.getAllConversations.equals(call.method)) {
                 getAllConversations(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
@@ -190,8 +192,8 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
             else {
                 super.onMethodCall(call, result);
             }
-        } catch (JSONException ignored) {
-            super.onMethodCall(call, result);
+        } catch (JSONException e) {
+            onError(result, new HyphenateException(INVALID_PARAM, "Invalid params: " + e.getMessage()));
         }
     }
 
@@ -515,6 +517,14 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         asyncRunnable(() -> {
             EMClient.getInstance().chatManager().saveMessage(msg);
             onSuccess(result, channelName, MessageHelper.toJson(msg));
+        });
+    }
+
+    private void setVoiceMessageListened(JSONObject params, String channelName, Result result) throws JSONException {
+        EMMessage msg = MessageHelper.fromJson(params.getJSONObject("message"));
+        asyncRunnable(() -> {
+            EMClient.getInstance().chatManager().setVoiceMessageListened(msg);
+            onSuccess(result, channelName, true);
         });
     }
 
