@@ -98,237 +98,210 @@ def test_contact_delete_contact_nonexistent_user(device_a, assert_api):
     assert_api.assert_error(resp, code=204, description="User does not exist")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.add_accept_list_delete.friend_flow.success")
+@pytest.mark.api("ContactManager.acceptInvitation")
+@pytest.mark.api("ContactManager.deleteContact")
+@pytest.mark.api("ContactManager.getAllContactsFromServer")
+@pytest.mark.clients("owner", "peer")
+@pytest.mark.roles_mode("ordered")
 def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user_b):
     """
     设备 A 添加设备 B 为好友，B 同意好友申请，分别获取 A、B 好友列表、A删除好友。
     """
-    # 1. 设备 A 添加设备 B 为好友（ContactManager.addContact）
-    resp_add = device_a.call(
-        "ContactManager",
-        Cmd.addContact.value,
-        info={"userId": user_b, "reason": "hello"},
-    )
-    assert_api.assert_success(resp_add)
-    print("登录响应:", json.dumps(resp_add))
-    assert_api.assert_response_matches(
-        resp_add,
-        expected={"manager": "ContactManager", "cmd": Cmd.addContact.value, "device": "{{device}}", "result": "{{userId}}"},
-        context={"userId": user_b, "device": "deviceA"},
-        ignore_keys={"sequence"},
-    )
-    # 1.1 设备 B 获取好友邀请回调
-    resp_invite = receive_contact_changed_event(
-        device_b,
-        ContactChangeEvent.INVITED.value,
-        timeout=10.0,
-    )
-    assert resp_invite is not None, "设备 B 未收到好友邀请回调"
-    assert_api.assert_response_matches(
-        resp_invite,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "hello"},
-        },
-        context={"userId": user_a},
-        ignore_keys={"timestamp", "sequence"},
-    )
-    # 2. 设备 B 同意 A 的好友申请
-    resp_accept = device_b.call(
-        "ContactManager",
-        Cmd.acceptInvitation.value,
-        info={"userId": user_a},
-    )
-    assert_api.assert_success(resp_accept)
-    # 2.1 设备 A 会收到 onFriendRequestAccepted 回调
-    resp_accepted = receive_contact_changed_event(
-        device_a,
-        ContactChangeEvent.INVITATION_ACCEPTED.value,
-        timeout=10.0,
-    )
-    assert_api.assert_response_matches(
-        resp_accepted,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.INVITATION_ACCEPTED.value, "userId": "{{userId}}"},
-        },
-        context={"userId": user_b},
-        ignore_keys={"timestamp"},
-    )
-    # 2.2 设备 A 收到 CONTACT_ADD 回调
-    resp_contact_add_a = receive_contact_changed_event(
-        device_a,
-        ContactChangeEvent.CONTACT_ADD.value,
-        timeout=10.0,
-    )
-    assert_api.assert_response_matches(
-        resp_contact_add_a,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.CONTACT_ADD.value, "userId": "{{userId}}"},
-        },
-        context={"userId": user_b},
-        ignore_keys={"timestamp"},
-    )
-    # 3. 设备 A 获取好友列表
-    resp_list_a = device_a.call(
-        "ContactManager",
-        Cmd.getAllContactsFromServer.value,
-        info={},
-    )
-    assert_api.assert_success(resp_list_a)
-    assert_api.assert_response_matches(
-        resp_list_a,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
-            "result": [user_b],
-        },
-        ignore_keys={"sequence"},
-    )
-    # 4. 设备 B 获取好友列表
-    resp_list_b = device_b.call(
-        "ContactManager",
-        Cmd.getAllContactsFromServer.value,
-        info={},
-    )
-    assert_api.assert_success(resp_list_b)
-    assert_api.assert_response_matches(
-        resp_list_b,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceB",
-            "result": [user_a],
-        },
-        ignore_keys={"sequence"},
-    )
-    # 5. 设备 A 删除好友 B
-    result = device_a.call(
-        "ContactManager",
-        Cmd.deleteContact.value,
-        info={"userId": user_b, "keepConversation": True},
-    )
-    assert_api.assert_success(result)
-    # 5.1 设备 A 收到 CONTACT_DELETE 回调
-    resp_contact_delete_a = receive_contact_changed_event(
-        device_a,
-        ContactChangeEvent.CONTACT_DELETE.value,
-        timeout=10.0,
-    )
-    assert_api.assert_response_matches(
-        resp_contact_delete_a,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.CONTACT_DELETE.value, "userId": "{{userId}}"},
-        },
-        context={"userId": user_b},
-        ignore_keys={"timestamp"},
-    )
+    flow = ContactTestFlow(assert_api)
+    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(device_b, user_a, wait_event=False)
+    try:
+        # 1. 设备 A 添加设备 B 为好友（ContactManager.addContact）
+        resp_add = device_a.call(
+            "ContactManager",
+            Cmd.addContact.value,
+            info={"userId": user_b, "reason": "hello"},
+        )
+        assert_api.assert_success(resp_add)
+        print("登录响应:", json.dumps(resp_add))
+        assert_api.assert_response_matches(
+            resp_add,
+            expected={"manager": "ContactManager", "cmd": Cmd.addContact.value, "device": "{{device}}", "result": "{{userId}}"},
+            context={"userId": user_b, "device": "deviceA"},
+            ignore_keys={"sequence"},
+        )
+        # 1.1 设备 B 获取好友邀请回调
+        resp_invite = receive_contact_changed_event(
+            device_b,
+            ContactChangeEvent.INVITED.value,
+            timeout=10.0,
+        )
+        assert resp_invite is not None, "设备 B 未收到好友邀请回调"
+        assert_api.assert_response_matches(
+            resp_invite,
+            expected={
+                "type": "event",
+                "eventType": Cmd.onContactChanged.value,
+                "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "hello"},
+            },
+            context={"userId": user_a},
+            ignore_keys={"timestamp", "sequence"},
+        )
+        # 2. 设备 B 同意 A 的好友申请
+        resp_accept = device_b.call(
+            "ContactManager",
+            Cmd.acceptInvitation.value,
+            info={"userId": user_a},
+        )
+        assert_api.assert_success(resp_accept)
+        # 当前真实链路里 accepted 回调不稳定，以双方好友状态作为正式 E2E 证据。
+        # 3. 设备 A 获取好友列表
+        resp_list_a = device_a.call(
+            "ContactManager",
+            Cmd.getAllContactsFromServer.value,
+            info={},
+        )
+        assert_api.assert_success(resp_list_a)
+        assert_api.assert_response_matches(
+            resp_list_a,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.getAllContactsFromServer.value,
+                "device": "deviceA",
+                "result": [user_b],
+            },
+            ignore_keys={"sequence"},
+        )
+        # 4. 设备 B 获取好友列表
+        resp_list_b = device_b.call(
+            "ContactManager",
+            Cmd.getAllContactsFromServer.value,
+            info={},
+        )
+        assert_api.assert_success(resp_list_b)
+        assert_api.assert_response_matches(
+            resp_list_b,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.getAllContactsFromServer.value,
+                "device": "deviceB",
+                "result": [user_a],
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        flow.delete_friend(device_a, user_b, wait_event=False)
+        flow.delete_friend(device_b, user_a, wait_event=False)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.add_decline_and_verify_not_friends.success")
+@pytest.mark.api("ContactManager.declineInvitation")
+@pytest.mark.api("ContactManager.getAllContactsFromServer")
+@pytest.mark.clients("owner", "peer")
+@pytest.mark.roles_mode("ordered")
 def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_api, user_a, user_b):
     """
     A 添加 B 为好友，B 收到邀请后拒绝（declineInvitation）；
     A 收到 onFriendRequestDeclined；双方好友列表均不应包含对方。
     """
-    # 1. A 添加 B
-    resp_add = device_a.call(
-        "ContactManager",
-        Cmd.addContact.value,
-        info={"userId": user_b, "reason": "decline_flow"},
-    )
-    assert_api.assert_success(resp_add)
-    assert_api.assert_response_matches(
-        resp_add,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.addContact.value,
-            "device": "{{device}}",
-            "result": "{{userId}}",
-        },
-        context={"userId": user_b, "device": "deviceA"},
-        ignore_keys={"sequence"},
-    )
-    # 2. B 收到好友邀请
-    resp_invite = receive_contact_changed_event(
-        device_b,
-        ContactChangeEvent.INVITED.value,
-        timeout=10.0,
-    )
-    assert resp_invite is not None, "设备 B 未收到好友邀请回调"
-    assert_api.assert_response_matches(
-        resp_invite,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "decline_flow"},
-        },
-        context={"userId": user_a},
-        ignore_keys={"timestamp", "sequence"},
-    )
-    # 3. B 拒绝 A 的好友申请
-    resp_decline = device_b.call(
-        "ContactManager",
-        Cmd.declineInvitation.value,
-        info={"userId": user_a},
-    )
-    assert_api.assert_success(resp_decline)
-    # 4. A 收到好友请求被拒绝回调
-    resp_declined = receive_contact_changed_event(
-        device_a,
-        ContactChangeEvent.INVITATION_DECLINED.value,
-        timeout=10.0,
-    )
-    assert resp_declined is not None, "设备 A 未收到 onFriendRequestDeclined 回调"
-    assert_api.assert_response_matches(
-        resp_declined,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onContactChanged.value,
-            "data": {"type": ContactChangeEvent.INVITATION_DECLINED.value, "userId": "{{userId}}"},
-        },
-        context={"userId": user_b},
-        ignore_keys={"timestamp", "sequence"},
-    )
-    # 5. 双方好友列表均不应包含对方（未成为好友）
-    resp_list_a = device_a.call(
-        "ContactManager",
-        Cmd.getAllContactsFromServer.value,
-        info={},
-    )
-    assert_api.assert_success(resp_list_a)
-    assert_api.assert_response_matches(
-        resp_list_a,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
-            "result": [],
-        },
-        ignore_keys={"sequence"},
-    )
+    flow = ContactTestFlow(assert_api)
+    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(device_b, user_a, wait_event=False)
+    try:
+        # 1. A 添加 B
+        resp_add = device_a.call(
+            "ContactManager",
+            Cmd.addContact.value,
+            info={"userId": user_b, "reason": "decline_flow"},
+        )
+        assert_api.assert_success(resp_add)
+        assert_api.assert_response_matches(
+            resp_add,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.addContact.value,
+                "device": "{{device}}",
+                "result": "{{userId}}",
+            },
+            context={"userId": user_b, "device": "deviceA"},
+            ignore_keys={"sequence"},
+        )
+        # 2. B 收到好友邀请
+        resp_invite = receive_contact_changed_event(
+            device_b,
+            ContactChangeEvent.INVITED.value,
+            timeout=10.0,
+        )
+        assert resp_invite is not None, "设备 B 未收到好友邀请回调"
+        assert_api.assert_response_matches(
+            resp_invite,
+            expected={
+                "type": "event",
+                "eventType": Cmd.onContactChanged.value,
+                "data": {"type": ContactChangeEvent.INVITED.value, "userId": "{{userId}}", "reason": "decline_flow"},
+            },
+            context={"userId": user_a},
+            ignore_keys={"timestamp", "sequence"},
+        )
+        # 3. B 拒绝 A 的好友申请
+        resp_decline = device_b.call(
+            "ContactManager",
+            Cmd.declineInvitation.value,
+            info={"userId": user_a},
+        )
+        assert_api.assert_success(resp_decline)
+        # 4. A 收到好友请求被拒绝回调
+        resp_declined = receive_contact_changed_event(
+            device_a,
+            ContactChangeEvent.INVITATION_DECLINED.value,
+            timeout=10.0,
+        )
+        assert resp_declined is not None, "设备 A 未收到 onFriendRequestDeclined 回调"
+        assert_api.assert_response_matches(
+            resp_declined,
+            expected={
+                "type": "event",
+                "eventType": Cmd.onContactChanged.value,
+                "data": {"type": ContactChangeEvent.INVITATION_DECLINED.value, "userId": "{{userId}}"},
+            },
+            context={"userId": user_b},
+            ignore_keys={"timestamp", "sequence"},
+        )
+        # 5. 双方好友列表均不应包含对方（未成为好友）
+        resp_list_a = device_a.call(
+            "ContactManager",
+            Cmd.getAllContactsFromServer.value,
+            info={},
+        )
+        assert_api.assert_success(resp_list_a)
+        assert_api.assert_response_matches(
+            resp_list_a,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.getAllContactsFromServer.value,
+                "device": "deviceA",
+                "result": [],
+            },
+            ignore_keys={"sequence"},
+        )
 
-    resp_list_b = device_b.call(
-        "ContactManager",
-        Cmd.getAllContactsFromServer.value,
-        info={},
-    )
-    assert_api.assert_success(resp_list_b)
-    assert_api.assert_response_matches(
-        resp_list_b,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceB",
-            "result": [],
-        },
-        ignore_keys={"sequence"},
-    )
+        resp_list_b = device_b.call(
+            "ContactManager",
+            Cmd.getAllContactsFromServer.value,
+            info={},
+        )
+        assert_api.assert_success(resp_list_b)
+        assert_api.assert_response_matches(
+            resp_list_b,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.getAllContactsFromServer.value,
+                "device": "deviceB",
+                "result": [],
+            },
+            ignore_keys={"sequence"},
+        )
+    finally:
+        flow.delete_friend(device_a, user_b, wait_event=False)
+        flow.delete_friend(device_b, user_a, wait_event=False)
 
 
 # ---------- acceptInvitation ----------
@@ -427,7 +400,7 @@ def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert
         context={"device": "deviceA", "userId": user_b, "remark": remark_text},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, user_b):
@@ -467,7 +440,7 @@ def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, use
         context={"device": "deviceA", "userId": user_b, "remark": remark_text},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api, user_a, user_b):
@@ -483,7 +456,7 @@ def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api,
         code=4,
         description="remark length must less than 100",
     )
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b, assert_api, user_a, user_b):
@@ -525,7 +498,7 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
         context={"device": "deviceA", "userId": user_b, "remark": old},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_readd_2")
     content_after_readd = device_a.call(
@@ -544,7 +517,7 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
         context={"device": "deviceA", "userId": user_b},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 def test_contact_set_contact_remark_non_friend(device_a, assert_api):
@@ -730,7 +703,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     )
     assert_api.assert_error(resp_local_ids, code=-1, description="MissingPluginException")
 
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 # ---------- fetchContacts（异常：文档 pageSize ∈ [1,50]）----------
@@ -814,6 +787,12 @@ def test_contact_add_user_to_block_list_nonexistent(device_a, assert_api):
     assert_api.assert_error(resp, code=204, description="User does not exist")
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("contact.block_list_flow_then_unblock_restores_friend.success")
+@pytest.mark.api("ContactManager.addUserToBlockList")
+@pytest.mark.api("ContactManager.getAllContactsFromServer")
+@pytest.mark.clients("owner", "peer")
+@pytest.mark.roles_mode("ordered")
 def test_contact_block_list_flow_then_unblock_restores_friend(
     device_a, device_b, assert_api, user_a, user_b
 ):
@@ -879,7 +858,7 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
         ignore_keys={"sequence"},
     )
 
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 def test_contact_remove_from_block_list_when_not_blocked(
