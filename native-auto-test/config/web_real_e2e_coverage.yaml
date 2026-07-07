@@ -486,11 +486,12 @@ web_real_e2e:
       verified_by:
       - rg -n "onSendDataToFlutter|sendDataToFlutter" im_flutter_test/lib/bridge
         im_flutter_sdk_web/lib/src/real_web_sdk_interop.dart
-      reason: Current Web real adapter has no verified real Web SDK or service callback
-        concept for onSendDataToFlutter; it is not wired as a real browser SDK E2E
-        event in the bridge.
-      reason_zh: 当前 Web 真实适配层没有与 `onSendDataToFlutter` 对应的真实 SDK 或
-        服务端回调概念，测试 bridge 也没有把它接成真实浏览器 E2E 事件。
+      reason: Current Web real runtime/bridge has no verified real Web SDK or
+        service callback concept corresponding to onSendDataToFlutter, so this
+        event is not wired as a real browser SDK E2E signal.
+      reason_zh: 当前 Web 真实 runtime/bridge 没有与 `onSendDataToFlutter`
+        对应的可验证真实 Web SDK 或服务端回调概念，因此这条事件没有被接成真实浏览器
+        SDK E2E 信号。
     onTokenWillExpire:
       real_e2e_status: blocked
       tests: []
