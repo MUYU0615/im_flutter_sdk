@@ -605,6 +605,11 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
     )
 
 
+@pytest.mark.case_id("chat.group_ack_boundary_methods.current_behavior")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.ackGroupMessageRead")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_group_ack_boundary_methods(device_a, assert_api):
     """ackGroupMessageRead：非法群消息 ID 与群 ID 边界，冻结当前真实返回。"""
     info = {"msgId": "__invalid_group_msg_id__", "group_id": "__invalid_group_id__"}
@@ -621,6 +626,13 @@ def test_chat_manager_group_ack_boundary_methods(device_a, assert_api):
     )
 
 
+@pytest.mark.case_id("chat.fetch_group_acks.success")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.ackGroupMessageRead")
+@pytest.mark.api("ChatManager.asyncFetchGroupAcks")
+@pytest.mark.clients("sender", "receiver")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, user_a, user_b):
     """asyncFetchGroupAcks：发送需要群回执的群消息并发送回执后，冻结当前分页查询返回空列表语义。"""
     group_id = ""
@@ -663,6 +675,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
                     "needGroupAck": True,
                     "isThread": False,
                     "isContentReplaced": False,
+                    "isListened": False,
                     "broadcast": False,
                     "onlineState": True,
                     "body": {"targetLanguages": [], "translations": {}, "type": 0, "content": content},
@@ -696,7 +709,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
                 "manager": "ChatManager",
                 "cmd": Cmd.ackGroupMessageRead.value,
                 "device": "deviceB",
-                "result": 1,
+                "result": True,
             },
             ignore_keys={"sequence"},
         )
@@ -721,9 +734,14 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id, device_b=device_b)
+            destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.case_id("chat.fetch_group_acks.invalid_required_params")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.asyncFetchGroupAcks")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
 def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_api):
     """asyncFetchGroupAcks 缺失 msgId 与非法 pageSize 均应由 wrapper 返回稳定参数错误。"""
     resp_missing_msg = device_a.call(
