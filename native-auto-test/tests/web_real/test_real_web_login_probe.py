@@ -11,6 +11,7 @@ from src import Cmd
 from src.rest_api.user_api import get_user_access_token
 from src.rest_api.chatroom_api import delete_chat_room
 from tests.chat._utils import build_text
+from tests.chatroom.chatroom_helpers import create_chatroom_or_skip
 
 
 pytestmark = [
@@ -118,6 +119,32 @@ def test_real_web_create_chatroom_probe_without_global_login(
         assert isinstance(room, dict)
         room_id = room.get("roomId") or room.get("chatRoomId") or ""
         assert isinstance(room_id, str) and room_id, room
+    finally:
+        if room_id:
+            delete_chat_room(room_id)
+
+
+def test_real_web_change_chatroom_owner_probe_without_global_login(
+    primary_device,
+    assert_api,
+    user_a,
+    user_b,
+):
+    room_id, _ = create_chatroom_or_skip(
+        owner=user_a,
+        name_prefix=f"web-real-owner-probe-{uuid.uuid4().hex[:8]}",
+        desc_prefix="web real owner probe",
+    )
+    try:
+        changed = primary_device.call(
+            "ChatRoomManager",
+            Cmd.changeChatRoomOwner.value,
+            info={"roomId": room_id, "newOwner": user_b},
+        )
+        result = assert_api.get_result(changed)
+        assert isinstance(result, dict)
+        assert result.get("roomId") == room_id
+        assert result.get("owner") == user_b
     finally:
         if room_id:
             delete_chat_room(room_id)
