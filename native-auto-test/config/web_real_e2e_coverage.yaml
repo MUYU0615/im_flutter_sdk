@@ -3161,10 +3161,18 @@ web_real_e2e:
       tests: []
       verified_by:
       - rg -n "clearAllGroupsFromDB|reset\\(" im_flutter_sdk_web/lib/src/managers/group_manager_web.dart
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-methods-probe-20260707-000001
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 180 --
+        tests/web_real/test_real_web_login_probe.py::test_real_web_dump_group_manager_methods_without_global_login
+        --target-platform web -q -s
       reason: Current Web GroupManager clearAllGroupsFromDB path only resets local
         in-memory group state and does not call a real Web SDK/local database API.
+        The current real Web IMSDK groupManager method surface also does not expose
+        an equivalent clear-all local group storage API.
       reason_zh: 当前 `clearAllGroupsFromDB` 只会重置本地内存里的群组状态，没有调用
-        真实 Web SDK 或本地数据库清理能力，因此与移动端能力未对齐。
+        真实 Web SDK 或本地数据库清理能力；本次真实 IMSDK groupManager 方法面探针
+        也没有发现等价的“清空全部本地群组存储”入口，因此与移动端能力未对齐。
     isMemberInGroupMuteList:
       real_e2e_status: supported
       tests:
