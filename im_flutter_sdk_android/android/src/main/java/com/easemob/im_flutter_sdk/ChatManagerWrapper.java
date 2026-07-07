@@ -97,6 +97,10 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 updateParticipant(params, call.method, result);
             } else if (MethodKey.asyncFilterConversationsFromDB.equals(call.method)) {
                 asyncFilterConversationsFromDB(params, call.method, result);
+            } else if (MethodKey.voiceMessageToText.equals(call.method)) {
+                voiceMessageToText(params, call.method, result);
+            } else if (MethodKey.voiceFileToText.equals(call.method)) {
+                voiceFileToText(params, call.method, result);
             } else if (MethodKey.getAllConversations.equals(call.method)) {
                 getAllConversations(params, call.method, result);
             } else if (MethodKey.loadAllConversations.equals(call.method)) {
@@ -587,6 +591,47 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                 updateObject(conversations);
             }
         });
+    }
+
+    private void voiceMessageToText(JSONObject params, String channelName, Result result) throws JSONException {
+        EMMessage msg = MessageHelper.fromJson(params.getJSONObject("message"));
+        EMClient.getInstance().chatManager().voiceMessageToText(msg, new EMValueWrapperCallBack<String>(result, channelName));
+    }
+
+    private void voiceFileToText(JSONObject params, String channelName, Result result) throws JSONException {
+        String filePath = params.getString("filePath");
+        EMAudioParams audioParams = audioParamsFromJson(params.getJSONObject("audioParams"));
+        EMClient.getInstance().chatManager().voiceFileToText(filePath, audioParams, new EMValueWrapperCallBack<String>(result, channelName));
+    }
+
+    private EMAudioParams audioParamsFromJson(JSONObject json) throws JSONException {
+        EMAudioParams audioParams = new EMAudioParams();
+        if (json.has("format")) {
+            Object rawFormat = json.get("format");
+            if (rawFormat instanceof Number) {
+                int index = ((Number) rawFormat).intValue();
+                if (index < 0 || index >= EMAudioParams.AudioFormat.values().length) {
+                    throw new JSONException("audio format out of range: " + index);
+                }
+                audioParams.setFormat(EMAudioParams.AudioFormat.values()[index]);
+            } else {
+                try {
+                    audioParams.setFormat(EMAudioParams.AudioFormat.valueOf(rawFormat.toString().toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    throw new JSONException("invalid audio format: " + rawFormat);
+                }
+            }
+        }
+        if (json.has("sampleRate")) {
+            audioParams.setSampleRate(json.getInt("sampleRate"));
+        }
+        if (json.has("bitsPerSample")) {
+            audioParams.setBitsPerSample(json.getInt("bitsPerSample"));
+        }
+        if (json.has("channels")) {
+            audioParams.setChannels(json.getInt("channels"));
+        }
+        return audioParams;
     }
 
 

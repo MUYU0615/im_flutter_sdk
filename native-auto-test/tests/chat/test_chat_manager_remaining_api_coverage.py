@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 import time
 
@@ -726,6 +727,92 @@ def test_chat_manager_filter_conversations_from_db_invalid_mark(device_a, assert
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.asyncFilterConversationsFromDB.value,
+            "device": "deviceA",
+            "result": {"code": 110},
+        },
+        ignore_keys={"sequence", "description"},
+    )
+
+
+@pytest.mark.case_id("chat.voice_message_to_text.local_voice_message.current_behavior")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.voiceMessageToText")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_voice_message_to_text_local_voice_message(device_a, assert_api, user_a, user_b):
+    """voiceMessageToText：覆盖 Android 4.23 原生语音消息转文字入口，冻结当前真实返回或服务错误。"""
+    voice_path = f"/tmp/im_voice_to_text_{uuid.uuid4().hex[:8]}.aac"
+    with open(voice_path, "wb") as fh:
+        fh.write(b"fake-aac-data")
+    try:
+        message = {
+            "from": user_a,
+            "to": user_b,
+            "convId": user_b,
+            "chatType": 0,
+            "direction": 0,
+            "status": 0,
+            "hasRead": True,
+            "hasReadAck": False,
+            "hasDeliverAck": False,
+            "needGroupAck": False,
+            "isThread": False,
+            "isContentReplaced": False,
+            "isListened": False,
+            "body": {
+                "type": 4,
+                "localPath": voice_path,
+                "displayName": os.path.basename(voice_path),
+                "fileSize": 13,
+                "duration": 1,
+                "fileStatus": 3,
+            },
+        }
+        resp = device_a.call("ChatManager", Cmd.voiceMessageToText.value, info={"message": message})
+        result = resp.get("result")
+        assert_api.assert_response_matches(
+            resp,
+            expected={
+                "manager": "ChatManager",
+                "cmd": Cmd.voiceMessageToText.value,
+                "device": "deviceA",
+                "result": result,
+            },
+            ignore_keys={"sequence"},
+        )
+        assert isinstance(result, (str, dict, type(None))), f"voiceMessageToText 返回类型异常: {resp}"
+    finally:
+        try:
+            os.remove(voice_path)
+        except OSError:
+            pass
+
+
+@pytest.mark.case_id("chat.voice_file_to_text.invalid_audio_params")
+@pytest.mark.real_e2e
+@pytest.mark.api("ChatManager.voiceFileToText")
+@pytest.mark.clients("sender")
+@pytest.mark.roles_mode("ordered")
+def test_chat_manager_voice_file_to_text_invalid_audio_params(device_a, assert_api):
+    """voiceFileToText：非法 audioParams.format 返回参数错误，不应伪装成 MissingPlugin。"""
+    resp = device_a.call(
+        "ChatManager",
+        Cmd.voiceFileToText.value,
+        info={
+            "filePath": "/tmp/not-exists.pcm",
+            "audioParams": {
+                "format": "invalid",
+                "sampleRate": 16000,
+                "bitsPerSample": 16,
+                "channels": 1,
+            },
+        },
+    )
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.voiceFileToText.value,
             "device": "deviceA",
             "result": {"code": 110},
         },

@@ -94,6 +94,8 @@ class ChatMethodKeys {
   static const String updateParticipant = "updateParticipant";
   static const String asyncFilterConversationsFromDB =
       "asyncFilterConversationsFromDB";
+  static const String voiceMessageToText = "voiceMessageToText";
+  static const String voiceFileToText = "voiceFileToText";
   static const String getAllConversations = "getAllConversations";
   static const String loadAllConversations = "loadAllConversations";
   static const String loadAllConversationsFromDB = "loadAllConversationsFromDB";

@@ -1425,6 +1425,60 @@ class EMChatManager {
   }
 
   /// ~english
+  /// Converts a voice message to text.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 将语音消息转换为文本。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<String?> voiceMessageToText(EMMessage message) async {
+    try {
+      Map result = await Client.instance.chatManager.callNativeMethod(
+        ChatMethodKeys.voiceMessageToText,
+        {"message": message.toJson()},
+      );
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.voiceMessageToText] as String?;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
+  /// Converts a local voice file to text.
+  ///
+  /// **Throws** A description of the exception. See [EMError].
+  /// ~end
+  ///
+  /// ~chinese
+  /// 将本地语音文件转换为文本。
+  ///
+  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [EMError]。
+  /// ~end
+  Future<String?> voiceFileToText({
+    required String filePath,
+    required EMAudioParams audioParams,
+  }) async {
+    try {
+      Map result = await Client.instance.chatManager.callNativeMethod(
+        ChatMethodKeys.voiceFileToText,
+        {
+          "filePath": filePath,
+          "audioParams": audioParams.toJson(),
+        },
+      );
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.voiceFileToText] as String?;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// ~english
   /// Downloads the thumbnail if the message has not been downloaded before or if the download fails.
   ///
   /// Param [message] The message object.

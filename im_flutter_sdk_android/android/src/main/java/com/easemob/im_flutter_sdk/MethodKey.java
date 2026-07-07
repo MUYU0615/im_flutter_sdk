@@ -84,6 +84,8 @@ public class MethodKey {
     static final String setVoiceMessageListened = "setVoiceMessageListened";
     static final String updateParticipant = "updateParticipant";
     static final String asyncFilterConversationsFromDB = "asyncFilterConversationsFromDB";
+    static final String voiceMessageToText = "voiceMessageToText";
+    static final String voiceFileToText = "voiceFileToText";
     static final String getAllConversations = "getAllConversations";
     static final String loadAllConversations = "loadAllConversations";
     static final String loadAllConversationsFromDB = "loadAllConversationsFromDB";

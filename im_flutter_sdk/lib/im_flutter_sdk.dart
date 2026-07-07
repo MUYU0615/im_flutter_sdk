@@ -10,6 +10,7 @@ export 'src/managers/user_info_manager.dart';
 export 'src/internal/chat_area_code.dart';
 export 'src/internal/inner_headers.dart';
 export 'src/models/em_chat_enums.dart';
+export 'src/models/em_audio_params.dart';
 export 'src/models/em_chat_room.dart';
 export 'src/models/em_chat_thread.dart';
 export 'src/models/em_conversation.dart';

@@ -4,6 +4,7 @@ export 'em_push_config.dart';
 export 'em_transform_tools.dart';
 
 export '../models/em_chat_enums.dart';
+export '../models/em_audio_params.dart';
 export '../models/em_chat_room.dart';
 export '../models/em_chat_thread.dart';
 export '../models/em_conversation.dart';

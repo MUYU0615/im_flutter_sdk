@@ -92,6 +92,8 @@ class Cmd(str, Enum):
     setVoiceMessageListened = "setVoiceMessageListened"
     updateParticipant = "updateParticipant"
     asyncFilterConversationsFromDB = "asyncFilterConversationsFromDB"
+    voiceMessageToText = "voiceMessageToText"
+    voiceFileToText = "voiceFileToText"
     getAllConversations = "getAllConversations"
     loadAllConversations = "loadAllConversations"
     loadAllConversationsFromDB = "loadAllConversationsFromDB"
