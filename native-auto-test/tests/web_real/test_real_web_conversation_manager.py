@@ -1384,8 +1384,15 @@ def test_real_web_chat_thread_last_message_server_state(
         last_messages_result = assert_api.get_result(last_messages)
         assert isinstance(last_messages_result, dict)
         last_message = last_messages_result.get(thread_id)
-        assert isinstance(last_message, dict), last_messages_result
-        assert last_message != {}, last_messages_result
+        if not isinstance(last_message, dict) or last_message == {}:
+            debug_a = assert_api.get_result(
+                primary_device.call("Client", "getRealSdkDebug", info={})
+            )
+            pytest.fail(
+                "thread last-message result missing or empty: "
+                f"thread_id={thread_id}; result={last_messages_result!r}; "
+                f"debug={debug_a!r}"
+            )
         assert last_message.get("msgId") == parent_msg_id
         assert (last_message.get("body") or {}).get("content") == parent_content
     finally:

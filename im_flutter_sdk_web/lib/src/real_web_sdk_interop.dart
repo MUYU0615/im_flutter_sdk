@@ -3255,14 +3255,19 @@ class RealWebSdkClient {
             }),
           ],
         );
-        final raw = js_util.dartify(
-          await js_util.promiseToFuture<Object?>(promise as Object),
-        );
-        return _normalizeThreadLastMessageResult(raw);
-      } catch (e) {
-        _recordDebug('getChatThreadLastMessageList_error', {
-          'runtime': 'imsdk',
-          'threadIds': normalizedIds,
+      final raw = js_util.dartify(
+        await js_util.promiseToFuture<Object?>(promise as Object),
+      );
+      _recordDebug('getChatThreadLastMessageList_raw', {
+        'runtime': 'imsdk',
+        'threadIds': normalizedIds,
+        'raw': raw,
+      });
+      return _normalizeThreadLastMessageResult(raw);
+    } catch (e) {
+      _recordDebug('getChatThreadLastMessageList_error', {
+        'runtime': 'imsdk',
+        'threadIds': normalizedIds,
           'error': _jsErrorDescription(e),
         });
       }
