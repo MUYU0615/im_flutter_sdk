@@ -12,7 +12,7 @@ SCRIPT_DIR ?= scripts
         skills-validate test test-allure test-html test-chat-strict test-chat-discover \
         e2e-prepare e2e-run e2e-api-coverage e2e-full-run \
         web-e2e web-wrapper-mapping web-coverage-report \
-        android-real-e2e ios-real-e2e web-real-e2e web-real-matrix web-real-report \
+        android-real-e2e android-real-sanity ios-real-e2e web-real-e2e web-real-matrix web-real-report \
         web-real-no-real-api-audit web-real-docs web-real-full-baseline \
         android-api-coverage clean
 
@@ -38,6 +38,7 @@ help:
 	@echo "  web-wrapper-mapping Run Web wrapper JSON mapping cases via local_adapter"
 	@echo "  web-coverage-report Generate Web API coverage markdown report"
 	@echo "  android-real-e2e   Run Android real SDK/service E2E cases"
+	@echo "  android-real-sanity Run fixed Android real E2E sanity pack"
 	@echo "  ios-real-e2e       Run iOS real SDK/service E2E cases"
 	@echo "  web-real-e2e       Run real Web SDK/service E2E through local relay + headless Web clients"
 	@echo "  web-real-matrix    Generate real Web E2E API matrix"
@@ -157,6 +158,10 @@ web-coverage-report:
 
 android-real-e2e:
 	$(PY) -m src.tools.android_e2e_runner \
+	  $(ARGS)
+
+android-real-sanity:
+	$(PY) -m src.tools.android_sanity_runner \
 	  $(ARGS)
 
 android-api-coverage:

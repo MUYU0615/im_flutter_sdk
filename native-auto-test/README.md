@@ -250,6 +250,29 @@ out/log/android/<run_id>-android-pytest.html
 out/log/android/<run_id>-allure-results/
 ```
 
+## Android sanity 入口
+
+如果只是要验证当前 Android 真实 runner、登录回调、联系人准备和基础消息链是否正常，优先使用固定 sanity 入口：
+
+```bash
+make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id android-sanity-20260707-001"
+```
+
+这个入口会读取 `config/android_sanity_cases.txt`，执行一组已经验证过的正式 Android `real_e2e` case，目前包含：
+
+- `Client.getCurrentUser` 单设备登录 smoke
+- `ContactManager.acceptInvitation / getAllContactsFromServer`
+- `ChatManager.sendMessage`
+- `ChatRoomManager.createChatRoom / fetchChatRoomInfoFromServer`
+- `GroupManager.updateGroupAvatar`
+- `PresenceManager.publishPresenceWithDescription / presenceSubscribe / fetchPresenceStatus / fetchSubscribedMembersWithPageNum / presenceUnsubscribe`
+
+需要临时追加 pytest 参数时，仍然放到 `ARGS` 末尾，例如：
+
+```bash
+make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id android-sanity-20260707-001 -- -x"
+```
+
 ## 常用命令
 
 查看任务：

@@ -1,0 +1,6 @@
+tests/client/test_client_single_device_smoke.py::test_single_device_login_and_get_current_user
+tests/contact/test_contact.py::test_friend_add_accept_and_list
+tests/chat/test_chat_crud.py::test_chat_send_and_received
+tests/chatroom/test_chatroom_lifecycle.py::test_chatroom_create_and_fetch_from_server
+tests/group/test_group_remaining_api_coverage.py::test_group_update_avatar_success
+tests/presence/test_presence.py::test_presence_publish_subscribe_query_unsubscribe
