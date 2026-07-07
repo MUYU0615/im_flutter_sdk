@@ -3723,15 +3723,9 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_lifecycle_events_imsdk_runtime
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-thread-event-debug-imsdk
-        --app-url http://127.0.0.1:8274 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 120 --startup-timeout 180 --flutter-timeout
-        240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_lifecycle_events_imsdk_runtime
-        --target-platform web --web-sdk-runtime imsdk -q -s --runxfail
-      - python3 -m src.tools.web_e2e_runner --run-id web-real-thread-events-imsdk-direct-call
-        --app-url http://127.0.0.1:8268 --web-sdk-mode real_sdk --web-sdk-runtime
-        imsdk --headless-startup-wait 120 --startup-timeout 180 --flutter-timeout
-        240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_lifecycle_events_imsdk_runtime
+      - python3 -m src.tools.web_e2e_runner --run-id web-thread-create-event-recheck-20260707-000002
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_lifecycle_events_imsdk_runtime
         --target-platform web --web-sdk-runtime imsdk -q -s
       reason: RealWebSdkClient now registers chatThreadManager event handlers and
         disables the bridge's local synthetic thread events in real_sdk mode.
