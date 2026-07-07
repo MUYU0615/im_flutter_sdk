@@ -45,6 +45,8 @@ make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id
 
 它会读取 `config/android_sanity_cases.txt`，执行一组已验证过的正式 Android `real_e2e` case，用于快速确认 runner、登录/startCallback、联系人前置和基础消息链是否正常。需要回归更大范围前，优先先跑这组 sanity。
 
+`make android-real-e2e` 是底层 Android runner 调试入口，用于只验证单个 case、设备连接或 runner 启动链路；正式发版报告优先使用 `e2e-full-run`，代表性基线优先使用 `android-real-sanity`。
+
 ## 环境和 Case 分层
 
 环境准备负责：

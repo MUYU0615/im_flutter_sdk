@@ -362,10 +362,22 @@ make skills-validate
 make android-api-coverage
 ```
 
-运行 Android 真实 E2E：
+运行 Android sanity：
 
 ```bash
-make android-real-e2e
+make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id android-sanity-20260707-001"
+```
+
+运行 Android 正式发版 E2E：
+
+```bash
+make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+```
+
+底层 Android runner 调试：
+
+```bash
+make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5558 --run-id android-debug-20260707 -- tests --target-platform android -m real_e2e -q"
 ```
 
 运行 iOS 真实 E2E：
@@ -398,10 +410,12 @@ make test-html ARGS="tests --target-platform android -m real_e2e"
 make test-allure ARGS="tests --target-platform android -m real_e2e"
 ```
 
-Android 真实 E2E 推荐使用 runner 入口。runner 会先卸载旧测试 App、启动 WebSocket relay、拉起 Android 设备、下发 `Client.init`，再调用 pytest，并默认同时输出 HTML 与 Allure：
+Android 正式发版 E2E 推荐使用 `e2e-full-run`。当 `--platform-matrix android-android` 且 client 都是 Android 时，它会委托 Android runner；runner 会启动 WebSocket relay、拉起 Android 设备、下发 `Client.init`，再调用 pytest，并默认同时输出 HTML 与 Allure。
+
+`android-real-e2e` 是底层 runner 调试入口，用于只验证某个 Android case、runner 启动链路或设备连接问题，不作为发版报告的首选入口：
 
 ```bash
-make android-real-e2e
+make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5558 --run-id android-debug-20260707 -- tests/chat/test_chat_crud.py::test_chat_send_and_received --target-platform android -m real_e2e -q"
 ```
 
 默认报告位置：

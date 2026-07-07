@@ -122,3 +122,5 @@
   - 模块严格：`pytest -q tests/<domain>/test_<topic>.py -s`
   - 全量：`pytest -q tests -s`
   - Android sanity：`make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id>"`
+  - Android 正式发版：`make e2e-full-run ARGS="--client android:a@<version> --client android:b@<version> --run-id <run_id> --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"`
+  - Android 单点调试：`make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id> -- tests/<path>::<case> --target-platform android -m real_e2e -q"`
