@@ -1220,6 +1220,363 @@ native_api_review:
     batch: message_android_internal
     reason_zh: "该 Android 原生 public API 属于 Android 对象克隆或 Parcelable 实现细节，不应作为 Flutter App 开发者 wrapper API 暴露。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getAttributes
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getBody
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getBooleanAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getChatType
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getDoubleAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getFloatAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getFrom
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getIntAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getJSONArrayAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getJSONObjectAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getLongAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getMsgTime
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getRecaller
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getSenderInfo
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getStreamChunk
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getStringAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getTo
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getType
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getUserName
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: getWebhookEnv
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isAcked
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isBroadcast
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isChatThreadMessage
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isContentReplaced
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isDeliverOnlineOnly
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isDelivered
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isListened
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isNeedGroupAck
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isOnlineState
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: isUnread
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setAcked
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setAttribute
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setBody
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setChatType
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setDeliverAcked
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setDelivered
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setDirection
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setFrom
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setGroupAckCount
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setIsChatThreadMessage
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setIsNeedGroupAck
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setListened
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setLocalTime
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setMsgId
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setMsgTime
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setPriority
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setProgress
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setReceiverList
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setTo
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setUnread
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
+  - manager: MessageManager
+    api: setWebhookEnv
+    action: model_property_covered
+    priority: P2
+    batch: message_model_review
+    reason_zh: "该 API 是 EMMessage 模型字段或 setter/getter，Flutter 侧应通过消息序列化字段断言覆盖，不作为独立 manager 命令暴露。"
+    target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: PresenceManager
     api: clearListeners
     action: listener_registration_internal
