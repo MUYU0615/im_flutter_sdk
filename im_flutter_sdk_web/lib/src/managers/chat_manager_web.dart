@@ -250,6 +250,16 @@ class ChatManagerWeb extends ChatManager {
           return {method: null};
         }
         return {method: _storeMessage(_normalizeSentMessage(message))};
+      case _MethodKeys.setVoiceMessageListened:
+        final message = _asMap(map['message']);
+        final msgId = message['msgId']?.toString() ?? '';
+        final existing = _messageById(msgId);
+        if (existing == null) {
+          return {method: false};
+        }
+        existing['isListened'] = true;
+        _storeMessage(existing);
+        return {method: true};
       case _MethodKeys.getConversation:
         if (realSdk != null) {
           return {

@@ -127,6 +127,10 @@
         [self saveMessage:call.arguments
               channelName:call.method
                    result:result];
+    } else if ([ChatSetVoiceMessageListened isEqualToString:call.method]) {
+        [self setVoiceMessageListened:call.arguments
+                         channelName:call.method
+                              result:result];
     } else if ([ChatGetAllConversations isEqualToString:call.method]) {
         [self getAllConversations:call.arguments
                       channelName:call.method
@@ -522,6 +526,29 @@
                       channelName:aChannelName
                             error:aError
                            object:[aMessage toJson]];
+    }];
+}
+
+- (void)setVoiceMessageListened:(NSDictionary *)param
+                    channelName:(NSString *)aChannelName
+                         result:(FlutterResult)result {
+    __weak typeof(self) weakSelf = self;
+    EMChatMessage *msg = [EMChatMessage fromJson:param[@"message"]];
+    EMChatMessage *dbMsg = [EMClient.sharedClient.chatManager getMessageWithMessageId:msg.messageId];
+    if (dbMsg == nil) {
+        [weakSelf wrapperCallBack:result
+                      channelName:aChannelName
+                            error:[EMError errorWithDescription:@"The message is invalid." code:EMErrorMessageInvalid]
+                           object:nil];
+        return;
+    }
+    dbMsg.isListened = YES;
+    [EMClient.sharedClient.chatManager updateMessage:dbMsg
+                                          completion:^(EMChatMessage *aMessage, EMError *aError) {
+        [weakSelf wrapperCallBack:result
+                      channelName:aChannelName
+                            error:aError
+                           object:@(!aError)];
     }];
 }
 

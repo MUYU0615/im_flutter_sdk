@@ -91,6 +91,7 @@ static NSString *const ChatDownloadMessageAttachmentInCombine = @"downloadMessag
 static NSString *const ChatDownloadMessageThumbnailInCombine = @"downloadMessageThumbnailInCombine";
 static NSString *const ChatImportMessages = @"importMessages";
 static NSString *const ChatSaveMessage = @"saveMessage";
+static NSString *const ChatSetVoiceMessageListened = @"setVoiceMessageListened";
 static NSString *const ChatGetAllConversations = @"getAllConversations";
 static NSString *const ChatGetConversationsByType = @"getConversationsByType";
 static NSString *const ChatCleanConversationsMemoryCache = @"cleanConversationsMemoryCache";
