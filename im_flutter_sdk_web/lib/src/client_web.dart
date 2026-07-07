@@ -167,6 +167,8 @@ class ClientWeb extends Client {
         };
       case 'dumpRealSdkContactManagerMethods':
         return {method: _realSdk?.dumpContactManagerMethods() ?? <String>[]};
+      case 'dumpRealSdkChatRoomManagerMethods':
+        return {method: _realSdk?.dumpChatRoomManagerMethods() ?? <String>[]};
       case _MethodKeys.createAccount:
         if (_sdkMode == 'real_sdk') {
           final userId = map['userId']?.toString() ?? '';

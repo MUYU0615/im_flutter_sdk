@@ -1,9 +1,14 @@
+import pytest
+
 from src.tools.platform_api_support_report import (
     PlatformStatus,
     _web_status,
     render_csv,
     render_html,
 )
+
+
+pytestmark = [pytest.mark.no_global_login]
 
 
 def test_not_applicable_reason_is_rendered_in_chinese():

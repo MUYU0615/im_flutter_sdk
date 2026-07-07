@@ -9,6 +9,7 @@ import pytest
 
 from src import Cmd
 from src.rest_api.user_api import get_user_access_token
+from src.rest_api.chatroom_api import delete_chat_room
 from tests.chat._utils import build_text
 
 
@@ -52,6 +53,52 @@ def test_real_web_runtime_status_without_global_login(primary_device, assert_api
         event.get("type") in {"bridge_init_requested", "init_enter"}
         for event in events
     )
+
+
+def test_real_web_dump_chatroom_manager_methods_without_global_login(
+    primary_device,
+    assert_api,
+):
+    methods = primary_device.call("Client", "dumpRealSdkChatRoomManagerMethods", info={})
+    result = assert_api.get_result(methods)
+    assert isinstance(result, list)
+    assert result, result
+
+
+def test_real_web_create_chatroom_probe_without_global_login(
+    primary_device,
+    assert_api,
+    user_a,
+):
+    token_a = get_user_access_token(user_a, "1")
+
+    logout = primary_device.call("Client", Cmd.logout.value, info={"unbindToken": False})
+    assert_api.assert_result_equals(logout, True)
+    login = primary_device.call(
+        "Client",
+        Cmd.loginWithAgoraToken.value,
+        info={"userId": user_a, "agoraToken": token_a},
+    )
+    assert_api.assert_result_equals(login, user_a)
+
+    created = primary_device.call(
+        "ChatRoomManager",
+        Cmd.createChatRoom.value,
+        info={
+            "subject": f"web-real-probe-room-{uuid.uuid4().hex[:8]}",
+            "desc": "web real create chatroom probe",
+            "maxUserCount": 200,
+        },
+    )
+    room_id = ""
+    try:
+        room = assert_api.get_result(created)
+        assert isinstance(room, dict)
+        room_id = room.get("roomId") or room.get("chatRoomId") or ""
+        assert isinstance(room_id, str) and room_id, room
+    finally:
+        if room_id:
+            delete_chat_room(room_id)
 
 
 def test_real_web_token_login_without_global_login(

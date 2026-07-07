@@ -4008,6 +4008,48 @@ class RealWebSdkClient {
     int pageNum = 1,
     int pageSize = 20,
   }) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final chatRoomManager =
+          js_util.getProperty<Object?>(highLevelClient, 'chatRoomManager');
+      if (chatRoomManager == null) {
+        throw StateError('Real Web SDK chatRoomManager is not available.');
+      }
+      final promise = js_util.callMethod<Object?>(
+        chatRoomManager,
+        'getChatRoomList',
+        [
+          js_util.jsify({
+            'pageNum': pageNum,
+            'pageSize': pageSize,
+          }),
+        ],
+      );
+      final result = await js_util.promiseToFuture<Object?>(promise as Object);
+      final raw = js_util.dartify(result);
+      final rawMap = raw is Map ? _asMap(raw) : const <String, dynamic>{};
+      final data = rawMap['data'];
+      final dataMap = _asMap(data);
+      final source = data is List
+          ? data
+          : dataMap['data'] is List
+              ? dataMap['data']
+              : dataMap['list'] is List
+                  ? dataMap['list']
+                  : rawMap['entities'] is List
+                      ? rawMap['entities']
+                      : const [];
+      final rooms = _asMapList(source).map(_normalizeChatRoom).toList();
+      return {
+        'pageNum': pageNum,
+        'pageSize': pageSize,
+        'totalSize': _asInt(rawMap['count']) ??
+            _asInt(dataMap['count']) ??
+            _asInt(dataMap['total']) ??
+            rooms.length,
+        'list': rooms,
+      };
+    }
     final result = await _callRealSdk('getChatRooms', [
       {
         'pagenum': pageNum,
@@ -7987,6 +8029,45 @@ class RealWebSdkClient {
     } catch (_) {}
     final sorted = result.toList()..sort();
     _recordDebug('contactManager_methods', {
+      'runtime': 'imsdk',
+      'methods': sorted,
+    });
+    return sorted;
+  }
+
+  List<String> dumpChatRoomManagerMethods() {
+    final client = _highLevelClient;
+    if (client == null) {
+      return const <String>[];
+    }
+    final manager = js_util.getProperty<Object?>(client, 'chatRoomManager');
+    if (manager == null) {
+      return const <String>[];
+    }
+    final result = <String>{};
+    try {
+      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+        final text = key?.toString();
+        if (text != null && text.isNotEmpty) {
+          result.add(text);
+        }
+      }
+    } catch (_) {}
+    try {
+      JSAny? current = manager as JSAny?;
+      for (var depth = 0; depth < 5 && current != null; depth++) {
+        for (final key
+            in js_util.dartify(_jsGetOwnPropertyNames(current)) as List) {
+          final text = key?.toString();
+          if (text != null && text.isNotEmpty) {
+            result.add(text);
+          }
+        }
+        current = _jsGetPrototypeOf(current);
+      }
+    } catch (_) {}
+    final sorted = result.toList()..sort();
+    _recordDebug('chatRoomManager_methods', {
       'runtime': 'imsdk',
       'methods': sorted,
     });

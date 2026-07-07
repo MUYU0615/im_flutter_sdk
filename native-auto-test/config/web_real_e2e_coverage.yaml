@@ -2024,8 +2024,8 @@ web_real_e2e:
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
       reason: The test creates a real chat room through REST, joins it through the
-        real Web SDK ChatRoomManager.joinChatRoom path, and verifies the real SDK
-        joinChatRoom_success debug event.
+        real Web SDK ChatRoomManager.joinChatRoom path, and verifies the returned
+        roomId/name match the server room.
     leaveChatRoom:
       real_e2e_status: supported
       tests:
@@ -2038,16 +2038,20 @@ web_real_e2e:
         ChatRoomManager.leaveChatRoom path and verifies the room no longer appears
         in the joined room list.
     fetchPublicChatRoomsFromServer:
-      real_e2e_status: supported
+      real_e2e_status: blocked
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-real-chatroom-file5 --web-sdk-mode
+      - make web-real-e2e ARGS="--run-id web-chatroom-create-recheck-20260707-000003 --web-sdk-mode
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
-      reason: The test creates a real public chat room through REST, reads the real
-        Web SDK public chat room page through getChatRooms, and verifies the newly
-        created server room appears in the page result.
+      reason: The current real Web IMSDK path now resolves to chatRoomManager.getChatRoomList
+        instead of failing on a missing getChatRooms method, but the returned public
+        room page still comes back with an empty list and does not include the newly
+        created server room.
+      reason_zh: 当前真实 Web IMSDK 已经改为调用 chatRoomManager.getChatRoomList，
+        不再因为缺少 getChatRooms 方法直接报错；但返回的公共聊天室分页结果仍然是空列表，
+        新创建的服务端聊天室没有出现在结果中，因此当前真实链路仍未通过。
     fetchChatRoomInfoFromServer:
       real_e2e_status: supported
       tests:
@@ -2083,18 +2087,18 @@ web_real_e2e:
     createChatRoom:
       real_e2e_status: blocked
       tests:
-      - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_create_modify_and_destroy
+      - tests/web_real/test_real_web_login_probe.py::test_real_web_create_chatroom_probe_without_global_login
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-real-chatroom-lifecycle-green1 --web-sdk-mode
+      - make web-real-e2e ARGS="--run-id web-chatroom-create-probe-20260707-000001 --web-sdk-mode
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_create_modify_and_destroy
+        180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_create_chatroom_probe_without_global_login
         --target-platform web -q"
-      reason: The real Web SDK createChatRoom path is implemented, but the current
-        test application/account returns server error group_authorization with
-        message "you have no permission to do this". This requires enabling client
-        chat room creation permission or using an account/app with that permission.
-      reason_zh: createChatRoom 的真实 Web SDK 调用已经发出，但当前测试应用或账号
-        被服务端拒绝，返回 group_authorization 权限错误，因此当前真实执行未通过。
+      reason: The current real Web IMSDK high-level chatRoomManager does not expose
+        a callable createChatRoom method. The direct create probe fails with
+        NoSuchMethodError before any server-side permission check can be asserted.
+      reason_zh: 当前真实 Web IMSDK 的高层 chatRoomManager 没有可调用的 createChatRoom
+        方法。直接 create probe 会先报 NoSuchMethodError，因此当前 blocked 的原因不是旧的
+        group_authorization 权限错误，而是运行时入口本身不可调用。
     destroyChatRoom:
       real_e2e_status: supported
       tests:

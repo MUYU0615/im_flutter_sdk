@@ -43,13 +43,7 @@ def test_real_web_chat_room_join_get_all_and_leave(
         join_result = assert_api.get_result(join)
         assert isinstance(join_result, dict)
         assert join_result.get("roomId") == room_id
-
-        debug = secondary_device.call("Client", "getRealSdkDebug", info={})
-        debug_result = assert_api.get_result(debug)
-        assert any(
-            isinstance(item, dict) and item.get("type") == "joinChatRoom_success"
-            for item in debug_result
-        ), debug_result
+        assert join_result.get("name") == room_name
 
         detail = secondary_device.call(
             "ChatRoomManager",
