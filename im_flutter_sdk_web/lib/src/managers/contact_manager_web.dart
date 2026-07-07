@@ -2,13 +2,30 @@ part of '../client_web.dart';
 
 class ContactManagerWeb extends ContactManager {
   Future<dynamic> Function(MethodCall call)? _handler;
+  int _handlerInstallCount = 0;
   final Map<String, Map<String, dynamic>> _contacts = {};
   final Set<String> _blockList = {};
 
   @override
   void updateNativeHandler(handler) {
     _handler = handler;
+    _handlerInstallCount += 1;
+    final client = Client.instance;
+    if (client is ClientWeb) {
+      client._realSdk?.recordExternalDebugEvent(
+        'contact_manager_update_native_handler',
+        {
+          'installCount': _handlerInstallCount,
+          'hasHandler': _handler != null,
+          'handlerHashCode': _handler.hashCode,
+        },
+      );
+    }
   }
+
+  bool get hasNativeHandler => _handler != null;
+  int get handlerInstallCount => _handlerInstallCount;
+  int? get handlerHashCode => _handler?.hashCode;
 
   @override
   Future<dynamic> callNativeMethod(String method, [dynamic params]) async {

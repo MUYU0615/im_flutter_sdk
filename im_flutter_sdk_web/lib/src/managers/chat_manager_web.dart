@@ -2,6 +2,7 @@ part of '../client_web.dart';
 
 class ChatManagerWeb extends ChatManager {
   Future<dynamic> Function(MethodCall call)? _handler;
+  int _handlerInstallCount = 0;
   ChatThreadManagerWeb? chatThreadManager;
   int _messageSequence = 0;
   final Map<String, Map<String, dynamic>> _messages = {};
@@ -9,14 +10,80 @@ class ChatManagerWeb extends ChatManager {
   final Map<String, Set<String>> _messageReactions = {};
   final Map<String, Map<String, dynamic>> _messagePins = {};
   final Map<String, List<Map<String, dynamic>>> _groupAcks = {};
+  final List<Map<String, dynamic>> _pendingRealTextMessages = [];
+  final List<Map<String, dynamic>> _pendingRealSuccessMessages = [];
 
   @override
   void updateNativeHandler(handler) {
     _handler = handler;
+    _handlerInstallCount += 1;
+    final client = Client.instance;
+    if (client is ClientWeb) {
+      client._realSdk?.recordExternalDebugEvent(
+        'chat_manager_update_native_handler',
+        {
+          'installCount': _handlerInstallCount,
+          'hasHandler': _handler != null,
+          'handlerHashCode': _handler.hashCode,
+        },
+      );
+    }
   }
 
+  bool get hasNativeHandler => _handler != null;
+  int get handlerInstallCount => _handlerInstallCount;
+  int? get handlerHashCode => _handler?.hashCode;
+
   Future<void> emitRealTextMessage(Map<String, dynamic> message) async {
-    await _handler?.call(MethodCall('realWebTextMessage', message));
+    _pendingRealTextMessages.add(Map<String, dynamic>.from(message));
+    final client = Client.instance;
+    Future<dynamic> Function(MethodCall call)? handler = _handler;
+    if (client is ClientWeb) {
+      handler ??= client._handler;
+      client._realSdk?.recordExternalDebugEvent(
+        'chat_manager_emit_real_text_message_begin',
+        {
+          'msgId': message['msgId'],
+          'from': message['from'],
+          'to': message['to'],
+          'bodyType': _asMap(message['body'])['type'],
+          'hasHandler': _handler != null,
+          'hasClientHandler': client._handler != null,
+          'handlerInstallCount': _handlerInstallCount,
+          'managerHandlerHashCode': _handler?.hashCode,
+          'clientHandlerHashCode': client._handler?.hashCode,
+        },
+      );
+    }
+    if (handler != null) {
+      final effectiveHandler = handler;
+      await Future.microtask(
+        () => effectiveHandler(MethodCall('realWebTextMessage', message)),
+      );
+    }
+    if (client is ClientWeb) {
+      client._realSdk?.recordExternalDebugEvent(
+        'chat_manager_emit_real_text_message_end',
+        {
+          'msgId': message['msgId'],
+        },
+      );
+    }
+  }
+
+  Future<void> emitRealMessageSuccess(Map<String, dynamic> message) async {
+    _pendingRealSuccessMessages.add(Map<String, dynamic>.from(message));
+    final client = Client.instance;
+    Future<dynamic> Function(MethodCall call)? handler = _handler;
+    if (client is ClientWeb) {
+      handler ??= client._handler;
+    }
+    if (handler != null) {
+      final effectiveHandler = handler;
+      await Future.microtask(
+        () => effectiveHandler(MethodCall('realWebMessageSuccess', message)),
+      );
+    }
   }
 
   Future<void> emitRealDeliveredAckMessage(Map<String, dynamic> message) async {
@@ -69,6 +136,22 @@ class ChatManagerWeb extends ChatManager {
           return {method: await _sendRealMessage(realSdk, message)};
         }
         return {method: _storeMessage(_normalizeSentMessage(message))};
+      case 'getPendingRealTextMessages':
+        final list = _pendingRealTextMessages
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+        return {method: list};
+      case 'clearPendingRealTextMessages':
+        _pendingRealTextMessages.clear();
+        return {method: true};
+      case 'getPendingRealSuccessMessages':
+        final list = _pendingRealSuccessMessages
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+        return {method: list};
+      case 'clearPendingRealSuccessMessages':
+        _pendingRealSuccessMessages.clear();
+        return {method: true};
       case _MethodKeys.sendMessageWithType:
         final message = _normalizeMessageInput(map);
         if (!_isSupportedMessage(message)) {
@@ -79,6 +162,11 @@ class ChatManagerWeb extends ChatManager {
         }
         return {method: _storeMessage(_normalizeSentMessage(message))};
       case _MethodKeys.resendMessage:
+        if (realSdk != null) {
+          final message =
+              _asMap(map['message']).isEmpty ? map : _asMap(map['message']);
+          return {method: await _resendRealMessage(realSdk, message)};
+        }
         return {method: _resendMessage(map)};
       case _MethodKeys.ackGroupMessageRead:
         if (realSdk != null) {
@@ -1034,6 +1122,14 @@ class ChatManagerWeb extends ChatManager {
     }
     existing['status'] = 2;
     return _storeMessage(existing);
+  }
+
+  Future<Map<String, dynamic>> _resendRealMessage(
+    dynamic realSdk,
+    Map<String, dynamic> message,
+  ) async {
+    final normalized = _normalizeMessageInput(message);
+    return _sendRealMessage(realSdk, normalized);
   }
 
   int _ackConversationRead(Map<String, dynamic> map) {

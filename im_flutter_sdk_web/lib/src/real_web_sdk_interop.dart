@@ -97,6 +97,7 @@ List<String> _toStringList(Object? value) {
 class RealWebSdkClient {
   RealWebSdkClient({
     required this.onTextMessage,
+    required this.onMessageSuccess,
     required this.onDeliveredAckMessage,
     required this.onReadAckMessage,
     required this.onModifiedMessage,
@@ -116,6 +117,7 @@ class RealWebSdkClient {
   });
 
   final Future<void> Function(Map<String, dynamic> message) onTextMessage;
+  final Future<void> Function(Map<String, dynamic> message) onMessageSuccess;
   final Future<void> Function(Map<String, dynamic> message)
       onDeliveredAckMessage;
   final Future<void> Function(Map<String, dynamic> message) onReadAckMessage;
@@ -784,6 +786,16 @@ class RealWebSdkClient {
         content: content,
       );
       _rememberMessage(sent);
+      _recordDebug('send_success_bridge_emit_begin', {
+        'runtime': 'imsdk',
+        'msgId': sent['msgId'],
+        'bodyType': _asMap(sent['body'])['type'],
+      });
+      await onMessageSuccess(sent);
+      _recordDebug('send_success_bridge_emit_end', {
+        'runtime': 'imsdk',
+        'msgId': sent['msgId'],
+      });
       return sent;
     }
     final conn = _requireConnection();
@@ -873,6 +885,16 @@ class RealWebSdkClient {
         fallback: map,
       );
       _rememberMessage(sent);
+      _recordDebug('send_success_bridge_emit_begin', {
+        'runtime': 'imsdk',
+        'msgId': sent['msgId'],
+        'bodyType': _asMap(sent['body'])['type'],
+      });
+      await onMessageSuccess(sent);
+      _recordDebug('send_success_bridge_emit_end', {
+        'runtime': 'imsdk',
+        'msgId': sent['msgId'],
+      });
       return sent;
     }
     return sendTextMessage(map);
@@ -926,6 +948,16 @@ class RealWebSdkClient {
         final sent = _normalizeRealCombineMessage(js_util.dartify(sentRaw),
             fallback: map);
         _rememberMessage(sent);
+        _recordDebug('send_success_bridge_emit_begin', {
+          'runtime': 'imsdk',
+          'msgId': sent['msgId'],
+          'bodyType': _asMap(sent['body'])['type'],
+        });
+        await onMessageSuccess(sent);
+        _recordDebug('send_success_bridge_emit_end', {
+          'runtime': 'imsdk',
+          'msgId': sent['msgId'],
+        });
         return sent;
       } catch (e) {
         _recordDebug('send_combine_error', {
@@ -5477,11 +5509,37 @@ class RealWebSdkClient {
           if (value is List) {
             for (final item in value) {
               final message = _normalizeRealIncomingMessage(item);
+              _recordDebug('bridge_emit_real_text_message_begin', {
+                'runtime': 'imsdk',
+                'source': 'onMessage',
+                'msgId': message['msgId'],
+                'from': message['from'],
+                'to': message['to'],
+                'bodyType': _asMap(message['body'])['type'],
+              });
               onTextMessage(message);
+              _recordDebug('bridge_emit_real_text_message_end', {
+                'runtime': 'imsdk',
+                'source': 'onMessage',
+                'msgId': message['msgId'],
+              });
             }
           } else {
             final message = _normalizeRealIncomingMessage(value);
+            _recordDebug('bridge_emit_real_text_message_begin', {
+              'runtime': 'imsdk',
+              'source': 'onMessage',
+              'msgId': message['msgId'],
+              'from': message['from'],
+              'to': message['to'],
+              'bodyType': _asMap(message['body'])['type'],
+            });
             onTextMessage(message);
+            _recordDebug('bridge_emit_real_text_message_end', {
+              'runtime': 'imsdk',
+              'source': 'onMessage',
+              'msgId': message['msgId'],
+            });
           }
         }).toJS,
         'onMessageRead': ((JSAny? event) {
@@ -6006,17 +6064,50 @@ class RealWebSdkClient {
         if (value is List) {
           for (final item in value) {
             final message = _normalizeRealIncomingMessage(item);
+            _recordDebug('bridge_emit_real_text_message_begin', {
+              'source': 'onMessage',
+              'msgId': message['msgId'],
+              'from': message['from'],
+              'to': message['to'],
+              'bodyType': _asMap(message['body'])['type'],
+            });
             onTextMessage(message);
+            _recordDebug('bridge_emit_real_text_message_end', {
+              'source': 'onMessage',
+              'msgId': message['msgId'],
+            });
           }
         } else {
           final message = _normalizeRealIncomingMessage(value);
+          _recordDebug('bridge_emit_real_text_message_begin', {
+            'source': 'onMessage',
+            'msgId': message['msgId'],
+            'from': message['from'],
+            'to': message['to'],
+            'bodyType': _asMap(message['body'])['type'],
+          });
           onTextMessage(message);
+          _recordDebug('bridge_emit_real_text_message_end', {
+            'source': 'onMessage',
+            'msgId': message['msgId'],
+          });
         }
       }).toJS,
       'onTextMessage': ((JSAny? event) {
         _recordDebug('onTextMessage', {'payload': js_util.dartify(event)});
         final message = _normalizeRealIncomingMessage(js_util.dartify(event));
+        _recordDebug('bridge_emit_real_text_message_begin', {
+          'source': 'onTextMessage',
+          'msgId': message['msgId'],
+          'from': message['from'],
+          'to': message['to'],
+          'bodyType': _asMap(message['body'])['type'],
+        });
         onTextMessage(message);
+        _recordDebug('bridge_emit_real_text_message_end', {
+          'source': 'onTextMessage',
+          'msgId': message['msgId'],
+        });
       }).toJS,
       'onReadMessage': ((JSAny? event) {
         final value = js_util.dartify(event);

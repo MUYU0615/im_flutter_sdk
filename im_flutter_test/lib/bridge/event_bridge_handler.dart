@@ -1,4 +1,5 @@
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+import 'package:flutter/foundation.dart';
 
 /// Event forwarding entry point for the JSON bridge test app.
 ///
@@ -20,6 +21,8 @@ class EventBridgeHandler {
   bool _registered = false;
   BridgeEventSender? _sendEvent;
 
+  bool get isRegistered => _registered;
+
   List<Map<String, dynamic>> _messagesToJson(List<EMMessage> messages) {
     return messages.map((message) => message.toJson()).toList();
   }
@@ -29,6 +32,9 @@ class EventBridgeHandler {
     required BridgeEventSender sendEvent,
     bool emitConnectedOnRegister = true,
   }) {
+    debugPrint(
+      '[EventBridgeHandler] registerAllHandlers device=$deviceName emitConnected=$emitConnectedOnRegister',
+    );
     _registered = true;
     _sendEvent = sendEvent;
     EMClient.getInstance.chatManager.addEventHandler(
@@ -561,6 +567,9 @@ class EventBridgeHandler {
   void emitMessagesReceived({
     required List<Map<String, dynamic>> messages,
   }) {
+    debugPrint(
+      '[EventBridgeHandler] emitMessagesReceived registered=$_registered count=${messages.length}',
+    );
     if (!_registered) return;
     _sendEvent?.call('onMessagesReceived', {
       'messages': messages,
@@ -581,6 +590,9 @@ class EventBridgeHandler {
   void emitCmdMessagesReceived({
     required List<Map<String, dynamic>> messages,
   }) {
+    debugPrint(
+      '[EventBridgeHandler] emitCmdMessagesReceived registered=$_registered count=${messages.length}',
+    );
     if (!_registered) return;
     _sendEvent?.call('onCmdMessagesReceived', {
       'messages': messages,
@@ -830,6 +842,7 @@ class EventBridgeHandler {
   }
 
   void unregisterAllHandlers() {
+    debugPrint('[EventBridgeHandler] unregisterAllHandlers');
     EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
     EMClient.getInstance.chatManager.removeMessageEvent(_messageEventId);
     EMClient.getInstance.contactManager.removeEventHandler(_handlerId);

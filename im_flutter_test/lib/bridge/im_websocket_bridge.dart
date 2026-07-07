@@ -45,6 +45,15 @@ class IMWebSocketBridge {
   final String _webSdkMode = 'real_sdk';
 
   OnBridgeLog? onLog;
+  int _realWebTextMessageCalls = 0;
+  int _messagesReceivedEventsSent = 0;
+  String? _lastBridgeMessageId;
+  String? _lastBridgeEventType;
+  int? _nativeHandlerHashCode;
+  int _nativeHandlerInstallCount = 0;
+  Timer? _webRealTextFlushTimer;
+  final Set<String> _flushedWebRealTextMsgIds = <String>{};
+  final Set<String> _flushedWebRealSuccessMsgIds = <String>{};
 
   static bool _isLoginMethod(String? method) {
     return method == _login || method == _loginWithAgoraToken;
@@ -162,6 +171,21 @@ class IMWebSocketBridge {
     }
   }
 
+  Map<String, dynamic> _bridgeState() {
+    return {
+      'deviceName': _deviceName,
+      'webSdkMode': _webSdkMode,
+      'socketConnected': _socket != null && !(_socket?.isClosed ?? true),
+      'nativeHandlerRegistered': EventBridgeHandler.instance.isRegistered,
+      'nativeHandlerHashCode': _nativeHandlerHashCode,
+      'nativeHandlerInstallCount': _nativeHandlerInstallCount,
+      'realWebTextMessageCalls': _realWebTextMessageCalls,
+      'messagesReceivedEventsSent': _messagesReceivedEventsSent,
+      'lastBridgeMessageId': _lastBridgeMessageId,
+      'lastBridgeEventType': _lastBridgeEventType,
+    };
+  }
+
   bool _isBridgeResponseOrEvent(Map<String, dynamic> message) {
     return message['type'] == 'event' ||
         message.containsKey('result') ||
@@ -212,14 +236,10 @@ class IMWebSocketBridge {
           ? Map<String, dynamic>.from(arguments)
           : <String, dynamic>{'value': arguments};
       if (call.method == 'realWebTextMessage') {
-        final body = data['body'];
-        final bodyType = body is Map ? body['type'] : null;
-        final isCmd = bodyType == 6 || bodyType?.toString() == '6';
-        if (isCmd) {
-          EventBridgeHandler.instance.emitCmdMessagesReceived(messages: [data]);
-        } else {
-          EventBridgeHandler.instance.emitMessagesReceived(messages: [data]);
-        }
+        await _handleBridgeRealWebTextMessage(data);
+      } else if (call.method == 'realWebMessageSuccess') {
+        _logV('received realWebMessageSuccess: ${jsonEncode(data)}');
+        EventBridgeHandler.instance.emitMessageSuccess(message: data);
       } else if (call.method == 'realWebDeliveredAckMessage') {
         EventBridgeHandler.instance.emitMessagesDelivered(messages: [data]);
         EventBridgeHandler.instance.emitMessageDeliveryAck(message: data);
@@ -294,6 +314,12 @@ class IMWebSocketBridge {
       return null;
     }
 
+    _nativeHandlerHashCode = handler.hashCode;
+    _nativeHandlerInstallCount += 1;
+    _logV(
+      'install native handler hash=$_nativeHandlerHashCode count=$_nativeHandlerInstallCount',
+    );
+
     for (final manager in [
       Client.instance,
       Client.instance.chatManager,
@@ -316,10 +342,92 @@ class IMWebSocketBridge {
   }
 
   void _cleanup() {
+    _stopWebRealTextFlush();
     _subscription?.cancel();
     _subscription = null;
     _socket = null;
     _deviceName = null;
+  }
+
+  void _startWebRealTextFlush() {
+    if (_webSdkMode != 'real_sdk') return;
+    _webRealTextFlushTimer ??= Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) => _flushPendingWebRealTextMessages(),
+    );
+  }
+
+  void _stopWebRealTextFlush() {
+    _webRealTextFlushTimer?.cancel();
+    _webRealTextFlushTimer = null;
+    _flushedWebRealTextMsgIds.clear();
+    _flushedWebRealSuccessMsgIds.clear();
+  }
+
+  Future<void> _flushPendingWebRealTextMessages() async {
+    if (_socket == null || _socket!.isClosed) return;
+    if (_webSdkMode != 'real_sdk') return;
+    try {
+      final result = await Client.instance.chatManager.callNativeMethod(
+        'getPendingRealTextMessages',
+        <String, dynamic>{},
+      );
+      final map = result is Map<String, dynamic>
+          ? result
+          : result is Map
+              ? Map<String, dynamic>.from(result)
+              : const <String, dynamic>{};
+      final rawList = map['getPendingRealTextMessages'];
+      if (rawList is! List) return;
+      for (final item in rawList) {
+        if (item is! Map) continue;
+        final message = Map<String, dynamic>.from(item);
+        final msgId = message['msgId']?.toString();
+        if (msgId == null || msgId.isEmpty) continue;
+        if (_flushedWebRealTextMsgIds.contains(msgId)) continue;
+        _flushedWebRealTextMsgIds.add(msgId);
+        _logV('flush pending real web text message: $msgId');
+        await _handleBridgeRealWebTextMessage(message);
+      }
+
+      final successResult = await Client.instance.chatManager.callNativeMethod(
+        'getPendingRealSuccessMessages',
+        <String, dynamic>{},
+      );
+      final successMap = successResult is Map<String, dynamic>
+          ? successResult
+          : successResult is Map
+              ? Map<String, dynamic>.from(successResult)
+              : const <String, dynamic>{};
+      final successList = successMap['getPendingRealSuccessMessages'];
+      if (successList is! List) return;
+      for (final item in successList) {
+        if (item is! Map) continue;
+        final message = Map<String, dynamic>.from(item);
+        final msgId = message['msgId']?.toString();
+        if (msgId == null || msgId.isEmpty) continue;
+        if (_flushedWebRealSuccessMsgIds.contains(msgId)) continue;
+        _flushedWebRealSuccessMsgIds.add(msgId);
+        _logV('flush pending real web success message: $msgId');
+        EventBridgeHandler.instance.emitMessageSuccess(message: message);
+      }
+    } catch (e, st) {
+      _logE('flush pending real web text messages: $e\n$st');
+    }
+  }
+
+  Future<void> _handleBridgeRealWebTextMessage(Map<String, dynamic> data) async {
+    _realWebTextMessageCalls += 1;
+    _lastBridgeMessageId = data['msgId']?.toString();
+    _logV('received realWebTextMessage: ${jsonEncode(data)}');
+    final body = data['body'];
+    final bodyType = body is Map ? body['type'] : null;
+    final isCmd = bodyType == 6 || bodyType?.toString() == '6';
+    if (isCmd) {
+      EventBridgeHandler.instance.emitCmdMessagesReceived(messages: [data]);
+    } else {
+      EventBridgeHandler.instance.emitMessagesReceived(messages: [data]);
+    }
   }
 
   Future<void> _onMessage(dynamic raw) async {
@@ -431,6 +539,13 @@ class IMWebSocketBridge {
       return;
     }
 
+    if (managerName == 'Client' && method == 'getBridgeState') {
+      final resp = _successResponse(request, {method: _bridgeState()}, method);
+      _send(ws, resp);
+      onLog?.call(text, jsonEncode(resp));
+      return;
+    }
+
     final manager = _getManager(managerName);
     if (manager == null) {
       final resp = _errorResponse(id, -1, 'Unknown manager: $managerName');
@@ -444,15 +559,18 @@ class IMWebSocketBridge {
       if (managerName == 'ChatManager' && method == 'realWebTextMessage') {
         final message =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final body = message['body'];
-        final bodyType = body is Map ? body['type'] : null;
-        final isCmd = bodyType == 6 || bodyType?.toString() == '6';
-        if (isCmd) {
-          EventBridgeHandler.instance
-              .emitCmdMessagesReceived(messages: [message]);
-        } else {
-          EventBridgeHandler.instance.emitMessagesReceived(messages: [message]);
-        }
+        _logV('bridge cmd realWebTextMessage: ${jsonEncode(message)}');
+        await _handleBridgeRealWebTextMessage(message);
+        final resp = _successResponse(request, {method: true}, method);
+        _send(ws, resp);
+        onLog?.call(text, jsonEncode(resp));
+        return;
+      }
+      if (managerName == 'ChatManager' && method == 'realWebMessageSuccess') {
+        final message =
+            args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
+        _logV('bridge cmd realWebMessageSuccess: ${jsonEncode(message)}');
+        EventBridgeHandler.instance.emitMessageSuccess(message: message);
         final resp = _successResponse(request, {method: true}, method);
         _send(ws, resp);
         onLog?.call(text, jsonEncode(resp));
@@ -584,6 +702,7 @@ class IMWebSocketBridge {
             sendEvent: sendEvent,
             emitConnectedOnRegister: _webSdkMode != 'real_sdk',
           );
+          _startWebRealTextFlush();
         } catch (e, st) {
           _logE('startCallback after login: $e\n$st');
         }
@@ -594,9 +713,11 @@ class IMWebSocketBridge {
           sendEvent: sendEvent,
           emitConnectedOnRegister: _webSdkMode != 'real_sdk',
         );
+        _startWebRealTextFlush();
       }
       if (managerName == 'Client' &&
           (method == 'logout' || method == 'webReset')) {
+        _stopWebRealTextFlush();
         if (method == 'logout' && _webSdkMode != 'real_sdk') {
           EventBridgeHandler.instance.emitDisconnected(
             deviceName: _deviceName,
@@ -994,22 +1115,24 @@ class IMWebSocketBridge {
       if (managerName == 'ChatManager' &&
           (method == 'sendMessage' || method == 'sendMessageWithType')) {
         final message = response['result'];
-        if (_webSdkMode != 'real_sdk' && message is Map) {
+        if (message is Map) {
           final normalized = Map<String, dynamic>.from(message);
-          final body = normalized['body'];
-          final bodyType = body is Map ? body['type'] : null;
-          if (normalized['streamChunk'] != null) {
-            EventBridgeHandler.instance.emitStreamMessagesReceived(
-              messages: [normalized],
-            );
-          } else if (bodyType == 6) {
-            EventBridgeHandler.instance.emitCmdMessagesReceived(
-              messages: [normalized],
-            );
-          } else {
-            EventBridgeHandler.instance.emitMessagesReceived(
-              messages: [normalized],
-            );
+          if (_webSdkMode != 'real_sdk') {
+            final body = normalized['body'];
+            final bodyType = body is Map ? body['type'] : null;
+            if (normalized['streamChunk'] != null) {
+              EventBridgeHandler.instance.emitStreamMessagesReceived(
+                messages: [normalized],
+              );
+            } else if (bodyType == 6) {
+              EventBridgeHandler.instance.emitCmdMessagesReceived(
+                messages: [normalized],
+              );
+            } else {
+              EventBridgeHandler.instance.emitMessagesReceived(
+                messages: [normalized],
+              );
+            }
           }
           EventBridgeHandler.instance.emitMessageSuccess(message: normalized);
         }
@@ -1426,6 +1549,10 @@ class IMWebSocketBridge {
       return;
     }
     try {
+      _lastBridgeEventType = eventType;
+      if (eventType == 'onMessagesReceived') {
+        _messagesReceivedEventsSent += 1;
+      }
       final eventData = _normalizeEventData(eventType, data);
       final payload = {
         'type': 'event',

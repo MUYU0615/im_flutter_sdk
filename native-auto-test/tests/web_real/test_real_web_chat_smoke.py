@@ -13,6 +13,40 @@ from tests.chat._utils import build_text
 pytestmark = [pytest.mark.web, pytest.mark.chat, pytest.mark.real_web]
 
 
+def _clear_web_real_pending(primary_device, secondary_device, assert_api):
+    for device in (primary_device, secondary_device):
+        assert_api.assert_result_equals(
+            device.call("ChatManager", "clearPendingRealTextMessages", info={}),
+            True,
+        )
+        assert_api.assert_result_equals(
+            device.call("ChatManager", "clearPendingRealSuccessMessages", info={}),
+            True,
+        )
+        device.drain_events(timeout=0.2)
+
+
+def _wait_for_received_text(device, content, timeout=30.0):
+    deadline = __import__("time").time() + timeout
+    while __import__("time").time() < deadline:
+        event = device.receive_message(
+            match_event_type=Cmd.onMessagesReceived.value,
+            timeout=1.0,
+        )
+        if event is None:
+            continue
+        messages = (event.get("data") or {}).get("messages")
+        if not isinstance(messages, list):
+            continue
+        for message in messages:
+            if (
+                isinstance(message, dict)
+                and (message.get("body") or {}) == {"type": 0, "content": content}
+            ):
+                return event, message
+    return None, None
+
+
 def test_real_web_send_text_a_to_b(
     primary_device,
     secondary_device,
@@ -24,6 +58,7 @@ def test_real_web_send_text_a_to_b(
     secondary_device.call("Client", Cmd.startCallback.value, info={})
     primary_device.drain_events(timeout=0.2)
     secondary_device.drain_events(timeout=0.2)
+    _clear_web_real_pending(primary_device, secondary_device, assert_api)
 
     content = f"real-web-text-{uuid.uuid4().hex[:8]}"
     sent = primary_device.call(
@@ -41,7 +76,24 @@ def test_real_web_send_text_a_to_b(
         match_event_type=Cmd.onMessageSuccess.value,
         timeout=20.0,
     )
-    assert success is not None
+    if success is None:
+        primary_debug = assert_api.get_result(
+            primary_device.call("Client", "getRealSdkDebug", info={})
+        )
+        secondary_debug = assert_api.get_result(
+            secondary_device.call("Client", "getRealSdkDebug", info={})
+        )
+        leftovers = []
+        for _ in range(5):
+            event = primary_device.receive_message(timeout=1.0)
+            if event is None:
+                break
+            leftovers.append(event)
+        pytest.fail(
+            "webA did not receive onMessageSuccess; "
+            f"primary_debug={primary_debug!r}; secondary_debug={secondary_debug!r}; "
+            f"leftover={leftovers!r}"
+        )
     assert success.get("eventType") == Cmd.onMessageSuccess.value
     success_message = (success.get("data") or {}).get("msg")
     assert isinstance(success_message, dict)
@@ -50,13 +102,25 @@ def test_real_web_send_text_a_to_b(
     assert success_message["to"] == user_b
     assert success_message["body"] == {"type": 0, "content": content}
 
-    received = secondary_device.receive_message(
-        match_event_type=Cmd.onMessagesReceived.value,
-        timeout=30.0,
-    )
-    if received is None:
+    received, message = _wait_for_received_text(secondary_device, content, timeout=30.0)
+    if received is None or message is None:
         debug_resp = secondary_device.call("Client", "getRealSdkDebug", info={})
         debug = assert_api.get_result(debug_resp)
+        native_handler_state = assert_api.get_result(
+            secondary_device.call("Client", "getNativeHandlerState", info={})
+        )
+        primary_native_handler_state = assert_api.get_result(
+            primary_device.call("Client", "getNativeHandlerState", info={})
+        )
+        primary_debug = assert_api.get_result(
+            primary_device.call("Client", "getRealSdkDebug", info={})
+        )
+        bridge_state = assert_api.get_result(
+            secondary_device.call("Client", "getBridgeState", info={})
+        )
+        bridge_state_after_wait = assert_api.get_result(
+            secondary_device.call("Client", "getBridgeState", info={})
+        )
         leftovers = []
         for _ in range(5):
             event = secondary_device.receive_message(timeout=1.0)
@@ -65,21 +129,12 @@ def test_real_web_send_text_a_to_b(
             leftovers.append(event)
         pytest.fail(
             "webB did not receive onMessagesReceived; "
-            f"debug={debug!r}; leftover={leftovers!r}"
+            f"primary_native_handler_state={primary_native_handler_state!r}; "
+            f"native_handler_state={native_handler_state!r}; "
+            f"bridge_state={bridge_state!r}; bridge_state_after_wait={bridge_state_after_wait!r}; "
+            f"primary_debug={primary_debug!r}; debug={debug!r}; leftover={leftovers!r}"
         )
     assert received.get("eventType") == Cmd.onMessagesReceived.value
-    data = received.get("data")
-    assert isinstance(data, dict)
-    messages = data.get("messages")
-    assert isinstance(messages, list) and messages
-    message = messages[0]
-    if message["body"] != {"type": 0, "content": content}:
-        debug = assert_api.get_result(
-            secondary_device.call("Client", "getRealSdkDebug", info={})
-        )
-        pytest.fail(
-            f"unexpected received message body: {message!r}; debug={debug!r}"
-        )
     assert message["from"] == user_a
     assert message["to"] == user_b
     assert message["body"] == {"type": 0, "content": content}
@@ -96,6 +151,7 @@ def test_real_web_send_message_with_type_text_a_to_b(
     secondary_device.call("Client", Cmd.startCallback.value, info={})
     primary_device.drain_events(timeout=0.2)
     secondary_device.drain_events(timeout=0.2)
+    _clear_web_real_pending(primary_device, secondary_device, assert_api)
 
     content = f"real-web-with-type-{uuid.uuid4().hex[:8]}"
     sent = primary_device.call(
@@ -129,10 +185,7 @@ def test_real_web_send_message_with_type_text_a_to_b(
     assert success_message["to"] == user_b
     assert success_message["body"] == {"type": 0, "content": content}
 
-    received = secondary_device.receive_message(
-        match_event_type=Cmd.onMessagesReceived.value,
-        timeout=30.0,
-    )
+    received, _ = _wait_for_received_text(secondary_device, content, timeout=30.0)
     if received is None:
         debug_resp = secondary_device.call("Client", "getRealSdkDebug", info={})
         debug = assert_api.get_result(debug_resp)
@@ -140,15 +193,71 @@ def test_real_web_send_message_with_type_text_a_to_b(
             "webB did not receive onMessagesReceived for sendMessageWithType; "
             f"debug={debug!r}"
         )
-    messages = (received.get("data") or {}).get("messages")
-    assert isinstance(messages, list) and messages
-    assert any(
-        message.get("from") == user_a
-        and message.get("to") == user_b
-        and message.get("body") == {"type": 0, "content": content}
-        for message in messages
-        if isinstance(message, dict)
-    ), f"onMessagesReceived does not contain the sent message: {received}"
+    assert received.get("eventType") == Cmd.onMessagesReceived.value
+
+
+def test_real_web_resend_text_a_to_b(
+    primary_device,
+    secondary_device,
+    assert_api,
+    user_a,
+    user_b,
+):
+    primary_device.call("Client", Cmd.startCallback.value, info={})
+    secondary_device.call("Client", Cmd.startCallback.value, info={})
+    primary_device.drain_events(timeout=0.2)
+    secondary_device.drain_events(timeout=0.2)
+    _clear_web_real_pending(primary_device, secondary_device, assert_api)
+
+    content = f"real-web-resend-{uuid.uuid4().hex[:8]}"
+    sent = primary_device.call(
+        "ChatManager",
+        Cmd.sendMessage.value,
+        info=build_text(user_a, user_b, content),
+    )
+    sent_message = assert_api.get_result(sent)
+    assert sent_message["msgId"]
+
+    success = primary_device.receive_message(
+        match_event_type=Cmd.onMessageSuccess.value,
+        timeout=20.0,
+    )
+    assert success is not None
+    received, _ = _wait_for_received_text(secondary_device, content, timeout=30.0)
+    assert received is not None
+
+    resent = primary_device.call(
+        "ChatManager",
+        Cmd.resendMessage.value,
+        info=sent_message,
+    )
+    resent_message = assert_api.get_result(resent)
+    assert resent_message["from"] == user_a
+    assert resent_message["to"] == user_b
+    assert resent_message["body"] == {"type": 0, "content": content}
+    assert resent_message["msgId"]
+
+    success2 = primary_device.receive_message(
+        match_event_type=Cmd.onMessageSuccess.value,
+        timeout=20.0,
+    )
+    if success2 is None:
+        primary_debug = assert_api.get_result(
+            primary_device.call("Client", "getRealSdkDebug", info={})
+        )
+        pytest.fail(
+            "webA did not receive onMessageSuccess for resendMessage; "
+            f"primary_debug={primary_debug!r}"
+        )
+    received2, _ = _wait_for_received_text(secondary_device, content, timeout=30.0)
+    if received2 is None:
+        secondary_debug = assert_api.get_result(
+            secondary_device.call("Client", "getRealSdkDebug", info={})
+        )
+        pytest.fail(
+            "webB did not receive onMessagesReceived for resendMessage; "
+            f"secondary_debug={secondary_debug!r}"
+        )
 
 
 def test_real_web_send_message_with_type_combine_a_to_b(

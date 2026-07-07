@@ -107,6 +107,7 @@ class ClientWeb extends Client {
         if (_sdkMode == 'real_sdk') {
           _realSdk = RealWebSdkClient(
             onTextMessage: _emitRealTextMessage,
+            onMessageSuccess: _emitRealMessageSuccess,
             onDeliveredAckMessage: _emitRealDeliveredAckMessage,
             onReadAckMessage: _emitRealReadAckMessage,
             onModifiedMessage: _emitRealModifiedMessage,
@@ -137,6 +138,17 @@ class ClientWeb extends Client {
         return {method: true};
       case 'getSdkMode':
         return {method: _sdkMode};
+      case 'getNativeHandlerState':
+        return {
+          method: {
+            'chatManagerHasHandler': _chatManager.hasNativeHandler,
+            'chatManagerHandlerInstallCount': _chatManager.handlerInstallCount,
+            'chatManagerHandlerHashCode': _chatManager.handlerHashCode,
+            'contactManagerHasHandler': _contactManager.hasNativeHandler,
+            'contactManagerHandlerInstallCount': _contactManager.handlerInstallCount,
+            'contactManagerHandlerHashCode': _contactManager.handlerHashCode,
+          },
+        };
       case 'getRealSdkStatus':
         return {method: realWebSdkStatus()};
       case 'getRealSdkDebug':
@@ -291,7 +303,20 @@ class ClientWeb extends Client {
   }
 
   Future<void> _emitRealTextMessage(Map<String, dynamic> message) async {
+    _realSdk?.recordExternalDebugEvent('client_emit_real_text_message_begin', {
+      'msgId': message['msgId'],
+      'from': message['from'],
+      'to': message['to'],
+      'bodyType': _asMap(message['body'])['type'],
+    });
     await _chatManager.emitRealTextMessage(message);
+    _realSdk?.recordExternalDebugEvent('client_emit_real_text_message_end', {
+      'msgId': message['msgId'],
+    });
+  }
+
+  Future<void> _emitRealMessageSuccess(Map<String, dynamic> message) async {
+    await _chatManager.emitRealMessageSuccess(message);
   }
 
   Future<void> _emitRealDeliveredAckMessage(
