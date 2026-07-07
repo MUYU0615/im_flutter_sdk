@@ -25,6 +25,12 @@ class BridgeSocket {
 
 Future<BridgeSocket> connectBridgeSocket(Uri uri) async {
   final channel = WebSocketChannel.connect(uri);
-  await channel.ready;
+  await channel.ready.timeout(
+    const Duration(seconds: 5),
+    onTimeout: () {
+      channel.sink.close();
+      throw TimeoutException('Bridge socket connect timeout: $uri');
+    },
+  );
   return BridgeSocket._(channel);
 }

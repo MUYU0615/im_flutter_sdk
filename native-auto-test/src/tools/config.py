@@ -50,7 +50,10 @@ def load_capabilities() -> dict[str, Any]:
 
 
 def get_ws_base_url() -> str:
-    return load_config()["websocket"]["base_url"]
+    return (
+        os.getenv("NATIVE_AUTO_TEST_WS_BASE_URL")
+        or load_config()["websocket"]["base_url"]
+    )
 
 
 def get_default_topic() -> str:

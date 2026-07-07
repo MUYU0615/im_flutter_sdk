@@ -151,6 +151,7 @@ class IMWebSocketBridge {
     final String connectUrl = url ??
         '$kDefaultBridgeWebSocketBaseUrl?topic=${Uri.encodeComponent(topic ?? kDefaultBridgeWebSocketTopic)}';
     final uri = Uri.parse(connectUrl);
+    _logV('start requested uri=$uri device=$_deviceName');
     try {
       _socket = await connectBridgeSocket(uri);
       _logV('WebSocket bridge connected to $uri');
@@ -164,6 +165,12 @@ class IMWebSocketBridge {
         cancelOnError: false,
       );
       _installNativeHandlers();
+      _logV('native handlers installed');
+      sendEvent('onBridgeReady', {
+        'device': _deviceName,
+        'connected': true,
+        'bridgeUrl': uri.toString(),
+      });
     } catch (e, st) {
       _logE('WebSocket connect failed: $e\n$st');
       rethrow;

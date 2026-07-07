@@ -15,6 +15,7 @@ class EventBridgeHandler {
 
   static final EventBridgeHandler instance = EventBridgeHandler._();
   static const String _handlerId = 'im_flutter_test_bridge';
+  static const String _messageEventId = '${_handlerId}_message';
 
   bool _registered = false;
   BridgeEventSender? _sendEvent;
@@ -70,6 +71,25 @@ class EventBridgeHandler {
         },
         onStreamMessagesReceived: (messages) {
           emitStreamMessagesReceived(messages: _messagesToJson(messages));
+        },
+      ),
+    );
+    EMClient.getInstance.chatManager.addMessageEvent(
+      _messageEventId,
+      ChatMessageEvent(
+        onSuccess: (_, msg) {
+          emitMessageSuccess(message: Map<String, dynamic>.from(msg.toJson()));
+        },
+        onError: (_, msg, error) {
+          emitMessageError(
+            localId: msg.msgId,
+            message: Map<String, dynamic>.from(msg.toJson()),
+            description: error.description,
+            code: error.code,
+          );
+        },
+        onProgress: (localId, progress) {
+          emitMessageProgress(localId: localId, progress: progress);
         },
       ),
     );
@@ -631,13 +651,14 @@ class EventBridgeHandler {
     required String localId,
     required Map<String, dynamic> message,
     required String description,
+    int code = -1,
   }) {
     if (!_registered) return;
     _sendEvent?.call('onMessageError', {
       'localId': localId,
       'msg': message,
       'error': {
-        'code': -1,
+        'code': code,
         'description': description,
       },
       'operation': 'message_error',
@@ -810,6 +831,7 @@ class EventBridgeHandler {
 
   void unregisterAllHandlers() {
     EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
+    EMClient.getInstance.chatManager.removeMessageEvent(_messageEventId);
     EMClient.getInstance.contactManager.removeEventHandler(_handlerId);
     EMClient.getInstance.chatThreadManager.removeEventHandler(_handlerId);
     _registered = false;

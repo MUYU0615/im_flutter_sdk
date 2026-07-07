@@ -6,13 +6,17 @@ import pytest
 from src.tools.android_e2e_runner import (
     ANDROID_DEFAULT_TEST_PATHS,
     _build_commands,
+    _bridge_url_for_device,
     _connected_android_devices,
     _default_android_pytest_args,
+    _find_free_tcp_port,
     _init_bridge_device,
+    _is_emulator_device,
     _pytest_args_with_allure_report,
     _pytest_args_with_html_report,
+    _relay_bind_host,
     _required_device_count,
-    _wait_for_bridge_device,
+    _wait_for_bridge_logs,
 )
 from tests.conftest import pytest_collection_modifyitems
 
@@ -39,18 +43,11 @@ def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
         "-m",
         "src.tools.local_ws_relay",
         "--host",
-        "127.0.0.1",
+        "0.0.0.0",
         "--port",
         "2000",
     ]
-    assert commands.reverse[0] == [
-        "adb",
-        "-s",
-        "emulator-5554",
-        "reverse",
-        "tcp:2000",
-        "tcp:2000",
-    ]
+    assert commands.reverse == []
     assert commands.uninstall[0] == [
         "adb",
         "-s",
@@ -60,10 +57,11 @@ def test_android_runner_builds_clean_install_reverse_and_pytest_commands():
     ]
     assert commands.flutter_run[0][:4] == ["flutter", "run", "-d", "emulator-5554"]
     assert "--dart-define=IM_BRIDGE_AUTOCONNECT=true" in commands.flutter_run[0]
-    assert "--dart-define=IM_BRIDGE_URL=ws://127.0.0.1:2000/iov/websocket/dual" in commands.flutter_run[0]
+    assert "--dart-define=IM_BRIDGE_URL=ws://10.0.2.2:2000/iov/websocket/dual" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_DEVICE=deviceA" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceA" in commands.flutter_run[0]
     assert commands.env["NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"] == "90.0"
+    assert commands.env["NATIVE_AUTO_TEST_WS_BASE_URL"] == "ws://127.0.0.1:2000/iov/websocket/dual"
     assert commands.env["NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA"] == "emulator-5554"
     assert commands.env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] == (
         "/repo/native-auto-test/out/test-results/android-contact-case-results.json"
@@ -94,7 +92,7 @@ def test_android_runner_builds_two_device_launch_commands():
         output_root=Path("/repo/native-auto-test/out"),
     )
 
-    assert len(commands.reverse) == 2
+    assert commands.reverse == []
     assert len(commands.uninstall) == 2
     assert len(commands.flutter_run) == 2
     assert commands.flutter_run[0][:4] == ["flutter", "run", "-d", "emulator-5554"]
@@ -105,6 +103,85 @@ def test_android_runner_builds_two_device_launch_commands():
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceA" in commands.flutter_run[0]
     assert "--dart-define=IM_BRIDGE_DEVICE=deviceB" in commands.flutter_run[1]
     assert "--dart-define=IM_BRIDGE_TOPIC=im-auto-android-contact-deviceB" in commands.flutter_run[1]
+    assert "--dart-define=IM_BRIDGE_URL=ws://10.0.2.2:2000/iov/websocket/dual" in commands.flutter_run[0]
+    assert "--dart-define=IM_BRIDGE_URL=ws://10.0.2.2:2000/iov/websocket/dual" in commands.flutter_run[1]
+
+
+def test_android_runner_uses_reverse_for_physical_device_only():
+    commands = _build_commands(
+        native_auto_test_dir=Path("/repo/native-auto-test"),
+        im_flutter_test_dir=Path("/repo/im_flutter_test"),
+        run_id="android-contact",
+        app_url_device="ws://127.0.0.1:2000/iov/websocket/dual",
+        host="127.0.0.1",
+        port=2000,
+        device_ids=["R58N123ABC"],
+        package_name="com.easemob.im_flutter_test",
+        pytest_args=["tests/contact/test_contact.py", "--target-platform", "android", "-q"],
+        output_root=Path("/repo/native-auto-test/out"),
+    )
+
+    assert commands.reverse == [[
+        "adb",
+        "-s",
+        "R58N123ABC",
+        "reverse",
+        "tcp:2000",
+        "tcp:2000",
+    ]]
+    assert commands.relay == [
+        "python3",
+        "-m",
+        "src.tools.local_ws_relay",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "2000",
+    ]
+    assert "--dart-define=IM_BRIDGE_URL=ws://127.0.0.1:2000/iov/websocket/dual" in commands.flutter_run[0]
+
+
+def test_android_runner_bridge_url_helpers_distinguish_emulator_and_physical():
+    assert _is_emulator_device("emulator-5554") is True
+    assert _is_emulator_device("127.0.0.1:5555") is True
+    assert _is_emulator_device("R58N123ABC") is False
+    assert _bridge_url_for_device("emulator-5554", "ws://127.0.0.1:2000/iov/websocket/dual") == (
+        "ws://10.0.2.2:2000/iov/websocket/dual"
+    )
+    assert _bridge_url_for_device("R58N123ABC", "ws://127.0.0.1:2000/iov/websocket/dual") == (
+        "ws://127.0.0.1:2000/iov/websocket/dual"
+    )
+    assert _relay_bind_host(["emulator-5554"], "127.0.0.1") == "0.0.0.0"
+    assert _relay_bind_host(["R58N123ABC"], "127.0.0.1") == "127.0.0.1"
+
+
+def test_host_ws_base_url_uses_localhost_side_of_relay():
+    from src.tools.android_e2e_runner import _host_ws_base_url
+
+    assert _host_ws_base_url(
+        host="127.0.0.1",
+        port=24567,
+        bridge_url="ws://10.0.2.2:24567/iov/websocket/dual",
+    ) == "ws://127.0.0.1:24567/iov/websocket/dual"
+
+
+def test_find_free_tcp_port_uses_bound_socket(monkeypatch):
+    class _FakeSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def bind(self, address):
+            self.bound = address
+
+        def getsockname(self):
+            return ("127.0.0.1", 24567)
+
+    monkeypatch.setattr("src.tools.android_e2e_runner.socket.socket", lambda *args, **kwargs: _FakeSocket())
+
+    assert _find_free_tcp_port("127.0.0.1") == 24567
 
 
 def test_connected_android_devices_parses_only_online_devices(monkeypatch):
@@ -210,41 +287,34 @@ def test_config_response_timeout_supports_env_override(monkeypatch):
     assert config.get_response_timeout() == 75.0
 
 
-def test_wait_for_bridge_device_polls_until_response(monkeypatch):
-    calls: list[tuple[str, str, str]] = []
+def test_config_ws_base_url_supports_env_override(monkeypatch):
+    from src.tools import config
 
-    class _FakeConnection:
-        def __init__(self, *, device, topic):
-            self.device = device
-            self.topic = topic
+    monkeypatch.setenv("NATIVE_AUTO_TEST_WS_BASE_URL", "ws://127.0.0.1:24567/iov/websocket/dual")
 
-        def call(self, manager, cmd, info, timeout):
-            calls.append((self.device, self.topic, manager, cmd))
-            if len(calls) == 1:
-                raise TimeoutError("not connected yet")
-            return {"result": ""}
+    assert config.get_ws_base_url() == "ws://127.0.0.1:24567/iov/websocket/dual"
 
-        def stop(self):
-            calls.append((self.device, self.topic, "stop", ""))
 
-    monkeypatch.setattr(
-        "src.tools.android_e2e_runner.DeviceConnection",
-        _FakeConnection,
-    )
-    monkeypatch.setattr("src.tools.android_e2e_runner.time.sleep", lambda _: None)
+def test_wait_for_bridge_logs_waits_for_bridge_ready_markers(monkeypatch):
+    calls = []
+    proc = object()
 
-    _wait_for_bridge_device(
-        "deviceB",
-        run_id="android-contact",
-        timeout=1.0,
-        poll_interval=0.01,
-    )
+    def _fake_wait_for_output(proc, markers, *, timeout, name):
+        calls.append((proc, markers, timeout, name))
 
-    assert calls == [
-        ("deviceB", "im-auto-android-contact-deviceB", "Client", "getCurrentUser"),
-        ("deviceB", "im-auto-android-contact-deviceB", "Client", "getCurrentUser"),
-        ("deviceB", "im-auto-android-contact-deviceB", "stop", ""),
-    ]
+    monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_output", _fake_wait_for_output)
+
+    _wait_for_bridge_logs(proc, "deviceB", timeout=12.0)
+
+    assert calls == [(
+        proc,
+        (
+            "[IMWebSocketBridge] WebSocket bridge connected",
+            "[WebSocketConfigPage] connect success",
+        ),
+        12.0,
+        "bridge deviceB",
+    )]
 
 
 def test_init_bridge_device_sends_resolved_sdk_options(monkeypatch):

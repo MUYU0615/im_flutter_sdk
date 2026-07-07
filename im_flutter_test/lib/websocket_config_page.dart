@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import 'bridge/im_websocket_bridge.dart';
 
@@ -34,6 +35,39 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
   final List<BridgeLogItem> _logs = [];
   bool _connecting = false;
 
+  Future<void> _startBridgeWithRetry(
+    BridgeStartRequest request, {
+    int attempts = 3,
+    Duration retryDelay = const Duration(seconds: 2),
+  }) async {
+    Object? lastError;
+    for (var index = 0; index < attempts; index++) {
+      try {
+        final starter = widget.bridgeStarter;
+        if (starter == null) {
+          await IMWebSocketBridge.instance.start(
+            url: request.url,
+            deviceName: request.deviceName,
+          );
+        } else {
+          await starter(request);
+        }
+        return;
+      } catch (error) {
+        lastError = error;
+        debugPrint(
+          '[WebSocketConfigPage] connect attempt ${index + 1}/$attempts failed: $error',
+        );
+        if (index + 1 >= attempts) {
+          rethrow;
+        }
+        await Future<void>.delayed(retryDelay);
+      }
+    }
+    throw lastError ??
+        StateError('bridge start failed without explicit error');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -41,10 +75,15 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
     _urlController.text = params['bridgeUrl'] ?? kDefaultBridgeWebSocketBaseUrl;
     _topicController.text = params['topic'] ?? kDefaultBridgeWebSocketTopic;
     _deviceController.text = params['device'] ?? 'deviceA';
+    debugPrint(
+      '[WebSocketConfigPage] init autoconnect=${_boolParam(params['autoconnect'])} '
+      'url=${_urlController.text} topic=${_topicController.text} device=${_deviceController.text}',
+    );
     IMWebSocketBridge.instance.onLog = _onLog;
     if (_boolParam(params['autoconnect'])) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          debugPrint('[WebSocketConfigPage] autoconnect post frame start');
           _connect();
         }
       });
@@ -83,6 +122,9 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
     final url = _urlController.text.trim();
     final topic = _topicController.text.trim();
     final deviceName = _deviceController.text.trim();
+    debugPrint(
+      '[WebSocketConfigPage] connect requested url=$url topic=$topic device=$deviceName',
+    );
     if (url.isEmpty) {
       _showSnack('请输入 URL');
       return;
@@ -96,18 +138,12 @@ class _WebSocketConfigPageState extends State<WebSocketConfigPage> {
         url: connectUrl,
         deviceName: deviceName.isEmpty ? null : deviceName,
       );
-      final starter = widget.bridgeStarter;
-      if (starter == null) {
-        await IMWebSocketBridge.instance.start(
-          url: request.url,
-          deviceName: request.deviceName,
-        );
-      } else {
-        await starter(request);
-      }
+      await _startBridgeWithRetry(request);
       widget.eventRegistrar?.call();
+      debugPrint('[WebSocketConfigPage] connect success');
       if (mounted) _showSnack('已连接');
     } catch (e) {
+      debugPrint('[WebSocketConfigPage] connect failed: $e');
       if (mounted) _showSnack('连接失败: $e');
     } finally {
       if (mounted) setState(() => _connecting = false);

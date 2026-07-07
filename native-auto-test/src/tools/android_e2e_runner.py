@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -51,6 +52,37 @@ def _repo_dir() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def _is_emulator_device(device_id: str) -> bool:
+    return device_id.startswith("emulator-") or device_id.startswith("127.0.0.1:")
+
+
+def _bridge_url_for_device(device_id: str, default_url: str) -> str:
+    if not _is_emulator_device(device_id):
+        return default_url
+    parsed = default_url.replace("ws://127.0.0.1", "ws://10.0.2.2")
+    parsed = parsed.replace("ws://localhost", "ws://10.0.2.2")
+    return parsed
+
+
+def _relay_bind_host(device_ids: list[str], default_host: str) -> str:
+    if any(_is_emulator_device(device_id) for device_id in device_ids):
+        return "0.0.0.0"
+    return default_host
+
+
+def _find_free_tcp_port(host: str) -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        return int(sock.getsockname()[1])
+
+
+def _host_ws_base_url(*, host: str, port: int, bridge_url: str) -> str:
+    parsed = urllib.parse.urlparse(bridge_url)
+    scheme = parsed.scheme or "ws"
+    path = parsed.path or "/iov/websocket/dual"
+    return f"{scheme}://{host}:{port}{path}"
+
+
 def _build_commands(
     *,
     native_auto_test_dir: Path,
@@ -67,6 +99,11 @@ def _build_commands(
     env = os.environ.copy()
     env["NATIVE_AUTO_TEST_RUN_ID"] = run_id
     env.setdefault("NATIVE_AUTO_TEST_RESPONSE_TIMEOUT", "90.0")
+    env["NATIVE_AUTO_TEST_WS_BASE_URL"] = _host_ws_base_url(
+        host="127.0.0.1",
+        port=port,
+        bridge_url=app_url_device,
+    )
     test_results_dir = output_root / "test-results"
     env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] = str(test_results_dir / f"{run_id}-case-results.json")
     env["NATIVE_AUTO_TEST_CASE_RESULTS_CSV"] = str(test_results_dir / f"{run_id}-case-results.csv")
@@ -74,6 +111,22 @@ def _build_commands(
     topics = [f"{get_topic_prefix()}-{run_id}-{device_name}" for device_name in device_names]
     for device_name, device_id in zip(device_names, device_ids):
         env[f"NATIVE_AUTO_TEST_ANDROID_SERIAL_{device_name.upper()}"] = device_id
+    bridge_urls = [
+        _bridge_url_for_device(device_id, app_url_device) for device_id in device_ids
+    ]
+    reverse_commands = [
+        [
+            "adb",
+            "-s",
+            device_id,
+            "reverse",
+            f"tcp:{port}",
+            f"tcp:{port}",
+        ]
+        for device_id in device_ids
+        if not _is_emulator_device(device_id)
+    ]
+    relay_host = _relay_bind_host(device_ids, host)
     return AndroidE2ECommands(
         env=env,
         relay=[
@@ -81,21 +134,11 @@ def _build_commands(
             "-m",
             "src.tools.local_ws_relay",
             "--host",
-            host,
+            relay_host,
             "--port",
             str(port),
         ],
-        reverse=[
-            [
-                "adb",
-                "-s",
-                device_id,
-                "reverse",
-                f"tcp:{port}",
-                f"tcp:{port}",
-            ]
-            for device_id in device_ids
-        ],
+        reverse=reverse_commands,
         uninstall=[
             [
                 "adb",
@@ -113,11 +156,16 @@ def _build_commands(
                 "-d",
                 device_id,
                 "--dart-define=IM_BRIDGE_AUTOCONNECT=true",
-                f"--dart-define=IM_BRIDGE_URL={app_url_device}",
+                f"--dart-define=IM_BRIDGE_URL={bridge_url}",
                 f"--dart-define=IM_BRIDGE_DEVICE={device_name}",
                 f"--dart-define=IM_BRIDGE_TOPIC={topic}",
             ]
-            for device_id, device_name, topic in zip(device_ids, device_names, topics)
+            for device_id, device_name, topic, bridge_url in zip(
+                device_ids,
+                device_names,
+                topics,
+                bridge_urls,
+            )
         ],
         pytest=["pytest", *pytest_args],
     )
@@ -262,36 +310,22 @@ def _connected_android_devices() -> list[str]:
     return devices
 
 
-def _wait_for_bridge_device(
+def _wait_for_bridge_logs(
+    proc: subprocess.Popen,
     device_name: str,
     *,
-    run_id: str,
     timeout: float,
-    poll_interval: float = 1.0,
 ) -> None:
-    deadline = time.monotonic() + timeout
-    last_error: Exception | None = None
-    topic = f"{get_topic_prefix()}-{run_id}-{device_name}"
-    conn = DeviceConnection(device=device_name, topic=topic)
-    try:
-        while time.monotonic() < deadline:
-            try:
-                conn.call(
-                    "Client",
-                    "getCurrentUser",
-                    info={},
-                    timeout=min(5.0, max(0.5, deadline - time.monotonic())),
-                )
-                print(f"bridge {device_name} ready", flush=True)
-                return
-            except Exception as exc:
-                last_error = exc
-                time.sleep(poll_interval)
-        raise TimeoutError(
-            f"bridge {device_name} did not respond within {timeout}s"
-        ) from last_error
-    finally:
-        conn.stop()
+    _wait_for_output(
+        proc,
+        (
+            "[IMWebSocketBridge] WebSocket bridge connected",
+            "[WebSocketConfigPage] connect success",
+        ),
+        timeout=timeout,
+        name=f"bridge {device_name}",
+    )
+    print(f"bridge {device_name} ready", flush=True)
 
 
 def _init_bridge_device(
@@ -301,6 +335,11 @@ def _init_bridge_device(
     platform: str,
 ) -> None:
     topic = f"{get_topic_prefix()}-{run_id}-{device_name}"
+    print(
+        f"[android_e2e_runner] init bridge device={device_name} "
+        f"topic={topic} ws_base={os.getenv('NATIVE_AUTO_TEST_WS_BASE_URL')}",
+        flush=True,
+    )
     conn = DeviceConnection(device=device_name, topic=topic)
     try:
         options = resolve_sdk_init_options(platform)
@@ -341,18 +380,33 @@ def run(args: argparse.Namespace) -> int:
         run_id=run_id,
         allure_report=args.allure_report,
     )
+    relay_host = _relay_bind_host(args.device_ids, args.host)
+    relay_port = args.relay_port
+    if args.auto_relay_port:
+        relay_port = _find_free_tcp_port("127.0.0.1")
+    bridge_url = args.bridge_url.replace(
+        f":{args.relay_port}/",
+        f":{relay_port}/",
+    )
     commands = _build_commands(
         native_auto_test_dir=native_auto_test_dir,
         im_flutter_test_dir=im_flutter_test_dir,
         run_id=run_id,
         output_root=Path(args.output_root),
-        app_url_device=args.bridge_url,
-        host=args.host,
-        port=args.relay_port,
+        app_url_device=bridge_url,
+        host=relay_host,
+        port=relay_port,
         device_ids=args.device_ids,
         package_name=args.package_name,
         pytest_args=pytest_args,
     )
+    os.environ["NATIVE_AUTO_TEST_RUN_ID"] = commands.env["NATIVE_AUTO_TEST_RUN_ID"]
+    os.environ["NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"] = commands.env[
+        "NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"
+    ]
+    os.environ["NATIVE_AUTO_TEST_WS_BASE_URL"] = commands.env[
+        "NATIVE_AUTO_TEST_WS_BASE_URL"
+    ]
     required_device_count = _required_device_count(pytest_args)
     if len(args.device_ids) < required_device_count:
         raise RuntimeError(
@@ -372,7 +426,7 @@ def run(args: argparse.Namespace) -> int:
     try:
         relay = _popen(commands.relay, cwd=native_auto_test_dir, env=commands.env)
         processes.append(relay)
-        _wait_for_tcp(args.host, args.relay_port, timeout=args.startup_timeout, name="relay")
+        _wait_for_tcp("127.0.0.1", relay_port, timeout=args.startup_timeout, name="relay")
 
         for reverse in commands.reverse[:required_device_count]:
             _run(reverse, cwd=native_auto_test_dir, env=commands.env)
@@ -389,9 +443,9 @@ def run(args: argparse.Namespace) -> int:
                 timeout=args.flutter_timeout,
                 name=f"flutter android {device_name}",
             )
-            _wait_for_bridge_device(
+            _wait_for_bridge_logs(
+                app,
                 device_name,
-                run_id=run_id,
                 timeout=args.bridge_timeout,
             )
             _init_bridge_device(
@@ -425,6 +479,13 @@ def main() -> int:
     parser.add_argument("--package-name", default="com.easemob.im_flutter_test")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--relay-port", type=int, default=2000)
+    parser.add_argument(
+        "--no-auto-relay-port",
+        dest="auto_relay_port",
+        action="store_false",
+        default=True,
+        help="Use the fixed relay port instead of choosing a free local port automatically.",
+    )
     parser.add_argument("--bridge-url", default="ws://127.0.0.1:2000/iov/websocket/dual")
     parser.add_argument("--startup-timeout", type=float, default=60.0)
     parser.add_argument("--flutter-timeout", type=float, default=180.0)
