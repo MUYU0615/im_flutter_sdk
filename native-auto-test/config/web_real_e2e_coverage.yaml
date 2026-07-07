@@ -2045,13 +2045,19 @@ web_real_e2e:
       - make web-real-e2e ARGS="--run-id web-chatroom-create-recheck-20260707-000003 --web-sdk-mode
         real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
         180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
+      - tests/chatroom/test_chatroom_server_state.py::test_chatroom_fetch_public_chat_rooms_from_server_success
       reason: The current real Web IMSDK path now resolves to chatRoomManager.getChatRoomList
         instead of failing on a missing getChatRooms method, but the returned public
         room page still comes back with an empty list and does not include the newly
-        created server room.
+        created server room. The same REST-created room shape is already treated as
+        a valid public-room precondition in the cross-platform chatroom server-state
+        suite, so the current Web result is a real behavior gap rather than an
+        unproven fixture assumption.
       reason_zh: 当前真实 Web IMSDK 已经改为调用 chatRoomManager.getChatRoomList，
         不再因为缺少 getChatRooms 方法直接报错；但返回的公共聊天室分页结果仍然是空列表，
-        新创建的服务端聊天室没有出现在结果中，因此当前真实链路仍未通过。
+        新创建的服务端聊天室没有出现在结果中。与此同时，同样由 REST 创建的聊天室前置
+        已经被通用聊天室服务端状态用例当作有效 public-room 造数前提使用，因此当前 Web
+        结果属于真实行为缺口，而不是前置假设未被证明。
     fetchChatRoomInfoFromServer:
       real_e2e_status: supported
       tests:
