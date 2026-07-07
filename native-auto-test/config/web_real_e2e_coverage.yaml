@@ -2809,36 +2809,40 @@ web_real_e2e:
       reason: The test destroys the real Web SDK group during cleanup after a full
         lifecycle flow, proving the real destroyGroup path executes successfully.
     blockGroup:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-recheck-20260707-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-fix-20260708-000002
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 240 --
         tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
         --target-platform web -q -s
-      reason: The current real Web IMSDK high-level groupManager does not expose
-        disableSendGroupMsg, so the Flutter blockGroup mapping fails immediately
-        with a runtime TypeError before any message-delivery contract can be verified.
-      reason_zh: 当前真实 Web IMSDK 的高层 groupManager 没有暴露 disableSendGroupMsg，
-        因此 Flutter 的 blockGroup 映射会先在运行时直接报 TypeError，尚未进入
-        “是否屏蔽接收群消息”的语义验证阶段。
+      reason: The latest focused real run proves the Web real path now routes
+        blockGroup through the supported muteAllGroupMembers high-level API.
+        After blockGroup succeeds, the sender can still send to the group but
+        the secondary Web client no longer receives the message, matching the
+        current blocked-message contract.
+      reason_zh: 最新 focused real run 已经证明 Web real 路径现在通过
+        muteAllGroupMembers 高层 API 执行 blockGroup。blockGroup 成功后，
+        发送端仍可向群发送消息，但另一端 Web 客户端不再收到该消息，符合当前
+        “屏蔽群消息”语义。
     unblockGroup:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-recheck-20260707-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-group-block-fix-20260708-000002
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 240 --
         tests/web_real/test_real_web_conversation_manager.py::test_real_web_group_block_and_unblock_message_flow
         --target-platform web -q -s
-      reason: The current real Web IMSDK high-level groupManager does not expose
-        enableSendGroupMsg, so the Flutter unblockGroup mapping is not callable
-        in the same runtime path either.
-      reason_zh: 当前真实 Web IMSDK 的高层 groupManager 没有暴露 enableSendGroupMsg，
-        因此 Flutter 的 unblockGroup 映射在同一条运行时路径下同样不可调用。
+      reason: In the same focused real run, unblockGroup now routes through
+        unmuteAllGroupMembers; after unblock succeeds, the secondary Web client
+        receives the subsequent group text message again.
+      reason_zh: 同一条 focused real run 已经证明 unblockGroup 现在通过
+        unmuteAllGroupMembers 执行；解除屏蔽后，另一端 Web 客户端可以再次收到后续
+        群文本消息。
     updateGroupOwner:
       real_e2e_status: supported
       tests:

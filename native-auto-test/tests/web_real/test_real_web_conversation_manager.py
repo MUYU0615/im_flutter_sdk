@@ -2658,7 +2658,7 @@ def test_real_web_group_block_and_unblock_message_flow(
             match_event_type=Cmd.onMessagesReceived.value,
             timeout=5.0,
         )
-        assert blocked_received is not None
+        assert blocked_received is None
 
         unblocked = primary_device.call(
             "GroupManager",

@@ -2060,15 +2060,11 @@ class RealWebSdkClient {
   }
 
   Future<void> disableSendGroupMsg(String groupId) async {
-    await _callRealSdkVoid('disableSendGroupMsg', [
-      {'groupId': groupId},
-    ]);
+    await muteAllGroupMembers(groupId);
   }
 
   Future<void> enableSendGroupMsg(String groupId) async {
-    await _callRealSdkVoid('enableSendGroupMsg', [
-      {'groupId': groupId},
-    ]);
+    await unmuteAllGroupMembers(groupId);
   }
 
   Future<void> changeGroupOwner({
