@@ -3949,6 +3949,23 @@ class RealWebSdkClient {
   }
 
   Future<void> leaveChatRoom(String roomId) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final chatRoomManager =
+          js_util.getProperty<Object?>(highLevelClient, 'chatRoomManager');
+      if (chatRoomManager == null) {
+        throw StateError('Real Web SDK chatRoomManager is not available.');
+      }
+      final promise = js_util.callMethod<Object?>(
+        chatRoomManager,
+        'leaveChatRoom',
+        [
+          js_util.jsify({'chatRoomId': roomId}),
+        ],
+      );
+      await js_util.promiseToFuture<Object?>(promise as Object);
+      return;
+    }
     await _callRealSdkVoid('leaveChatRoom', [
       {'roomId': roomId},
     ]);
@@ -3995,6 +4012,25 @@ class RealWebSdkClient {
     int pageNum = 1,
     int pageSize = 50,
   }) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final raw = await _requestJoinedChatRoomsRaw(
+        highLevelClient,
+        pageNum: pageNum,
+        pageSize: pageSize,
+      );
+      _recordDebug('getJoinedChatRoomList_raw', {
+        'runtime': 'imsdk',
+        'pageNum': pageNum,
+        'pageSize': pageSize,
+        'raw': raw,
+      });
+      final source = raw is Map ? raw['data'] : raw;
+      return _asMapList(source).map(_normalizeChatRoom).toList()
+        ..sort((a, b) => (a['roomId'] ?? '')
+            .toString()
+            .compareTo((b['roomId'] ?? '').toString()));
+    }
     final result = await _callRealSdk('getJoinedChatRooms', [
       {
         'pageNum': pageNum,
@@ -4007,6 +4043,72 @@ class RealWebSdkClient {
       ..sort((a, b) => (a['roomId'] ?? '')
           .toString()
           .compareTo((b['roomId'] ?? '').toString()));
+  }
+
+  Future<Object?> _requestJoinedChatRoomsRaw(
+    Object highLevelClient, {
+    required int pageNum,
+    required int pageSize,
+  }) async {
+    final getRestContext =
+        js_util.getProperty<Object?>(highLevelClient, 'getRestContext');
+    if (getRestContext == null) {
+      throw StateError('Real Web SDK client.getRestContext is not available.');
+    }
+    final context = js_util.callMethod<Object?>(
+      highLevelClient,
+      'getRestContext',
+      const [],
+    );
+    final contextMap = _asMap(js_util.dartify(context));
+    final restBaseUrl = contextMap['restBaseUrl']?.toString() ?? '';
+    final appKey = contextMap['appKey']?.toString() ?? '';
+    final userId = contextMap['userId']?.toString() ?? '';
+    final token = contextMap['token']?.toString() ?? '';
+    if (restBaseUrl.isEmpty || appKey.isEmpty || userId.isEmpty || token.isEmpty) {
+      throw StateError(
+        'Real Web SDK joined chat room list requires restBaseUrl/appKey/userId/token.',
+      );
+    }
+    final appKeyParts = appKey.split('#');
+    if (appKeyParts.length != 2) {
+      throw StateError('Invalid appKey for joined chat room list: $appKey');
+    }
+    final orgName = Uri.encodeComponent(appKeyParts[0]);
+    final appName = Uri.encodeComponent(appKeyParts[1]);
+    final encodedUserId = Uri.encodeComponent(userId);
+    final uri = Uri.parse(
+      '$restBaseUrl/$orgName/$appName/users/$encodedUserId/joined_chatrooms',
+    ).replace(
+      queryParameters: <String, String>{
+        'pagenum': '$pageNum',
+        'pagesize': '$pageSize',
+        'detail': 'true',
+      },
+    );
+    final response = await web.window.fetch(
+      uri.toString().toJS,
+      web.RequestInit(
+        headers: js_util.jsify({
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      ),
+    ).toDart;
+    final statusCode = response.status;
+    final body = (await response.text().toDart).toString();
+    if (statusCode < 200 || statusCode >= 300) {
+      _recordDebug('getJoinedChatRoomList_error', {
+        'runtime': 'imsdk',
+        'statusCode': statusCode,
+        'body': body,
+      });
+      throw StateError(
+        'Real Web SDK getJoinedChatRoomList failed: '
+        'HTTP $statusCode $body',
+      );
+    }
+    return jsonDecode(body);
   }
 
   Future<Map<String, dynamic>> getChatRooms({

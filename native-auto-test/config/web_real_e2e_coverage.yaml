@@ -2096,12 +2096,16 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
       verified_by:
-      - make web-real-e2e ARGS="--run-id web-real-chatroom-file5 --web-sdk-mode
-        real_sdk --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        180 -- tests/web_real/test_real_web_chat_room.py --target-platform web -q"
-      reason: The test leaves the same real chat room through the real Web SDK
-        ChatRoomManager.leaveChatRoom path and verifies the room no longer appears
-        in the joined room list.
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-joined-fix-20260708-000004
+        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
+        150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
+        --target-platform web --web-sdk-runtime imsdk -q -s
+      reason: The latest focused real run leaves the same chat room through the
+        real Web SDK high-level chatRoomManager.leaveChatRoom({chatRoomId})
+        path and verifies the room no longer appears in the joined room list.
+      reason_zh: 最新 focused real run 已经通过真实 Web SDK 高层
+        chatRoomManager.leaveChatRoom({chatRoomId}) 路径退出同一聊天室，并验证该聊天室
+        已经不再出现在 joined room list 中。
     fetchPublicChatRoomsFromServer:
       real_e2e_status: supported
       tests:
@@ -2144,31 +2148,19 @@ web_real_e2e:
         getChatRoomDetails path and verifies roomId/name against the REST-created
         server room.
     getAllChatRooms:
-      real_e2e_status: blocked
+      real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-public-fix-20260708-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-joined-fix-20260708-000004
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 240 -- tests/web_real/test_real_web_chat_room.py::test_real_web_chat_room_join_get_all_and_leave
         --target-platform web --web-sdk-runtime imsdk -q -s
-      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-methods-probe-20260708-000001
-        --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
-        150 --flutter-timeout 180 -- tests/web_real/test_real_web_login_probe.py::test_real_web_dump_chatroom_manager_methods_without_global_login
-        --target-platform web -q -s
-      reason: The latest real join/public-room run now proves fetchPublicChatRoomsFromServer
-        is working, but getAllChatRooms still fails earlier with TypeError because
-        the current Web real wrapper calls a non-existent joined-room-list entry.
-        The chatRoomManager method probe confirms the high-level runtime exposes
-        getChatRoomList but not getJoinedChatRoomList, so the current blocked
-        reason is a high-level joined-room-list API gap rather than a room-membership
-        assertion failure.
-      reason_zh: 最新真实 join/public-room run 已经证明
-        fetchPublicChatRoomsFromServer 可以工作，但 getAllChatRooms 仍然会更早地因
-        TypeError 失败；根因是当前 Web real wrapper 还在调用一个不存在的 joined-room
-        list 入口。chatRoomManager 方法面 probe 也已经证明高层 runtime 暴露的是
-        getChatRoomList，而不是 getJoinedChatRoomList，因此这条当前 blocked 的性质
-        是高层 joined-room-list API 缺口，不是聊天室加入状态断言失败。
+      reason: The latest focused real run proves getAllChatRooms now returns the
+        joined room list through the real Web path, includes the room after join,
+        and becomes empty again after leave.
+      reason_zh: 最新 focused real run 已经证明 getAllChatRooms 现在可以通过真实
+        Web 路径返回 joined room list，并且在 join 后包含该聊天室、leave 后再次变空。
     createChatRoom:
       real_e2e_status: blocked
       tests:
