@@ -218,7 +218,24 @@ make e2e-run ARGS="--run-context out/run/android-20260706-153000/context.yaml --
 make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/test-results/android-20260706-153000-case-results.json --output out/api-coverage/android-20260706-153000-gap-backlog.csv"
 ```
 
-参数说明：
+执行分支：
+
+- `--platform-matrix android-android` 且所有 `--client` 都是 Android 时，`e2e-full-run` 会走 Android 专用 runner 分支：
+  - 启动 relay
+  - 自动选择空闲 relay 端口
+  - 模拟器使用 `10.0.2.2`，真机保留 `adb reverse`
+  - 启动两个 `im_flutter_test` 客户端
+  - 下发 `Client.init`
+  - 执行 pytest
+  - 生成 Android API gap backlog
+- 其他矩阵当前仍走通用三阶段分支：
+  - `e2e_prepare`
+  - `e2e_run`
+  - `e2e_api_coverage`
+
+这两条分支都会生成 `case-results` 和 gap backlog，但只有 Android 专用 runner 目前真正接入了客户端启动、bridge ready 检测和真实设备编排。
+
+参数说明（正式入口）：
 
 | 参数 | 作用 |
 |---|---|
@@ -231,6 +248,28 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
 | `--account-mode` | 账号策略。第一阶段只支持 `fresh`。 |
 | `--device-mode` | 设备策略。第一阶段只支持 `existing`。 |
 | `--` 后面的 pytest 参数 | 透传给 pytest。Android-Android 矩阵下由 Android runner 执行，并自动补 HTML、Allure 和 case-results 环境变量。 |
+
+第一阶段限制：
+
+- `e2e_prepare` 当前只接受：
+  - `--device-mode existing`
+  - `--account-mode fresh`
+- 如果传入：
+  - `--device-mode auto`
+  - `--device-mode manual`
+  - 未来扩展外的 `--account-mode`
+  当前会直接报错，而不是静默降级。
+- `--matrix-mode` 虽然支持 `smoke / pair / full` 三个取值，但第一阶段主要先把它写入 context 和报告，只有 `pair` 是当前默认的正式执行模式。
+- `--install-mode upgrade` 现在仍主要是 context 层语义，Android 专用 runner 当前稳定验证过的是 `clean` 路径。
+
+版本解析规则：
+
+- 每个 client 最终都必须解析出一个 SDK 版本。
+- 版本可以来自：
+  - `--client android:a@4.23.0`
+  - 或 `--sdk-version android=4.23.0`
+- 两边同时写时，不能冲突。
+- Android `e2e-full-run` 会把解析出的 Android 版本继续写入 gap backlog 的 `sdk_version` 字段，作为本次报告的版本证据。
 
 直接 `pytest` 只作为低层调试入口，不作为正式覆盖报告入口。正式执行必须能生成：
 
@@ -249,6 +288,21 @@ Android-Android 当前实际日志目录是 `out/log/android/`，例如：
 out/log/android/<run_id>-android-pytest.html
 out/log/android/<run_id>-allure-results/
 ```
+
+Context 文件关键信息：
+
+- `out/run/<run_id>/context.yaml` 由 `e2e_prepare` 生成，或由正式入口间接生成。
+- 里面至少会写入：
+  - `run_id`
+  - `matrix_mode`
+  - `device_mode`
+  - `install_mode`
+  - `account_mode`
+  - `sdk_initialized`
+  - `sdk_options_summary`
+  - `clients.<slot>.requested_sdk_version`
+  - `clients.<slot>.version_check.status`
+- 当前 `version_check.status` 在 prepare 阶段只会先写成 `not_checked`；真正的运行时版本校验，要以后续 runner 或客户端主动回报为准，不要把 prepare 阶段的 context 误读成“已经验证版本一致”。
 
 ## Android sanity 入口
 
