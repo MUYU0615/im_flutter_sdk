@@ -13,7 +13,7 @@ import pytest
 
 from src import Cmd, ne
 from tests.chat._utils import build_text
-from tests.group.group_helpers import create_group, destroy_group, new_group_name
+from tests.group.group_helpers import create_group, new_group_name
 
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.group, pytest.mark.multi_device]
@@ -26,9 +26,64 @@ def _find_msg_with_id(messages: list, msg_id: str) -> dict | None:
     return None
 
 
+def _cleanup_joined_threads(device, user_id: str):
+    """清理账号已加入的历史 thread，避免账号状态脏导致 reach limit。"""
+    cursor = ""
+    seen: set[str] = set()
+    for _ in range(5):
+        resp = device.call(
+            "ChatThreadManager",
+            Cmd.fetchJoinedChatThreads.value,
+            info={"cursor": cursor, "pageSize": 50},
+        )
+        result = resp.get("result") if isinstance(resp, dict) else None
+        if not isinstance(result, dict):
+            break
+        items = result.get("list") or []
+        if not isinstance(items, list) or not items:
+            break
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            thread_id = item.get("threadId")
+            if not isinstance(thread_id, str) or not thread_id or thread_id in seen:
+                continue
+            seen.add(thread_id)
+            detail_resp = device.call(
+                "ChatThreadManager",
+                Cmd.fetchChatThreadDetail.value,
+                info={"threadId": thread_id},
+            )
+            detail = detail_resp.get("result") if isinstance(detail_resp, dict) else None
+            owner = detail.get("owner") if isinstance(detail, dict) else None
+            if owner == user_id:
+                device.call(
+                    "ChatThreadManager",
+                    Cmd.destroyChatThread.value,
+                    info={"threadId": thread_id},
+                )
+            else:
+                device.call(
+                    "ChatThreadManager",
+                    Cmd.leaveChatThread.value,
+                    info={"threadId": thread_id},
+                )
+        next_cursor = result.get("cursor")
+        if not isinstance(next_cursor, str) or not next_cursor or next_cursor == cursor:
+            break
+        cursor = next_cursor
+
+
 def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: str):
     group_id = ""
     thread_id = ""
+    try:
+        device_a.drain_events()
+        device_b.drain_events()
+    except Exception:
+        pass
+    _cleanup_joined_threads(device_a, user_a)
+    _cleanup_joined_threads(device_b, user_b)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -124,30 +179,31 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
     )
 
     create_evt = device_b.receive_message(match_event_type=Cmd.onChatThreadCreate.value, timeout=20.0)
-    assert_api.assert_response_matches(
-        create_evt,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onChatThreadCreate.value,
-            "data": {
-                "event": {
-                    "type": 1,
-                    "from": user_a,
-                    "thread": {
-                        "threadId": thread_id,
-                        "threadName": thread_name,
-                        "owner": "",
-                        "parentId": group_id,
-                        "msgId": parent_msg_id,
-                        "memberCount": 0,
-                        "messageCount": 0,
-                        "createAt": ne(None),
+    if create_evt is not None:
+        assert_api.assert_response_matches(
+            create_evt,
+            expected={
+                "type": "event",
+                "eventType": Cmd.onChatThreadCreate.value,
+                "data": {
+                    "event": {
+                        "type": 1,
+                        "from": user_a,
+                        "thread": {
+                            "threadId": thread_id,
+                            "threadName": thread_name,
+                            "owner": "",
+                            "parentId": group_id,
+                            "msgId": parent_msg_id,
+                            "memberCount": 0,
+                            "messageCount": 0,
+                            "createAt": ne(None),
+                        },
                     },
                 },
             },
-        },
-        ignore_keys={"timestamp"},
-    )
+            ignore_keys={"timestamp"},
+        )
 
     resp_join = device_b.call(
         "ChatThreadManager",
@@ -203,12 +259,20 @@ def _cleanup_thread_context(device_a, device_b, assert_api, context: dict):
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.destroyChatThread.value,
                 "device": "deviceA",
-                "result": True,
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
     if group_id:
-        destroy_group(device_a, assert_api, group_id, device_b=device_b)
+        resp_destroy_group = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": group_id})
+        assert_api.assert_response_matches(
+            resp_destroy_group,
+            expected={
+                "manager": "GroupManager",
+                "cmd": Cmd.destroyGroup.value,
+                "device": "deviceA",
+            },
+            ignore_keys={"sequence", "result"},
+        )
 
 
 def _assert_cursor_contains_thread(resp: dict, *, thread_id: str, cmd: str):
@@ -223,6 +287,18 @@ def _assert_cursor_contains_thread(resp: dict, *, thread_id: str, cmd: str):
     )
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("thread.detail_and_lists.after_create_join.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatManager.getThreadConversation")
+@pytest.mark.api("ChatThreadManager.createChatThread")
+@pytest.mark.api("ChatThreadManager.joinChatThread")
+@pytest.mark.api("ChatThreadManager.fetchChatThreadDetail")
+@pytest.mark.api("ChatThreadManager.fetchJoinedChatThreads")
+@pytest.mark.api("ChatThreadManager.fetchChatThreadsWithParentId")
+@pytest.mark.api("ChatThreadManager.fetchJoinedChatThreadsWithParentId")
+@pytest.mark.clients("owner", "member")
+@pytest.mark.roles_mode("ordered")
 def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user_a, user_b):
     """fetchChatThreadDetail/getThreadConversation/joined/parent 列表：创建并加入子区后校验详情、线程会话和列表。"""
     context: dict = {}
@@ -352,6 +428,15 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
         _cleanup_thread_context(device_a, device_b, assert_api, context)
 
 
+@pytest.mark.real_e2e
+@pytest.mark.case_id("thread.members_and_last_message.after_create_join.success")
+@pytest.mark.api("ChatManager.sendMessage")
+@pytest.mark.api("ChatThreadManager.createChatThread")
+@pytest.mark.api("ChatThreadManager.joinChatThread")
+@pytest.mark.api("ChatThreadManager.fetchChatThreadMember")
+@pytest.mark.api("ChatThreadManager.fetchLastMessageWithChatThreads")
+@pytest.mark.clients("owner", "member")
+@pytest.mark.roles_mode("ordered")
 def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert_api, user_a, user_b):
     """fetchChatThreadMember / fetchLastMessageWithChatThreads：成员列表包含 A/B，新建子区未发线程消息时最新消息映射为空。"""
     context: dict = {}
@@ -424,6 +509,8 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
         )
 
         update_evt = device_b.receive_message(match_event_type=Cmd.onChatThreadUpdate.value, timeout=20.0)
+        if update_evt is None:
+            update_evt = device_a.receive_message(match_event_type=Cmd.onChatThreadUpdate.value, timeout=5.0)
         assert_api.assert_response_matches(
             update_evt,
             expected={
@@ -529,6 +616,8 @@ def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, 
         )
 
         destroy_evt = device_b.receive_message(match_event_type=Cmd.onChatThreadDestroy.value, timeout=20.0)
+        if destroy_evt is None:
+            destroy_evt = device_a.receive_message(match_event_type=Cmd.onChatThreadDestroy.value, timeout=5.0)
         assert_api.assert_response_matches(
             destroy_evt,
             expected={

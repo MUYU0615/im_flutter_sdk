@@ -585,6 +585,76 @@ native_api_review:
     batch: conversation_model_review
     reason_zh: "该 Android 原生会话对象方法已由现有会话消息插入/搜索类 wrapper 流程间接覆盖，统计应绑定到对应 E2E。"
     target_case: native-auto-test/tests/chat/test_conversation_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: createChatThread
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 createChatThread 已由 Flutter ChatThreadManager.createChatThread 等价覆盖；Android 真实 E2E 已完成建群、父消息、创建 thread、加入 thread 与列表查询链路。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: joinChatThread
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 joinChatThread 已由 Flutter ChatThreadManager.joinChatThread 等价覆盖；真实 E2E 已验证 B 端加入 thread 并出现在 joined 列表。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchChatThreadDetail
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchChatThreadDetail 已由 Flutter ChatThreadManager.fetchChatThreadDetail 等价覆盖；真实 E2E 已验证 thread 详情字段。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchJoinedChatThreads
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchJoinedChatThreads 已由 Flutter ChatThreadManager.fetchJoinedChatThreads 等价覆盖；真实 E2E 已验证 joined thread 列表包含目标 thread。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchChatThreadsWithParentId
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchChatThreadsWithParentId 已由 Flutter ChatThreadManager.fetchChatThreadsWithParentId 等价覆盖；真实 E2E 已验证 parentId 维度 thread 列表。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchJoinedChatThreadsWithParentId
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchJoinedChatThreadsWithParentId 已由 Flutter ChatThreadManager.fetchJoinedChatThreadsWithParentId 等价覆盖；真实 E2E 已验证 B 端 parentId 下已加入 thread 列表。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchChatThreadMember
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchChatThreadMember 已由 Flutter ChatThreadManager.fetchChatThreadMember 等价覆盖；真实 E2E 已验证成员列表包含 A/B。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: fetchLastMessageWithChatThreads
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 fetchLastMessageWithChatThreads 已由 Flutter ChatThreadManager.fetchLastMessageWithChatThreads 等价覆盖；真实 E2E 已验证新建 thread 未发 thread 内消息时最新消息映射为空。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: updateChatThreadSubject
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 updateChatThreadSubject 已由 Flutter ChatThreadManager.updateChatThreadSubject 等价覆盖；API 调用成功，但 Android 当前未观察到 onChatThreadUpdate 生命周期事件，真实 E2E 生命周期校验阻塞。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
+  - manager: ChatThreadManager
+    api: destroyChatThread
+    action: direct_e2e_case
+    priority: P1
+    batch: thread_p1
+    reason_zh: "Android 原生 destroyChatThread 已由 Flutter ChatThreadManager.destroyChatThread 等价覆盖；API 调用成功，但 Android 当前未观察到 onChatThreadDestroy 生命周期事件，真实 E2E 生命周期校验阻塞。"
+    target_case: native-auto-test/tests/chat/test_chat_thread_remaining_api_coverage.py
   - manager: GroupManager
     api: acceptApplication
     action: direct_e2e_case
