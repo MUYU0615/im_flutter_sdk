@@ -3691,7 +3691,7 @@ web_real_e2e:
       real_e2e_status: blocked
       tests: []
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-thread-last-message-recheck-20260708-000001
+      - python3 -m src.tools.web_e2e_runner --run-id web-thread-lastmsg-raw-20260708-000001
         --web-sdk-mode real_sdk --headless-startup-wait 90 --startup-timeout
         150 --flutter-timeout 240 -- tests/web_real/test_real_web_conversation_manager.py::test_real_web_chat_thread_last_message_server_state
         --target-platform web -q -s
