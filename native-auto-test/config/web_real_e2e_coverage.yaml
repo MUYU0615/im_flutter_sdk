@@ -9,9 +9,14 @@ web_real_e2e:
         --headless-startup-wait 60 --startup-timeout 120 --flutter-timeout 180 --
         tests/web_real/test_real_web_chat_smoke.py::test_real_web_send_text_a_to_b
         --target-platform web -q"
+      - python3 -m src.tools.web_e2e_runner --run-id web-login-probe-20260708-000001
+        --relay-port 2002 --web-sdk-mode real_sdk --skip-runner-web-client-init
+        -- tests/web_real/test_real_web_login_probe.py -k 'test_real_web_init_only_without_global_login
+        or test_real_web_token_login_without_global_login' --target-platform web -q
       reason: Real Web SDK asset is loaded by im_flutter_test/web/index.html and Client.init
         creates a WebIM connection in real_sdk mode. Verified as part of the real
-        Web A/B text-message E2E smoke.
+        Web A/B text-message E2E smoke and by an init-owned probe that skips runner
+        pre-initialization.
     createAccount:
       real_e2e_status: not_applicable
       tests: []
@@ -43,9 +48,14 @@ web_real_e2e:
         real_sdk --headless-startup-wait 60 --startup-timeout 120 --flutter-timeout
         180 -- tests/web_real/test_real_web_client_session.py::test_real_web_client_login_and_renew_with_user_access_token
         --target-platform web -q"
+      - python3 -m src.tools.web_e2e_runner --run-id web-login-probe-20260708-000001
+        --relay-port 2002 --web-sdk-mode real_sdk --skip-runner-web-client-init
+        -- tests/web_real/test_real_web_login_probe.py -k 'test_real_web_init_only_without_global_login
+        or test_real_web_token_login_without_global_login' --target-platform web -q
       reason: Real Web E2E creates test users through REST setup, fetches a per-user
         access_token with password grant, then logs in through Client.loginWithAgoraToken
-        which maps to WebIM open({accessToken}).
+        which maps to WebIM open({accessToken}). The direct login probe owns Client.init
+        and skips runner pre-initialization to avoid masking init/login parameter issues.
     renewToken:
       real_e2e_status: supported
       tests:
