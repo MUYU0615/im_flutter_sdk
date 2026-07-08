@@ -602,15 +602,22 @@ def test_real_web_blocklist_probe_without_global_login(
         Cmd.getBlockListFromServer.value,
         info={},
     )
+    block_result = assert_api.get_result(block_resp)
+    assert isinstance(block_result, list)
+    assert user_b in {str(item) for item in block_result}
 
-    debug_a = primary_device.call("Client", "getRealSdkDebug", info={})
-    events_a = assert_api.get_result(debug_a)
-    debug_b = secondary_device.call("Client", "getRealSdkDebug", info={})
-    events_b = assert_api.get_result(debug_b)
-
-    pytest.fail(
-        "web real blocklist probe "
-        f"save={save!r} save_result={save_result!r} "
-        f"block_resp={block_resp!r} "
-        f"debugA={events_a!r} debugB={events_b!r}"
+    remove = primary_device.call(
+        "ContactManager",
+        Cmd.removeUserFromBlockList.value,
+        info={"userId": user_b},
     )
+    assert_api.assert_result_equals(remove, user_b)
+
+    after_remove = primary_device.call(
+        "ContactManager",
+        Cmd.getBlockListFromServer.value,
+        info={},
+    )
+    after_remove_result = assert_api.get_result(after_remove)
+    assert isinstance(after_remove_result, list)
+    assert user_b not in {str(item) for item in after_remove_result}

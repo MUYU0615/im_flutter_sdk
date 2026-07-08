@@ -614,20 +614,27 @@ web_real_e2e:
       real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_contact.py::test_real_web_contact_blocklist_add_query_remove
-      verified_by: *id003
+      verified_by: &web_contact_blocklist_probe
+      - make web-real-e2e ARGS="--run-id web-real-contact-full --web-sdk-mode real_sdk
+        --headless-startup-wait 60 --startup-timeout 120 --flutter-timeout 180 --
+        tests/web_real/test_real_web_contact.py --target-platform web -q"
+      - python3 -m src.tools.web_e2e_runner --run-id web-blocklist-probe-20260708-000003
+        --relay-port 2002 --web-sdk-mode real_sdk --skip-runner-web-client-init
+        -- tests/web_real/test_real_web_login_probe.py -k test_real_web_blocklist_probe_without_global_login
+        --target-platform web -q
       reason: webA adds webB to the server blocklist through the real Web SDK.
     removeUserFromBlockList:
       real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_contact.py::test_real_web_contact_blocklist_add_query_remove
-      verified_by: *id003
+      verified_by: *web_contact_blocklist_probe
       reason: webA removes webB from the server blocklist through the real Web SDK
         and verifies cleanup from the server list.
     getBlockListFromServer:
       real_e2e_status: supported
       tests:
       - tests/web_real/test_real_web_contact.py::test_real_web_contact_blocklist_add_query_remove
-      verified_by: *id003
+      verified_by: *web_contact_blocklist_probe
       reason: webA fetches the real server blocklist and sees webB after addUserToBlockList,
         then no longer sees webB after removal.
     getBlockListFromDB:
