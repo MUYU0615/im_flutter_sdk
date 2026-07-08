@@ -22,6 +22,29 @@ pytestmark = [
 ]
 
 
+def _init_real_web_client(device, assert_api):
+    status = device.call("Client", "getRealSdkStatus", info={})
+    result = assert_api.get_result(status)
+    assert isinstance(result, dict)
+    assert result["available"] is True
+
+    init = device.call(
+        "Client",
+        Cmd.init.value,
+        info={
+            "appKey": "easemob#dutest",
+            "webSdkMode": "real_sdk",
+            "enableDNSConfig": True,
+        },
+    )
+    assert_api.assert_result_equals(init, True)
+
+
+def _init_real_web_clients(assert_api, *devices):
+    for device in devices:
+        _init_real_web_client(device, assert_api)
+
+
 def test_real_web_init_only_without_global_login(primary_device, assert_api):
     status = primary_device.call("Client", "getRealSdkStatus", info={})
     result = assert_api.get_result(status)
@@ -95,6 +118,7 @@ def test_real_web_create_chatroom_probe_without_global_login(
 ):
     token_a = get_user_access_token(user_a, "1")
 
+    _init_real_web_client(primary_device, assert_api)
     logout = primary_device.call("Client", Cmd.logout.value, info={"unbindToken": False})
     assert_api.assert_result_equals(logout, True)
     login = primary_device.call(
@@ -132,6 +156,7 @@ def test_real_web_change_chatroom_owner_probe_without_global_login(
 ):
     token_a = get_user_access_token(user_a, "1")
 
+    _init_real_web_client(primary_device, assert_api)
     logout = primary_device.call("Client", Cmd.logout.value, info={"unbindToken": False})
     assert_api.assert_result_equals(logout, True)
     login = primary_device.call(
@@ -181,6 +206,7 @@ def test_real_web_token_login_without_global_login(
 ):
     token = get_user_access_token(user_a, "1")
 
+    _init_real_web_client(primary_device, assert_api)
     logout = primary_device.call("Client", Cmd.logout.value, info={"unbindToken": False})
     assert_api.assert_result_equals(logout, True)
 
@@ -259,6 +285,7 @@ def test_real_web_replay_pending_text_message_without_global_login(
     token_a = get_user_access_token(user_a, "1")
     token_b = get_user_access_token(user_b, "1")
 
+    _init_real_web_clients(assert_api, primary_device, secondary_device)
     for device, user_id, token in (
         (primary_device, user_a, token_a),
         (secondary_device, user_b, token_b),
@@ -362,6 +389,7 @@ def test_real_web_contact_fetch_probe_without_global_login(
     token_a = get_user_access_token(user_a, "1")
     token_b = get_user_access_token(user_b, "1")
 
+    _init_real_web_clients(assert_api, primary_device, secondary_device)
     for device in (primary_device, secondary_device):
         logout = device.call("Client", Cmd.logout.value, info={"unbindToken": False})
         assert_api.assert_result_equals(logout, True)
@@ -509,6 +537,7 @@ def test_real_web_blocklist_probe_without_global_login(
     token_a = get_user_access_token(user_a, "1")
     token_b = get_user_access_token(user_b, "1")
 
+    _init_real_web_clients(assert_api, primary_device, secondary_device)
     for device in (primary_device, secondary_device):
         logout = device.call("Client", Cmd.logout.value, info={"unbindToken": False})
         assert_api.assert_result_equals(logout, True)

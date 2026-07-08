@@ -2176,19 +2176,19 @@ web_real_e2e:
       tests:
       - tests/web_real/test_real_web_login_probe.py::test_real_web_create_chatroom_probe_without_global_login
       verified_by:
-      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-create-fix-20260708-000003
-        --relay-port 2002 --web-sdk-mode real_sdk --web-sdk-runtime imsdk
-        --headless-startup-wait 90 --startup-timeout 150 --flutter-timeout
-        240 -- tests/web_real/test_real_web_login_probe.py::test_real_web_create_chatroom_probe_without_global_login
-        --target-platform web -q -s
+      - python3 -m src.tools.web_e2e_runner --run-id web-chatroom-create-probe-20260708-000002
+        --relay-port 2002 --web-sdk-mode real_sdk --skip-runner-web-client-init
+        -- tests/web_real/test_real_web_login_probe.py -k test_real_web_create_chatroom_probe_without_global_login
+        --target-platform web -q
       reason: The latest focused real run proves createChatRoom is no longer blocked
         by a missing callable Web runtime entry. The real REST-backed create path
         is now reachable, but the server returns HTTP 401 group_authorization, so
-        the current blocker is permission, not runtime method absence.
+        the current blocker is permission, not runtime method absence or init/login
+        parameter flow.
       reason_zh: 最新 focused real run 已经证明 createChatRoom 不再卡在 Web runtime
         入口不存在。真实 REST create 路径现在可以走通，但服务端返回 HTTP 401
         group_authorization，所以当前 blocked 的原因已经收敛成权限拒绝，而不是旧的
-        NoSuchMethodError。
+        NoSuchMethodError 或 init/login 参数流程问题。
     destroyChatRoom:
       real_e2e_status: supported
       tests:
