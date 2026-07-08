@@ -211,6 +211,74 @@ def test_run_platform_api_support_report_writes_html_and_csv(monkeypatch):
     ]
 
 
+def test_run_can_skip_runner_web_client_init(monkeypatch, tmp_path):
+    calls = []
+    init_called = False
+
+    class FakeProcess:
+        stdout = None
+
+        def __init__(self, command):
+            self.command = command
+
+        def poll(self):
+            return 0
+
+        def terminate(self):
+            calls.append(("terminate", self.command))
+
+        def wait(self, timeout=None):
+            return 0
+
+        def kill(self):
+            calls.append(("kill", self.command))
+
+    class Completed:
+        returncode = 0
+
+    def fake_popen(command, *, cwd, env):
+        calls.append(("popen", command, str(cwd)))
+        return FakeProcess(command)
+
+    def fake_run(command, *, cwd, env):
+        calls.append(("run", command, str(cwd)))
+        return Completed()
+
+    def fake_init(*, env):
+        nonlocal init_called
+        init_called = True
+
+    monkeypatch.setattr(web_e2e_runner, "_repo_dir", lambda: tmp_path)
+    monkeypatch.setattr(web_e2e_runner, "_popen", fake_popen)
+    monkeypatch.setattr(web_e2e_runner, "_wait_for_tcp", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(web_e2e_runner, "_wait_for_output", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(web_e2e_runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(web_e2e_runner, "_init_web_bridge_devices", fake_init)
+
+    args = web_e2e_runner.argparse.Namespace(
+        run_id="web-init-probe",
+        app_url="http://127.0.0.1:8080",
+        host="127.0.0.1",
+        relay_port=2002,
+        headless_startup_wait=1.5,
+        startup_timeout=1.0,
+        flutter_timeout=1.0,
+        web_sdk_mode="real_sdk",
+        web_sdk_runtime=None,
+        chrome_headed=False,
+        chrome_verbose=False,
+        html_report=False,
+        skip_runner_web_client_init=True,
+        pytest_args=["tests/web_real/test_real_web_login_probe.py", "-q"],
+    )
+
+    code = web_e2e_runner.run(args)
+
+    assert code == 0
+    assert init_called is False
+    assert any(call[0] == "run" and call[1][0] == "pytest" for call in calls)
+
+
 def test_wait_for_tcp_returns_when_socket_connects(monkeypatch):
     attempts = []
 

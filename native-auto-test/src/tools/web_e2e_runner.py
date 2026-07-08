@@ -333,7 +333,8 @@ def run(args: argparse.Namespace) -> int:
             name="headless clients",
         )
 
-        _init_web_bridge_devices(env=commands.env)
+        if not args.skip_runner_web_client_init:
+            _init_web_bridge_devices(env=commands.env)
 
         print("+ " + " ".join(commands.pytest), flush=True)
         completed = subprocess.run(
@@ -368,6 +369,14 @@ def main() -> int:
     )
     parser.add_argument("--chrome-headed", action="store_true")
     parser.add_argument("--chrome-verbose", action="store_true")
+    parser.add_argument(
+        "--skip-runner-web-client-init",
+        action="store_true",
+        help=(
+            "Do not pre-initialize Web bridge clients before pytest. "
+            "Use this for init/login probe cases that own Client.init themselves."
+        ),
+    )
     parser.add_argument(
         "--no-html-report",
         dest="html_report",
