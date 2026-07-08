@@ -585,6 +585,9 @@ web_real_e2e:
       - make web-real-e2e ARGS="--run-id web-real-contact-full --web-sdk-mode real_sdk
         --headless-startup-wait 60 --startup-timeout 120 --flutter-timeout 180 --
         tests/web_real/test_real_web_contact.py --target-platform web -q"
+      - python3 -m src.tools.web_e2e_runner --run-id web-contact-list-verify-20260708-000001
+        --relay-port 2002 --web-sdk-mode real_sdk -- tests/web_real/test_real_web_contact.py
+        -k test_real_web_contact_add_accept_list_delete --target-platform web -q
       reason: Real Web SDK sends a contact request from webA to webB through the IM
         service.
     deleteContact:
