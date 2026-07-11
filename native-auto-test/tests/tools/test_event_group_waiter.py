@@ -1,6 +1,6 @@
 import pytest
 
-from src.tools.event_group_waiter import EventExpectation, ForbiddenEvent, wait_event_group
+from src.tools.event_group_waiter import EventExpectation, ForbiddenEvent, _redact_sensitive, wait_event_group
 
 
 pytestmark = pytest.mark.no_global_login
@@ -207,3 +207,34 @@ def test_wait_event_group_fails_on_forbidden_event():
             timeout=0.01,
             poll_timeout=0.01,
         )
+
+
+def test_redact_sensitive_handles_normalized_token_and_secret_keys():
+    payload = {
+        "auth_token": "auth-value",
+        "access_token": "access-value",
+        "refresh_token": "refresh-value",
+        "agoraToken": "agora-value",
+        "agora_token": "agora-snake-value",
+        "clientSecret": "client-secret-value",
+        "Authorization": "bearer-value",
+        "nested": {
+            "private-key": "private-key-value",
+            "normal": "visible",
+            "items": [{"PASSWORD": "password-value"}],
+        },
+    }
+
+    redacted = _redact_sensitive(payload)
+
+    assert redacted["auth_token"] == "***REDACTED***"
+    assert redacted["access_token"] == "***REDACTED***"
+    assert redacted["refresh_token"] == "***REDACTED***"
+    assert redacted["agoraToken"] == "***REDACTED***"
+    assert redacted["agora_token"] == "***REDACTED***"
+    assert redacted["clientSecret"] == "***REDACTED***"
+    assert redacted["Authorization"] == "***REDACTED***"
+    assert redacted["nested"]["private-key"] == "***REDACTED***"
+    assert redacted["nested"]["items"][0]["PASSWORD"] == "***REDACTED***"
+    assert redacted["nested"]["normal"] == "visible"
+    assert payload["auth_token"] == "auth-value"

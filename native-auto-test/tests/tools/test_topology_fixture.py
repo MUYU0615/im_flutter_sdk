@@ -77,3 +77,16 @@ def test_topology_case_scope_creates_marker_and_drains_selected_clients():
     assert scope.clients == [primary, remote]
     assert primary.drained == [0.5]
     assert remote.drained == [0.5]
+
+
+def test_topology_case_scope_fails_when_pre_case_drain_fails():
+    class BrokenDrainClient:
+        name = "primary_a"
+
+        def drain_events(self, timeout=0.5):
+            raise RuntimeError("drain socket closed")
+
+    topology = Topology.from_context(_context(), start_connections=False)
+
+    with pytest.raises(RuntimeError, match="drain socket closed"):
+        topology.case_scope("send text", clients=[BrokenDrainClient()])

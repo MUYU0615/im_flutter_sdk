@@ -40,13 +40,20 @@ def _client_name(client: Any) -> str:
 
 
 def _redact_sensitive(payload: Any) -> Any:
-    sensitive_keys = {"token", "password", "secret", "authorization", "client_secret", "private_key"}
+    sensitive_markers = ("token", "secret", "password", "authorization", "privatekey", "clientsecret")
     redacted = deepcopy(payload)
+
+    def normalized_key(key: Any) -> str:
+        return "".join(char for char in str(key).lower() if char.isalnum())
+
+    def is_sensitive_key(key: Any) -> bool:
+        normalized = normalized_key(key)
+        return any(marker in normalized for marker in sensitive_markers)
 
     def redact(value: Any) -> Any:
         if isinstance(value, dict):
             return {
-                key: "***REDACTED***" if str(key).lower() in sensitive_keys else redact(item)
+                key: "***REDACTED***" if is_sensitive_key(key) else redact(item)
                 for key, item in value.items()
             }
         if isinstance(value, list):
