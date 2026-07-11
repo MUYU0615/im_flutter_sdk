@@ -4,10 +4,26 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from src.tools.android_e2e_runner import _write_client_lifecycle, run
+from src.tools.android_e2e_runner import _login_payload_for_client, _write_client_lifecycle, run
 
 
 pytestmark = pytest.mark.no_global_login
+
+
+def test_login_payload_for_context_client_uses_user_ref_without_secret_in_context():
+    context = {
+        "accounts": {
+            "primary": {"user_ref": "a", "user_id": "user1"},
+        },
+        "clients": {
+            "primary_a": {"account": "primary", "user_id": "user1"},
+        },
+    }
+    config = {"accounts": {"default_password": "pwd"}}
+
+    payload = _login_payload_for_client(context, config, "primary_a")
+
+    assert payload == {"userId": "user1", "password": "pwd"}
 
 
 def test_write_client_lifecycle_updates_context(tmp_path):
@@ -93,6 +109,7 @@ def _patch_runner_runtime(
     monkeypatch,
     *,
     init_error: Exception | None = None,
+    login_error: Exception | None = None,
     bridge_ready=None,
     popen=None,
 ) -> None:
@@ -120,13 +137,19 @@ def _patch_runner_runtime(
             raise init_error
 
     monkeypatch.setattr("src.tools.android_e2e_runner._init_bridge_device", _fake_init)
+
+    def _fake_login(*args, **kwargs):
+        if login_error:
+            raise login_error
+
+    monkeypatch.setattr("src.tools.android_e2e_runner._login_context_client", _fake_login)
     monkeypatch.setattr(
         "src.tools.android_e2e_runner.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(returncode=0),
     )
 
 
-def test_android_runner_records_context_lifecycle_for_external_login(tmp_path, monkeypatch):
+def test_android_runner_records_context_lifecycle_for_runner_owned_login(tmp_path, monkeypatch):
     context_path = tmp_path / "context.yaml"
     _write_context(context_path)
     _patch_runner_runtime(monkeypatch)
@@ -138,8 +161,8 @@ def test_android_runner_records_context_lifecycle_for_external_login(tmp_path, m
     ]
     assert lifecycle["install"] == "success"
     assert lifecycle["init"] == "success"
-    assert lifecycle["login"] == "external"
-    assert lifecycle["start_callback"] == "external"
+    assert lifecycle["login"] == "success"
+    assert lifecycle["start_callback"] == "success"
 
 
 def test_android_runner_records_install_success_after_startup_readiness(tmp_path, monkeypatch):
@@ -233,4 +256,27 @@ def test_android_runner_records_init_failure_and_stops_before_pytest(tmp_path, m
     assert lifecycle["init"] == "failed"
     assert lifecycle["init_error"] == {"message": "bad init"}
     assert lifecycle["login"] == "pending"
+    assert lifecycle["start_callback"] == "pending"
+
+
+def test_android_runner_records_login_failure_and_stops_before_pytest(tmp_path, monkeypatch):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+    _patch_runner_runtime(monkeypatch, login_error=RuntimeError("bad login"))
+
+    def _fail_pytest(*args, **kwargs):
+        raise AssertionError("pytest should not run after login failure")
+
+    monkeypatch.setattr("src.tools.android_e2e_runner.subprocess.run", _fail_pytest)
+
+    with pytest.raises(RuntimeError, match="bad login"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["install"] == "success"
+    assert lifecycle["init"] == "success"
+    assert lifecycle["login"] == "failed"
+    assert lifecycle["login_error"] == {"message": "bad login"}
     assert lifecycle["start_callback"] == "pending"

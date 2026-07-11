@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from .config import get_topic_prefix
+from .config import get_topic_prefix, load_config
 from .sdk_options_resolver import resolve_sdk_init_options
 from .ws_client import DeviceConnection
 
@@ -406,6 +406,43 @@ def _init_bridge_device(
         conn.stop()
 
 
+def _login_payload_for_client(context: dict, config: dict, client_name: str) -> dict:
+    raw_client = context["clients"][client_name]
+    raw_account = context["accounts"][raw_client["account"]]
+    user_id = raw_account["user_id"]
+    accounts_cfg = config.get("accounts") or {}
+    users_cfg = accounts_cfg.get("users") or {}
+    user_ref = raw_account.get("user_ref", "")
+    user_cfg = users_cfg.get(user_ref) if isinstance(users_cfg, dict) else {}
+    password = ""
+    if isinstance(user_cfg, dict):
+        password = str(user_cfg.get("password") or "")
+    password = password or str(accounts_cfg.get("default_password") or "")
+    if not password:
+        raise RuntimeError(f"client {client_name} 无法解析登录密码")
+    return {"userId": user_id, "password": password}
+
+
+def _login_context_client(client_name: str, context: dict, use_token_login: bool = False) -> None:
+    if use_token_login:
+        raise RuntimeError("topology token login is not implemented")
+    conn = DeviceConnection(
+        device=client_name,
+        topic=context["clients"][client_name]["relay"]["topic"],
+    )
+    conn.start()
+    try:
+        payload = _login_payload_for_client(context, load_config(), client_name)
+        resp = conn.call("Client", "login", info=payload, timeout=60.0)
+        if resp.get("success") is False or resp.get("error"):
+            raise RuntimeError(f"login failed for {client_name}: {resp}")
+        cb_resp = conn.call("Client", "startCallback", info={}, timeout=30.0)
+        if cb_resp.get("success") is False or cb_resp.get("error"):
+            raise RuntimeError(f"startCallback failed for {client_name}: {cb_resp}")
+    finally:
+        conn.stop()
+
+
 def run(args: argparse.Namespace) -> int:
     repo_dir = _repo_dir()
     native_auto_test_dir = repo_dir / "native-auto-test"
@@ -537,8 +574,23 @@ def run(args: argparse.Namespace) -> int:
             _write_client_lifecycle(
                 context_path,
                 device_name,
-                {"init": "success", "login": "external", "start_callback": "external"},
+                {"init": "success"},
             )
+            if context_clients:
+                try:
+                    _login_context_client(device_name, context)
+                    _write_client_lifecycle(
+                        context_path,
+                        device_name,
+                        {"login": "success", "start_callback": "success"},
+                    )
+                except Exception as exc:
+                    _write_client_lifecycle(
+                        context_path,
+                        device_name,
+                        {"login": "failed", "login_error": {"message": str(exc)}},
+                    )
+                    raise
 
         print("+ " + " ".join(commands.pytest), flush=True)
         completed = subprocess.run(
