@@ -224,7 +224,7 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
   - 启动 relay
   - 自动选择空闲 relay 端口
   - 模拟器使用 `10.0.2.2`，真机保留 `adb reverse`
-  - 启动两个 `im_flutter_test` 客户端
+  - 按拓扑声明启动所有 `im_flutter_test` 客户端；默认 Android 拓扑会启动 `primary_a`、`primary_b`、`remote_c` 三个客户端
   - 下发 `Client.init`
   - 执行 pytest
   - 生成 Android API gap backlog

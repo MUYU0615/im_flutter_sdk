@@ -176,6 +176,25 @@ def test_android_runner_records_context_lifecycle_for_runner_owned_login(tmp_pat
     assert lifecycle["start_callback"] == "success"
 
 
+def test_android_runner_passes_run_context_to_pytest(tmp_path, monkeypatch):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+    captured = {}
+    _patch_runner_runtime(monkeypatch)
+
+    def _capture_pytest(command, *args, **kwargs):
+        captured["command"] = command
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("src.tools.android_e2e_runner.subprocess.run", _capture_pytest)
+
+    assert run(_runner_args(context_path, tmp_path)) == 0
+
+    assert "--run-context" in captured["command"]
+    index = captured["command"].index("--run-context")
+    assert captured["command"][index + 1] == str(context_path)
+
+
 def test_android_runner_records_install_success_after_startup_readiness(tmp_path, monkeypatch):
     context_path = tmp_path / "context.yaml"
     _write_context(context_path)

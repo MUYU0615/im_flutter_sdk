@@ -96,6 +96,14 @@ def test_full_run_topology_builds_prepare_runner_coverage_stages():
         "tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_send_to_non_friend_message_error_event",
         "-q",
     ]
+    assert commands[2][-6:] == [
+        "--pytest-report",
+        "out/log/android/android-topology-001-android-pytest.html",
+        "--platform",
+        "android",
+        "--sdk-version",
+        "topology",
+    ]
 
 
 def test_topology_command_does_not_require_client_args():

@@ -77,6 +77,8 @@ def build_topology_runner_commands(
     context_path = f"{output_root}/run/{run_id}/context.yaml"
     case_results = f"{output_root}/test-results/{run_id}-case-results.json"
     gap_backlog = f"{output_root}/api-coverage/{run_id}-gap-backlog.csv"
+    pytest_report = f"{output_root}/log/android/{run_id}-android-pytest.html"
+    sdk_version = "topology"
     prepare = [
         sys.executable,
         "-m",
@@ -111,8 +113,12 @@ def build_topology_runner_commands(
         case_results,
         "--output",
         gap_backlog,
+        "--pytest-report",
+        pytest_report,
         "--platform",
         "android",
+        "--sdk-version",
+        sdk_version,
     ]
     return [prepare, runner, coverage]
 

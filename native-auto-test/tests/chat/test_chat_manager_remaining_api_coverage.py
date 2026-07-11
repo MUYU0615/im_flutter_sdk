@@ -26,12 +26,13 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
 
     resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
     temp_id = (resp.get("result") or {}).get("msgId")
+    expected_sender_device = getattr(device_a, "name", "deviceA")
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": expected_sender_device,
             "result": {
                 "msgId": temp_id,
                 "from": user_a,
@@ -426,35 +427,38 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
 @pytest.mark.roles_mode("ordered")
 def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, device_b, assert_api, user_a, user_b):
     """
-    1. 准备 primary_a、primary_b 客户端并确认账号已登录；
-    2. primary_a 向 primary_b 发送单聊消息，建立会话状态；
-    3. primary_a 添加远端和本地会话标记并通过 fetchConversationsByOptions 拉取；
-    4. 断言目标会话包含标记后删除该标记。
+    1. 准备 primary_a、primary_b、remote_c 客户端并确认账号已登录；
+    2. primary_a 向 remote_c 发送单聊消息，建立账号 1 与账号 2 的真实会话；
+    3. primary_a 添加远端和本地会话标记；
+    4. 断言 primary_a 和同账号 primary_b 都能拉取到该会话标记，之后删除标记。
     """
     describe_case_steps(
-        '1. 准备 primary_a、primary_b 客户端并确认账号已登录；\n'
-        '2. primary_a 向 primary_b 发送单聊消息，建立会话状态；\n'
-        '3. primary_a 添加远端和本地会话标记并通过 fetchConversationsByOptions 拉取；\n'
-        '4. 断言目标会话包含标记后删除该标记。'
+        '1. 准备 primary_a、primary_b、remote_c 客户端并确认账号已登录；\n'
+        '2. primary_a 向 remote_c 发送单聊消息，建立账号 1 与账号 2 的真实会话；\n'
+        '3. primary_a 添加远端和本地会话标记；\n'
+        '4. 断言 primary_a 和同账号 primary_b 都能拉取到该会话标记，之后删除标记。'
     )
     topology = _topology_or_none(request)
     if topology is not None:
         primary_a = topology.primary_client(0)
         primary_b = topology.primary_client(1)
-        scope = topology.case_scope("conversation-marks", clients=[primary_a, primary_b])
+        remote_c = topology.remote_client(0)
+        scope = topology.case_scope("conversation-marks", clients=[primary_a, primary_b, remote_c])
         sender = primary_a
-        receiver = primary_b
+        receiver = remote_c
+        sync_receiver = primary_b
         from_user = primary_a.user_id
-        to_user = primary_b.user_id
+        to_user = remote_c.user_id
         content = f"chat-mark-{scope.marker}"
     else:
         sender = device_a
         receiver = device_b
+        sync_receiver = None
         from_user = user_a
         to_user = user_b
         content = f"chat-mark-{uuid.uuid4().hex[:8]}"
-    expected_sender_device = getattr(sender, "name", "deviceA")
 
+    expected_sender_device = getattr(sender, "name", "deviceA")
     _send_text_and_receive(sender, receiver, assert_api, from_user, to_user, content)
 
     resp_add = sender.call(
@@ -486,6 +490,20 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, de
         },
         ignore_keys={"ext"},
     )
+    if sync_receiver is not None:
+        synced_conversation = _fetch_marked_conversation(sync_receiver, to_user, 0)
+        assert_api.assert_response_matches(
+            synced_conversation,
+            expected={
+                "convId": to_user,
+                "type": 0,
+                "isThread": False,
+                "isPinned": False,
+                "pinnedTime": 0,
+                "marks": [0],
+            },
+            ignore_keys={"ext"},
+        )
 
     resp_delete = sender.call(
         "ChatManager",

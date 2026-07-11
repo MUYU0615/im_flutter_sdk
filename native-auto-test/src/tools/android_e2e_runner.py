@@ -526,6 +526,8 @@ def run(args: argparse.Namespace) -> int:
         run_id=run_id,
         allure_report=args.allure_report,
     )
+    if context_path and "--run-context" not in pytest_args:
+        pytest_args = [*pytest_args, "--run-context", str(context_path)]
     relay_host = _relay_bind_host(args.device_ids, args.host)
     relay_port = args.relay_port
     if args.auto_relay_port:
