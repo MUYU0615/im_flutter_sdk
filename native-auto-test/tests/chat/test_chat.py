@@ -279,7 +279,7 @@ def test_chat_recall_message_invalid_id_response(device_a, assert_api):
 
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("error_response")
-def test_chat_add_reaction_invalid_id_response(request, device_a, assert_api):
+def test_chat_add_reaction_invalid_id_response(request, assert_api):
     """
     1. 准备 primary_a 客户端并确认已登录；
     2. 调用 ChatManager.addReaction，messageId 使用不存在的值；
@@ -292,7 +292,11 @@ def test_chat_add_reaction_invalid_id_response(request, device_a, assert_api):
         "3. 断言接口返回 code=303，description=Unknown server error；\n"
         "4. 仅断言错误响应，不声明额外的 reaction 成功事件证据。"
     )
-    client_a = request.getfixturevalue("topology").primary_client(0) if request.config.getoption("--run-context") else device_a
+    client_a = (
+        request.getfixturevalue("topology").primary_client(0)
+        if request.config.getoption("--run-context")
+        else request.getfixturevalue("device_a")
+    )
     expected_device = getattr(client_a, "name", "deviceA")
     resp = client_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
     print("ADD_REACTION_INVALID RESP:", resp)

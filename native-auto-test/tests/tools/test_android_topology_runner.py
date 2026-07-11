@@ -29,7 +29,7 @@ def test_login_payload_for_context_client_uses_user_ref_without_secret_in_contex
 
     payload = _login_payload_for_client(context, config, "primary_a")
 
-    assert payload == {"userId": "user1", "password": "pwd"}
+    assert payload == {"userId": "user1", "pwdOrToken": "pwd", "isPassword": True}
 
 
 def test_write_client_lifecycle_updates_context(tmp_path):

@@ -1,4 +1,5 @@
 import pytest
+import yaml
 
 from src.tools.e2e_full_run import (
     build_android_runner_commands,
@@ -102,8 +103,50 @@ def test_full_run_topology_builds_prepare_runner_coverage_stages():
         "--platform",
         "android",
         "--sdk-version",
-        "topology",
+        "4.23.0",
     ]
+
+
+def test_full_run_topology_requires_single_subject_sdk_version(tmp_path):
+    topology = tmp_path / "mixed-topology.yaml"
+    topology.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "name": "mixed",
+                "description": "mixed subject versions",
+                "platforms_under_test": ["android"],
+                "accounts": {"primary": {"user_ref": "a"}},
+                "clients": {
+                    "primary_a": {
+                        "platform": "android",
+                        "sdk_version": "4.23.0",
+                        "account": "primary",
+                        "roles": ["primary"],
+                    },
+                    "primary_b": {
+                        "platform": "android",
+                        "sdk_version": "4.24.0",
+                        "account": "primary",
+                        "roles": ["primary"],
+                    },
+                },
+                "requirements": {"accounts": {"primary": {"min_clients": 2}}},
+                "coverage": {"subject_clients": ["primary_a", "primary_b"], "helper_clients": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="同一个 sdk_version"):
+        build_topology_runner_commands(
+            topology=str(topology),
+            run_id="android-topology-mixed",
+            output_root="out",
+            device_args=[],
+            install_mode="clean",
+            pytest_args=[],
+        )
 
 
 def test_topology_command_does_not_require_client_args():

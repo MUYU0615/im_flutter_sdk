@@ -466,7 +466,7 @@ def _login_payload_for_client(context: dict, config: dict, client_name: str) -> 
     password = password or str(accounts_cfg.get("default_password") or "")
     if not password:
         raise RuntimeError(f"client {client_name} 无法解析登录密码")
-    return {"userId": user_id, "password": password}
+    return {"userId": user_id, "pwdOrToken": password, "isPassword": True}
 
 
 def _login_context_client(client_name: str, context: dict, use_token_login: bool = False) -> None:

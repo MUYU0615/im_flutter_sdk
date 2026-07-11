@@ -32,7 +32,14 @@ def _wait_until_mutual_contacts(device_a, device_b, user_a: str, user_b: str, *,
 
 
 @pytest.fixture(autouse=True)
-def ensure_friends(device_a, device_b, assert_api, user_a, user_b):
+def ensure_friends(request):
+    if request.config.getoption("--run-context"):
+        return
+    device_a = request.getfixturevalue("device_a")
+    device_b = request.getfixturevalue("device_b")
+    assert_api = request.getfixturevalue("assert_api")
+    user_a = request.getfixturevalue("user_a")
+    user_b = request.getfixturevalue("user_b")
     discovering = os.getenv("CASES_DISCOVER", "0") in ("1", "true", "True")
     server_resp = device_a.call("ContactManager", Cmd.getAllContactsFromServer.value, info={})
     if user_b in (server_resp.get("result") or []):

@@ -188,7 +188,7 @@ out/android-4.23-wrapper-platform-alignment.csv
 
 正式发版测试入口是 `e2e-full-run`，官方路径优先使用 `--topology`。
 
-当前已落地的真实环境编排是 `android-android`：入口会委托 Android runner 启动 WebSocket relay、执行 `adb reverse`、卸载旧 App、启动两个 `im_flutter_test` 客户端、登录前下发 `Client.init`、运行 pytest，并在最后生成 API 覆盖缺口文件。
+当前已落地的真实环境编排是 Android 拓扑入口：入口会委托 Android runner 启动 WebSocket relay、执行 `adb reverse`、卸载旧 App、按拓扑声明启动所有 `im_flutter_test` 客户端、登录前下发 `Client.init`、运行 pytest，并在最后生成 API 覆盖缺口文件。
 
 其他平台矩阵仍走通用阶段入口：
 

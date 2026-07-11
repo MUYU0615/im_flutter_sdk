@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
 from .e2e_cli import parse_client_arg, parse_sdk_version_arg, resolve_client_versions
+from .topology_loader import load_topology
 
 
 def _is_android_android_matrix(platform_matrix: str, client_args: list[str], sdk_version_args: list[str]) -> bool:
@@ -78,7 +80,18 @@ def build_topology_runner_commands(
     case_results = f"{output_root}/test-results/{run_id}-case-results.json"
     gap_backlog = f"{output_root}/api-coverage/{run_id}-gap-backlog.csv"
     pytest_report = f"{output_root}/log/android/{run_id}-android-pytest.html"
-    sdk_version = "topology"
+    topology_spec = load_topology(Path(topology))
+    subject_versions = {
+        topology_spec.clients[name].sdk_version
+        for name in topology_spec.coverage.subject_clients
+        if name in topology_spec.clients
+    }
+    if len(subject_versions) != 1:
+        raise ValueError(
+            "topology coverage subject clients 必须声明同一个 sdk_version，"
+            f"当前为: {', '.join(sorted(subject_versions)) or '(none)'}"
+        )
+    sdk_version = next(iter(subject_versions))
     prepare = [
         sys.executable,
         "-m",

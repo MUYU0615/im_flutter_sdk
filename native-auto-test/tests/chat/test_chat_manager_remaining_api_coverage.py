@@ -306,7 +306,7 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
 
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("sender_terminal_error")
-def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, assert_api, user_a, user_c):
+def test_chat_manager_send_to_non_friend_message_error_event(request, assert_api):
     """
     1. 准备 primary_a 客户端并确认 remote_c 不是好友；
     2. primary_a 向 remote_c 发送带 marker 的单聊消息；
@@ -330,6 +330,9 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
         to_user = remote_c.user_id
         content = f"non-friend-{marker}"
     else:
+        device_a = request.getfixturevalue("device_a")
+        user_a = request.getfixturevalue("user_a")
+        user_c = request.getfixturevalue("user_c")
         sender = device_a
         from_user = user_a
         to_user = user_c
@@ -425,7 +428,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
 @pytest.mark.api("ChatManager.deleteRemoteAndLocalConversationsMark")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, device_b, assert_api, user_a, user_b):
+def test_chat_manager_conversation_marks_and_fetch_options(request, assert_api):
     """
     1. 准备 primary_a、primary_b、remote_c 客户端并确认账号已登录；
     2. primary_a 向 remote_c 发送单聊消息，建立账号 1 与账号 2 的真实会话；
@@ -451,6 +454,10 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, de
         to_user = remote_c.user_id
         content = f"chat-mark-{scope.marker}"
     else:
+        device_a = request.getfixturevalue("device_a")
+        device_b = request.getfixturevalue("device_b")
+        user_a = request.getfixturevalue("user_a")
+        user_b = request.getfixturevalue("user_b")
         sender = device_a
         receiver = device_b
         sync_receiver = None
