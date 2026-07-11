@@ -383,6 +383,50 @@ def test_android_runner_sanitizes_login_failure_response_in_context(tmp_path, mo
     assert "config-secret" not in serialized
 
 
+def test_android_runner_drops_scalar_login_error_text_from_context(tmp_path, monkeypatch):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+    context = yaml.safe_load(context_path.read_text(encoding="utf-8"))
+    context["accounts"] = {"primary": {"user_ref": "a", "user_id": "user-a"}}
+    context["clients"]["primary_a"]["account"] = "primary"
+    context_path.write_text(yaml.safe_dump(context), encoding="utf-8")
+    config = {"accounts": {"users": {"a": {"password": "config-secret"}}}}
+
+    class _FakeConnection:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+        def call(self, manager, cmd, info=None, timeout=None):
+            if cmd == "init":
+                return {"success": True}
+            if cmd == "login":
+                return {"success": False, "error": "token=abc password=secret"}
+            raise AssertionError(f"unexpected command: {cmd}")
+
+    _patch_runner_runtime(monkeypatch, patch_login=False)
+    monkeypatch.setattr("src.tools.android_e2e_runner.load_config", lambda: config)
+    monkeypatch.setattr("src.tools.android_e2e_runner.DeviceConnection", _FakeConnection)
+
+    with pytest.raises(RuntimeError, match="login failed"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["login"] == "failed"
+    assert lifecycle["login_error"] == {"message": "login failed"}
+    serialized = yaml.safe_dump(lifecycle, allow_unicode=True)
+    assert "token=abc" not in serialized
+    assert "password=secret" not in serialized
+    assert "config-secret" not in serialized
+
+
 def test_login_context_client_sanitizes_bridge_failure_response(monkeypatch):
     context = {
         "accounts": {
