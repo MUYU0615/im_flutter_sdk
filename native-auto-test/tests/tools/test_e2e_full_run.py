@@ -1,6 +1,10 @@
 import pytest
 
-from src.tools.e2e_full_run import build_android_runner_commands, build_stage_commands
+from src.tools.e2e_full_run import (
+    build_android_runner_commands,
+    build_stage_commands,
+    build_topology_runner_commands,
+)
 
 
 pytestmark = pytest.mark.no_global_login
@@ -59,6 +63,37 @@ def test_full_run_android_matrix_delegates_to_real_android_runner():
         "4.23.0",
     ]
     assert "out/api-coverage/android-20260706-153000-gap-backlog.csv" in commands[1]
+
+
+def test_full_run_topology_builds_prepare_runner_coverage_stages():
+    commands = build_topology_runner_commands(
+        topology="config/topologies/android-primary-dual-remote.yaml",
+        run_id="android-topology-001",
+        output_root="out",
+        device_args=[
+            "primary_a=emulator-5554",
+            "primary_b=emulator-5558",
+            "remote_c=emulator-5560",
+        ],
+        install_mode="clean",
+        pytest_args=[
+            "tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_send_to_non_friend_message_error_event",
+            "-q",
+        ],
+    )
+
+    assert [command[2] for command in commands] == [
+        "src.tools.e2e_prepare",
+        "src.tools.android_e2e_runner",
+        "src.tools.e2e_api_coverage",
+    ]
+    assert "--topology" in commands[0]
+    assert "--run-context" in commands[1]
+    assert "out/run/android-topology-001/context.yaml" in commands[1]
+    assert commands[1][-2:] == [
+        "tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_send_to_non_friend_message_error_event",
+        "-q",
+    ]
 
 
 def test_full_run_android_matrix_requires_android_clients():

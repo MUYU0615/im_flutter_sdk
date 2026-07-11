@@ -65,6 +65,58 @@ def build_android_runner_commands(
     return [runner, coverage]
 
 
+def build_topology_runner_commands(
+    *,
+    topology: str,
+    run_id: str,
+    output_root: str,
+    device_args: list[str],
+    install_mode: str,
+    pytest_args: list[str],
+) -> list[list[str]]:
+    context_path = f"{output_root}/run/{run_id}/context.yaml"
+    case_results = f"{output_root}/test-results/{run_id}-case-results.json"
+    gap_backlog = f"{output_root}/api-coverage/{run_id}-gap-backlog.csv"
+    prepare = [
+        sys.executable,
+        "-m",
+        "src.tools.e2e_prepare",
+        "--topology",
+        topology,
+        "--run-id",
+        run_id,
+        "--output-root",
+        output_root,
+        "--install-mode",
+        install_mode,
+    ]
+    for value in device_args:
+        prepare.extend(["--device", value])
+    runner = [
+        sys.executable,
+        "-m",
+        "src.tools.android_e2e_runner",
+        "--run-context",
+        context_path,
+        "--",
+        *pytest_args,
+    ]
+    coverage = [
+        sys.executable,
+        "-m",
+        "src.tools.e2e_api_coverage",
+        "--run-id",
+        run_id,
+        "--case-results",
+        case_results,
+        "--output",
+        gap_backlog,
+        "--platform",
+        "android",
+    ]
+    return [prepare, runner, coverage]
+
+
 def build_stage_commands(
     *,
     client_args: list[str],
@@ -131,7 +183,9 @@ def build_stage_commands(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="正式 SDK E2E 全流程入口。")
-    parser.add_argument("--client", action="append", required=True)
+    parser.add_argument("--topology", default="")
+    parser.add_argument("--device", action="append", default=[])
+    parser.add_argument("--client", action="append", default=[])
     parser.add_argument("--sdk-version", action="append", default=[])
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output-root", default="out")
@@ -149,7 +203,16 @@ def main(argv: list[str] | None = None) -> int:
     pytest_args = args.pytest_args
     if pytest_args and pytest_args[0] == "--":
         pytest_args = pytest_args[1:]
-    if _is_android_android_matrix(args.platform_matrix, args.client, args.sdk_version):
+    if args.topology:
+        commands = build_topology_runner_commands(
+            topology=args.topology,
+            run_id=args.run_id,
+            output_root=args.output_root,
+            device_args=args.device,
+            install_mode=args.install_mode,
+            pytest_args=pytest_args,
+        )
+    elif _is_android_android_matrix(args.platform_matrix, args.client, args.sdk_version):
         commands = build_android_runner_commands(
             client_args=args.client,
             sdk_version_args=args.sdk_version,

@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+import yaml
+
 from .config import get_topic_prefix
 from .sdk_options_resolver import resolve_sdk_init_options
 from .ws_client import DeviceConnection
@@ -83,6 +85,29 @@ def _host_ws_base_url(*, host: str, port: int, bridge_url: str) -> str:
     return f"{scheme}://{host}:{port}{path}"
 
 
+def _load_run_context(path: str) -> dict:
+    if not path:
+        return {}
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+
+
+def _android_clients_from_context(context: dict) -> list[dict]:
+    clients = []
+    for name, raw in (context.get("clients") or {}).items():
+        if raw.get("platform") != "android":
+            continue
+        clients.append(
+            {
+                "name": name,
+                "device_id": raw["device"]["id"],
+                "topic": raw["relay"]["topic"],
+                "account": raw["account"],
+                "user_id": raw["user_id"],
+            }
+        )
+    return clients
+
+
 def _build_commands(
     *,
     native_auto_test_dir: Path,
@@ -95,6 +120,8 @@ def _build_commands(
     device_ids: list[str],
     package_name: str,
     pytest_args: list[str],
+    device_names: list[str] | None = None,
+    topics: list[str] | None = None,
 ) -> AndroidE2ECommands:
     env = os.environ.copy()
     env["NATIVE_AUTO_TEST_RUN_ID"] = run_id
@@ -107,8 +134,12 @@ def _build_commands(
     test_results_dir = output_root / "test-results"
     env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] = str(test_results_dir / f"{run_id}-case-results.json")
     env["NATIVE_AUTO_TEST_CASE_RESULTS_CSV"] = str(test_results_dir / f"{run_id}-case-results.csv")
-    device_names = [f"device{chr(ord('A') + index)}" for index in range(len(device_ids))]
-    topics = [f"{get_topic_prefix()}-{run_id}-{device_name}" for device_name in device_names]
+    device_names = device_names or [
+        f"device{chr(ord('A') + index)}" for index in range(len(device_ids))
+    ]
+    topics = topics or [
+        f"{get_topic_prefix()}-{run_id}-{device_name}" for device_name in device_names
+    ]
     for device_name, device_id in zip(device_names, device_ids):
         env[f"NATIVE_AUTO_TEST_ANDROID_SERIAL_{device_name.upper()}"] = device_id
     bridge_urls = [
@@ -333,8 +364,9 @@ def _init_bridge_device(
     *,
     run_id: str,
     platform: str,
+    topic: str | None = None,
 ) -> None:
-    topic = f"{get_topic_prefix()}-{run_id}-{device_name}"
+    topic = topic or f"{get_topic_prefix()}-{run_id}-{device_name}"
     print(
         f"[android_e2e_runner] init bridge device={device_name} "
         f"topic={topic} ws_base={os.getenv('NATIVE_AUTO_TEST_WS_BASE_URL')}",
@@ -368,6 +400,16 @@ def run(args: argparse.Namespace) -> int:
     im_flutter_test_dir = repo_dir / "im_flutter_test"
     run_id = args.run_id or _default_run_id()
     pytest_args = args.pytest_args or _default_android_pytest_args()
+    context = _load_run_context(args.run_context)
+    context_clients = _android_clients_from_context(context)
+    if context_clients:
+        run_id = context["run_id"]
+        args.device_ids = [client["device_id"] for client in context_clients]
+        device_names = [client["name"] for client in context_clients]
+        topics = [client["topic"] for client in context_clients]
+    else:
+        device_names = None
+        topics = None
     pytest_args = _pytest_args_with_html_report(
         pytest_args,
         native_auto_test_dir=native_auto_test_dir,
@@ -399,6 +441,8 @@ def run(args: argparse.Namespace) -> int:
         device_ids=args.device_ids,
         package_name=args.package_name,
         pytest_args=pytest_args,
+        device_names=device_names,
+        topics=topics,
     )
     os.environ["NATIVE_AUTO_TEST_RUN_ID"] = commands.env["NATIVE_AUTO_TEST_RUN_ID"]
     os.environ["NATIVE_AUTO_TEST_RESPONSE_TIMEOUT"] = commands.env[
@@ -407,7 +451,9 @@ def run(args: argparse.Namespace) -> int:
     os.environ["NATIVE_AUTO_TEST_WS_BASE_URL"] = commands.env[
         "NATIVE_AUTO_TEST_WS_BASE_URL"
     ]
-    required_device_count = _required_device_count(pytest_args)
+    required_device_count = (
+        len(context_clients) if context_clients else _required_device_count(pytest_args)
+    )
     if len(args.device_ids) < required_device_count:
         raise RuntimeError(
             f"Android E2E requires {required_device_count} device(s), got {len(args.device_ids)}: "
@@ -434,7 +480,7 @@ def run(args: argparse.Namespace) -> int:
             _run(uninstall, cwd=native_auto_test_dir, env=commands.env, check=False)
 
         for index, flutter_run in enumerate(commands.flutter_run[:required_device_count]):
-            device_name = f"device{chr(ord('A') + index)}"
+            device_name = device_names[index] if device_names else f"device{chr(ord('A') + index)}"
             app = _popen(flutter_run, cwd=im_flutter_test_dir, env=commands.env)
             processes.append(app)
             _wait_for_output(
@@ -452,6 +498,7 @@ def run(args: argparse.Namespace) -> int:
                 device_name,
                 run_id=run_id,
                 platform="android",
+                topic=topics[index] if topics else None,
             )
 
         print("+ " + " ".join(commands.pytest), flush=True)
@@ -467,6 +514,7 @@ def run(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-context", default="")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--output-root", default="out")
     parser.add_argument(
