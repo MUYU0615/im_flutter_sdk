@@ -338,6 +338,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
             pass
         content = f"chat-error-non-friend-{uuid.uuid4().hex[:8]}"
 
+    expected_sender_device = getattr(sender, "name", "deviceA")
     resp = sender.call("ChatManager", Cmd.sendMessage.value, info=build_text(from_user, to_user, content))
     temp_id = ((resp.get("result") or {}).get("msgId"))
     assert temp_id, f"sendMessage 未返回临时 msgId: {resp}"
@@ -346,7 +347,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": expected_sender_device,
             "result": {
                 "msgId": temp_id,
                 "from": from_user,
@@ -388,9 +389,9 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, 
                 "msgId": temp_id,
                 "msg": {
                     "msgId": temp_id,
-                    "from": user_a,
-                    "to": user_c,
-                    "convId": user_c,
+                    "from": from_user,
+                    "to": to_user,
+                    "convId": to_user,
                     "chatType": 0,
                     "direction": 0,
                     "status": 3,
@@ -452,6 +453,7 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, de
         from_user = user_a
         to_user = user_b
         content = f"chat-mark-{uuid.uuid4().hex[:8]}"
+    expected_sender_device = getattr(sender, "name", "deviceA")
 
     _send_text_and_receive(sender, receiver, assert_api, from_user, to_user, content)
 
@@ -465,7 +467,7 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, de
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addRemoteAndLocalConversationsMark.value,
-            "device": "deviceA",
+            "device": expected_sender_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -495,7 +497,7 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, de
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.deleteRemoteAndLocalConversationsMark.value,
-            "device": "deviceA",
+            "device": expected_sender_device,
             "result": None,
         },
         ignore_keys={"sequence"},

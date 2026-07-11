@@ -282,15 +282,16 @@ def test_chat_add_reaction_invalid_id_response(request, device_a, assert_api):
     1. 准备 primary_a 客户端并确认已登录；
     2. 调用 ChatManager.addReaction，messageId 使用不存在的值；
     3. 断言接口返回 code=303，description=Unknown server error；
-    4. 断言不会产生 reaction 添加成功事件。
+    4. 仅断言错误响应，不声明额外的 reaction 成功事件证据。
     """
     describe_case_steps(
         "1. 准备 primary_a 客户端并确认已登录；\n"
         "2. 调用 ChatManager.addReaction，messageId 使用不存在的值；\n"
         "3. 断言接口返回 code=303，description=Unknown server error；\n"
-        "4. 断言不会产生 reaction 添加成功事件。"
+        "4. 仅断言错误响应，不声明额外的 reaction 成功事件证据。"
     )
     client_a = request.getfixturevalue("topology").primary_client(0) if request.config.getoption("--run-context") else device_a
+    expected_device = getattr(client_a, "name", "deviceA")
     resp = client_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
     print("ADD_REACTION_INVALID RESP:", resp)
     assert_api.assert_response_matches(
@@ -298,7 +299,7 @@ def test_chat_add_reaction_invalid_id_response(request, device_a, assert_api):
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {"code": 303, "description": "Unknown server error"},
         },
         ignore_keys={"sequence"},
