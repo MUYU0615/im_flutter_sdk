@@ -91,6 +91,18 @@ def _load_run_context(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
 
+def _write_client_lifecycle(context_path: Path | None, client_name: str, updates: dict) -> None:
+    if not context_path:
+        return
+    data = yaml.safe_load(context_path.read_text(encoding="utf-8")) or {}
+    lifecycle = data.setdefault("clients", {}).setdefault(client_name, {}).setdefault("lifecycle", {})
+    lifecycle.update(updates)
+    context_path.write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
 def _android_clients_from_context(context: dict) -> list[dict]:
     clients = []
     for name, raw in (context.get("clients") or {}).items():
@@ -401,6 +413,7 @@ def run(args: argparse.Namespace) -> int:
     run_id = args.run_id or _default_run_id()
     pytest_args = args.pytest_args or _default_android_pytest_args()
     context = _load_run_context(args.run_context)
+    context_path = Path(args.run_context) if args.run_context else None
     context_clients = _android_clients_from_context(context)
     if context_clients:
         run_id = context["run_id"]
@@ -476,8 +489,11 @@ def run(args: argparse.Namespace) -> int:
 
         for reverse in commands.reverse[:required_device_count]:
             _run(reverse, cwd=native_auto_test_dir, env=commands.env)
-        for uninstall in commands.uninstall[:required_device_count]:
+        for index, uninstall in enumerate(commands.uninstall[:required_device_count]):
             _run(uninstall, cwd=native_auto_test_dir, env=commands.env, check=False)
+            if context_path and device_names:
+                device_name = device_names[index]
+                _write_client_lifecycle(context_path, device_name, {"install": "success"})
 
         for index, flutter_run in enumerate(commands.flutter_run[:required_device_count]):
             device_name = device_names[index] if device_names else f"device{chr(ord('A') + index)}"
@@ -494,11 +510,24 @@ def run(args: argparse.Namespace) -> int:
                 device_name,
                 timeout=args.bridge_timeout,
             )
-            _init_bridge_device(
+            try:
+                _init_bridge_device(
+                    device_name,
+                    run_id=run_id,
+                    platform="android",
+                    topic=topics[index] if topics else None,
+                )
+            except Exception as exc:
+                _write_client_lifecycle(
+                    context_path,
+                    device_name,
+                    {"init": "failed", "init_error": {"message": str(exc)}},
+                )
+                raise
+            _write_client_lifecycle(
+                context_path,
                 device_name,
-                run_id=run_id,
-                platform="android",
-                topic=topics[index] if topics else None,
+                {"init": "success", "login": "external", "start_callback": "external"},
             )
 
         print("+ " + " ".join(commands.pytest), flush=True)
