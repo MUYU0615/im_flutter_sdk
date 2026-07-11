@@ -4,7 +4,13 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from src.tools.android_e2e_runner import _login_payload_for_client, _write_client_lifecycle, run
+from src.tools.android_e2e_runner import (
+    _LifecyclePhaseError,
+    _login_context_client,
+    _login_payload_for_client,
+    _write_client_lifecycle,
+    run,
+)
 
 
 pytestmark = pytest.mark.no_global_login
@@ -110,6 +116,8 @@ def _patch_runner_runtime(
     *,
     init_error: Exception | None = None,
     login_error: Exception | None = None,
+    login_effect=None,
+    patch_login: bool = True,
     bridge_ready=None,
     popen=None,
 ) -> None:
@@ -139,10 +147,13 @@ def _patch_runner_runtime(
     monkeypatch.setattr("src.tools.android_e2e_runner._init_bridge_device", _fake_init)
 
     def _fake_login(*args, **kwargs):
+        if login_effect:
+            return login_effect(*args, **kwargs)
         if login_error:
             raise login_error
 
-    monkeypatch.setattr("src.tools.android_e2e_runner._login_context_client", _fake_login)
+    if patch_login:
+        monkeypatch.setattr("src.tools.android_e2e_runner._login_context_client", _fake_login)
     monkeypatch.setattr(
         "src.tools.android_e2e_runner.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(returncode=0),
@@ -280,3 +291,141 @@ def test_android_runner_records_login_failure_and_stops_before_pytest(tmp_path, 
     assert lifecycle["login"] == "failed"
     assert lifecycle["login_error"] == {"message": "bad login"}
     assert lifecycle["start_callback"] == "pending"
+
+
+def test_android_runner_records_start_callback_failure_after_login_success(
+    tmp_path, monkeypatch
+):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+
+    def _fail_start_callback(*args, **kwargs):
+        raise _LifecyclePhaseError(
+            "start_callback",
+            "startCallback failed",
+            {"message": "startCallback failed"},
+        )
+
+    _patch_runner_runtime(monkeypatch, login_effect=_fail_start_callback)
+
+    def _fail_pytest(*args, **kwargs):
+        raise AssertionError("pytest should not run after startCallback failure")
+
+    monkeypatch.setattr("src.tools.android_e2e_runner.subprocess.run", _fail_pytest)
+
+    with pytest.raises(RuntimeError, match="startCallback failed"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["install"] == "success"
+    assert lifecycle["init"] == "success"
+    assert lifecycle["login"] == "success"
+    assert lifecycle["start_callback"] == "failed"
+    assert lifecycle["start_callback_error"] == {"message": "startCallback failed"}
+    assert "login_error" not in lifecycle
+
+
+def test_android_runner_sanitizes_login_failure_response_in_context(tmp_path, monkeypatch):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+    context = yaml.safe_load(context_path.read_text(encoding="utf-8"))
+    context["accounts"] = {"primary": {"user_ref": "a", "user_id": "user-a"}}
+    context["clients"]["primary_a"]["account"] = "primary"
+    context_path.write_text(yaml.safe_dump(context), encoding="utf-8")
+    config = {"accounts": {"users": {"a": {"password": "config-secret"}}}}
+
+    class _FakeConnection:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+        def call(self, manager, cmd, info=None, timeout=None):
+            if cmd == "init":
+                return {"success": True}
+            if cmd == "login":
+                return {
+                    "success": False,
+                    "error": {
+                        "code": 401,
+                        "description": "bad credentials",
+                        "password": "leaked-password",
+                        "token": "leaked-token",
+                    },
+                }
+            raise AssertionError(f"unexpected command: {cmd}")
+
+    _patch_runner_runtime(monkeypatch, patch_login=False)
+    monkeypatch.setattr("src.tools.android_e2e_runner.load_config", lambda: config)
+    monkeypatch.setattr("src.tools.android_e2e_runner.DeviceConnection", _FakeConnection)
+
+    with pytest.raises(RuntimeError, match="login failed"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["login"] == "failed"
+    assert lifecycle["login_error"] == {
+        "message": "login failed",
+        "code": 401,
+        "description": "bad credentials",
+    }
+    serialized = yaml.safe_dump(lifecycle, allow_unicode=True)
+    assert "leaked-password" not in serialized
+    assert "leaked-token" not in serialized
+    assert "config-secret" not in serialized
+
+
+def test_login_context_client_sanitizes_bridge_failure_response(monkeypatch):
+    context = {
+        "accounts": {
+            "primary": {"user_ref": "a", "user_id": "user1"},
+        },
+        "clients": {
+            "primary_a": {
+                "account": "primary",
+                "relay": {"topic": "topic-a"},
+            },
+        },
+    }
+    config = {"accounts": {"users": {"a": {"password": "config-secret"}}}}
+
+    class _FakeConnection:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+        def call(self, manager, cmd, info=None, timeout=None):
+            assert cmd == "login"
+            return {
+                "success": False,
+                "error": {
+                    "code": 401,
+                    "description": "bad credentials",
+                    "password": "leaked-password",
+                    "token": "leaked-token",
+                },
+            }
+
+    monkeypatch.setattr("src.tools.android_e2e_runner.load_config", lambda: config)
+    monkeypatch.setattr("src.tools.android_e2e_runner.DeviceConnection", _FakeConnection)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        _login_context_client("primary_a", context)
+
+    message = str(exc_info.value)
+    assert message == "login failed"
+    assert "leaked-password" not in message
+    assert "leaked-token" not in message

@@ -46,6 +46,13 @@ class AndroidE2ECommands:
     pytest: list[str]
 
 
+class _LifecyclePhaseError(RuntimeError):
+    def __init__(self, phase: str, message: str, details: dict | None = None) -> None:
+        super().__init__(message)
+        self.phase = phase
+        self.details = details or {"message": message}
+
+
 def _default_run_id() -> str:
     return "android-" + datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -101,6 +108,23 @@ def _write_client_lifecycle(context_path: Path | None, client_name: str, updates
         yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
     )
+
+
+def _safe_bridge_error(message: str, response: dict | None = None) -> dict:
+    details: dict = {"message": message}
+    if not isinstance(response, dict):
+        return details
+
+    source = response.get("error")
+    if not isinstance(source, dict):
+        source = response
+    for key in ("code", "description", "error"):
+        value = source.get(key)
+        if value is None:
+            continue
+        if isinstance(value, (str, int, float, bool)):
+            details[key] = value
+    return details
 
 
 def _android_clients_from_context(context: dict) -> list[dict]:
@@ -435,10 +459,18 @@ def _login_context_client(client_name: str, context: dict, use_token_login: bool
         payload = _login_payload_for_client(context, load_config(), client_name)
         resp = conn.call("Client", "login", info=payload, timeout=60.0)
         if resp.get("success") is False or resp.get("error"):
-            raise RuntimeError(f"login failed for {client_name}: {resp}")
+            raise _LifecyclePhaseError(
+                "login",
+                "login failed",
+                _safe_bridge_error("login failed", resp),
+            )
         cb_resp = conn.call("Client", "startCallback", info={}, timeout=30.0)
         if cb_resp.get("success") is False or cb_resp.get("error"):
-            raise RuntimeError(f"startCallback failed for {client_name}: {cb_resp}")
+            raise _LifecyclePhaseError(
+                "start_callback",
+                "startCallback failed",
+                _safe_bridge_error("startCallback failed", cb_resp),
+            )
     finally:
         conn.stop()
 
@@ -584,6 +616,20 @@ def run(args: argparse.Namespace) -> int:
                         device_name,
                         {"login": "success", "start_callback": "success"},
                     )
+                except _LifecyclePhaseError as exc:
+                    if exc.phase == "start_callback":
+                        updates = {
+                            "login": "success",
+                            "start_callback": "failed",
+                            "start_callback_error": exc.details,
+                        }
+                    else:
+                        updates = {
+                            "login": "failed",
+                            "login_error": exc.details,
+                        }
+                    _write_client_lifecycle(context_path, device_name, updates)
+                    raise
                 except Exception as exc:
                     _write_client_lifecycle(
                         context_path,
