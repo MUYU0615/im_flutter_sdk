@@ -1,0 +1,59 @@
+schema_version: 1
+name: android_primary_dual_remote
+description: Android SDK multi-device real E2E topology.
+
+platforms_under_test:
+  - android
+
+accounts:
+  primary:
+    user_ref: a
+    purpose: account under test
+  remote:
+    user_ref: b
+    purpose: interaction counterparty
+
+clients:
+  primary_a:
+    platform: android
+    sdk_version: "4.23.0"
+    account: primary
+    device:
+      mode: auto
+    roles:
+      - primary
+      - same_account_member
+
+  primary_b:
+    platform: android
+    sdk_version: "4.23.0"
+    account: primary
+    device:
+      mode: auto
+    roles:
+      - primary
+      - same_account_member
+
+  remote_c:
+    platform: android
+    sdk_version: "4.23.0"
+    account: remote
+    device:
+      mode: auto
+    roles:
+      - remote
+      - counterparty
+
+requirements:
+  accounts:
+    primary:
+      min_clients: 2
+    remote:
+      min_clients: 1
+
+coverage:
+  subject_clients:
+    - primary_a
+    - primary_b
+  helper_clients:
+    - remote_c
