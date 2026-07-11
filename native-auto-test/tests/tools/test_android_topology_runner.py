@@ -94,6 +94,7 @@ def _patch_runner_runtime(
     *,
     init_error: Exception | None = None,
     bridge_ready=None,
+    popen=None,
 ) -> None:
     class _FakeProcess:
         stdout = None
@@ -101,7 +102,10 @@ def _patch_runner_runtime(
         def poll(self):
             return 0
 
-    monkeypatch.setattr("src.tools.android_e2e_runner._popen", lambda *args, **kwargs: _FakeProcess())
+    monkeypatch.setattr(
+        "src.tools.android_e2e_runner._popen",
+        popen or (lambda *args, **kwargs: _FakeProcess()),
+    )
     monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_tcp", lambda *args, **kwargs: None)
     monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_output", lambda *args, **kwargs: None)
     monkeypatch.setattr(
@@ -176,6 +180,36 @@ def test_android_runner_records_install_failure_when_bridge_readiness_fails(
     ]
     assert lifecycle["install"] == "failed"
     assert lifecycle["install_error"] == {"message": "bridge down"}
+    assert lifecycle["init"] == "pending"
+
+
+def test_android_runner_records_install_failure_when_flutter_launch_fails(
+    tmp_path, monkeypatch
+):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+
+    class _FakeProcess:
+        stdout = None
+
+        def poll(self):
+            return 0
+
+    def _popen(command, *args, **kwargs):
+        if command[:2] == ["flutter", "run"]:
+            raise FileNotFoundError("flutter missing")
+        return _FakeProcess()
+
+    _patch_runner_runtime(monkeypatch, popen=_popen)
+
+    with pytest.raises(FileNotFoundError, match="flutter missing"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["install"] == "failed"
+    assert lifecycle["install_error"] == {"message": "flutter missing"}
     assert lifecycle["init"] == "pending"
 
 

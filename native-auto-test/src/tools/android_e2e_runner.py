@@ -494,9 +494,9 @@ def run(args: argparse.Namespace) -> int:
 
         for index, flutter_run in enumerate(commands.flutter_run[:required_device_count]):
             device_name = device_names[index] if device_names else f"device{chr(ord('A') + index)}"
-            app = _popen(flutter_run, cwd=im_flutter_test_dir, env=commands.env)
-            processes.append(app)
             try:
+                app = _popen(flutter_run, cwd=im_flutter_test_dir, env=commands.env)
+                processes.append(app)
                 _wait_for_output(
                     app,
                     (

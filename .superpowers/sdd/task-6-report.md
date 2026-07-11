@@ -55,3 +55,35 @@ Review fix result:
 ```text
 5 passed, 1 warning in 0.18s
 ```
+
+## Re-review Fix
+
+- Wrapped `_popen(flutter_run, ...)` itself inside the install/startup lifecycle failure boundary, so Flutter launch failures now record `install: failed` and `install_error.message` before re-raising.
+- Added a focused regression test where `_popen` raises `FileNotFoundError("flutter missing")`; the test verifies `install` becomes `failed`, `install_error.message` is recorded, and `init` remains `pending`.
+
+RED check:
+
+```bash
+cd native-auto-test
+pytest -q tests/tools/test_android_topology_runner.py::test_android_runner_records_install_failure_when_flutter_launch_fails
+```
+
+Result before implementation:
+
+```text
+FAILED tests/tools/test_android_topology_runner.py::test_android_runner_records_install_failure_when_flutter_launch_fails
+AssertionError: assert 'pending' == 'failed'
+```
+
+Required test command:
+
+```bash
+cd native-auto-test
+pytest -q tests/tools/test_android_topology_runner.py
+```
+
+Required test result:
+
+```text
+6 passed, 1 warning in 0.13s
+```
