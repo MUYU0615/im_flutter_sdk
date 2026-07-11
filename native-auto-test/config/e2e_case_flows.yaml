@@ -1,0 +1,15 @@
+tests/chat/test_chat.py::test_chat_add_reaction_invalid_id_response:
+  flow: error_response
+  capabilities:
+    - chat.message.reaction
+  notes: 不需要 remote，不应等待接收端事件。
+
+tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_send_to_non_friend_message_error_event:
+  flow: sender_terminal_error
+  notes: 非好友发送失败，只断言发送端错误 callback。
+
+tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_conversation_marks_and_fetch_options:
+  flow: account_state_sync
+  optional:
+    - primary_multi_device_sync
+  notes: primary_a 操作，primary_b 同步，remote_c 不参与账号内同步。
