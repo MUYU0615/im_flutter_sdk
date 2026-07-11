@@ -110,6 +110,26 @@ def _write_client_lifecycle(context_path: Path | None, client_name: str, updates
     )
 
 
+def _redact_bridge_text(value: str) -> str:
+    lowered = value.lower()
+    sensitive_markers = (
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "secret",
+        "access_key",
+        "accesskey",
+        "app_key",
+        "appkey",
+        "authorization",
+        "bearer",
+    )
+    if any(marker in lowered for marker in sensitive_markers):
+        return "[redacted]"
+    return value
+
+
 def _safe_bridge_error(message: str, response: dict | None = None) -> dict:
     details: dict = {"message": message}
     if not isinstance(response, dict):
@@ -123,6 +143,8 @@ def _safe_bridge_error(message: str, response: dict | None = None) -> dict:
         if value is None:
             continue
         if isinstance(value, (str, int, float, bool)):
+            if key == "description" and isinstance(value, str):
+                value = _redact_bridge_text(value)
             details[key] = value
     return details
 
