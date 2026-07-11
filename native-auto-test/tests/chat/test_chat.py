@@ -29,9 +29,14 @@ pytestmark = [pytest.mark.client, pytest.mark.chat]
 
 
 @pytest.fixture(autouse=True)
-def ensure_friends(request, device_a, device_b, assert_api, user_a, user_b):
+def ensure_friends(request):
     if request.config.getoption("--run-context"):
         return
+    device_a = request.getfixturevalue("device_a")
+    device_b = request.getfixturevalue("device_b")
+    assert_api = request.getfixturevalue("assert_api")
+    user_a = request.getfixturevalue("user_a")
+    user_b = request.getfixturevalue("user_b")
     resp_add = device_a.call("ContactManager", Cmd.addContact.value, info={"userId": user_b, "reason": "chat-setup"})
     assert_api.assert_response_matches(
         resp_add,

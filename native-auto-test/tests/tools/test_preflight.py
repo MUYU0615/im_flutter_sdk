@@ -41,6 +41,17 @@ def test_primary_send_sync_supported_by_dual_primary_and_remote():
     ) is None
 
 
+def test_account_state_sync_requires_remote_for_current_chat_mark_case():
+    reason = skip_reason_for_flow(
+        flow="account_state_sync",
+        counts={"primary": 2, "remote": 0},
+        capabilities={"server_api": False},
+        requires_server_api=False,
+    )
+
+    assert reason == "当前 topology 不满足 account_state_sync：要求 remote 账号至少 1 个客户端，实际 0 个。"
+
+
 def test_unknown_flow_is_rejected():
     with pytest.raises(ValueError, match="未知 e2e_flow"):
         skip_reason_for_flow(

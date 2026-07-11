@@ -57,7 +57,7 @@ FLOW_REQUIREMENTS: dict[str, FlowRequirement] = {
     "peer_interaction": FlowRequirement(primary_clients=1, remote_clients=1),
     "remote_fanout": FlowRequirement(primary_clients=2, remote_clients=1),
     "primary_send_sync": FlowRequirement(primary_clients=2, remote_clients=1),
-    "account_state_sync": FlowRequirement(primary_clients=2),
+    "account_state_sync": FlowRequirement(primary_clients=2, remote_clients=1),
     "client_originated_control": FlowRequirement(primary_clients=2),
     "server_originated_control": FlowRequirement(primary_clients=1, server_api=True),
     "callback_event_only": FlowRequirement(primary_clients=1),
