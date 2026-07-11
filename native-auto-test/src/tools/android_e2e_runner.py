@@ -489,27 +489,37 @@ def run(args: argparse.Namespace) -> int:
 
         for reverse in commands.reverse[:required_device_count]:
             _run(reverse, cwd=native_auto_test_dir, env=commands.env)
-        for index, uninstall in enumerate(commands.uninstall[:required_device_count]):
+        for uninstall in commands.uninstall[:required_device_count]:
             _run(uninstall, cwd=native_auto_test_dir, env=commands.env, check=False)
-            if context_path and device_names:
-                device_name = device_names[index]
-                _write_client_lifecycle(context_path, device_name, {"install": "success"})
 
         for index, flutter_run in enumerate(commands.flutter_run[:required_device_count]):
             device_name = device_names[index] if device_names else f"device{chr(ord('A') + index)}"
             app = _popen(flutter_run, cwd=im_flutter_test_dir, env=commands.env)
             processes.append(app)
-            _wait_for_output(
-                app,
-                ("Flutter run key commands", "An Observatory debugger", "The Flutter DevTools debugger"),
-                timeout=args.flutter_timeout,
-                name=f"flutter android {device_name}",
-            )
-            _wait_for_bridge_logs(
-                app,
-                device_name,
-                timeout=args.bridge_timeout,
-            )
+            try:
+                _wait_for_output(
+                    app,
+                    (
+                        "Flutter run key commands",
+                        "An Observatory debugger",
+                        "The Flutter DevTools debugger",
+                    ),
+                    timeout=args.flutter_timeout,
+                    name=f"flutter android {device_name}",
+                )
+                _wait_for_bridge_logs(
+                    app,
+                    device_name,
+                    timeout=args.bridge_timeout,
+                )
+            except Exception as exc:
+                _write_client_lifecycle(
+                    context_path,
+                    device_name,
+                    {"install": "failed", "install_error": {"message": str(exc)}},
+                )
+                raise
+            _write_client_lifecycle(context_path, device_name, {"install": "success"})
             try:
                 _init_bridge_device(
                     device_name,

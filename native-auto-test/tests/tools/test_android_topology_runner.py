@@ -89,7 +89,12 @@ def _runner_args(context_path: Path, tmp_path: Path) -> SimpleNamespace:
     )
 
 
-def _patch_runner_runtime(monkeypatch, *, init_error: Exception | None = None) -> None:
+def _patch_runner_runtime(
+    monkeypatch,
+    *,
+    init_error: Exception | None = None,
+    bridge_ready=None,
+) -> None:
     class _FakeProcess:
         stdout = None
 
@@ -99,7 +104,10 @@ def _patch_runner_runtime(monkeypatch, *, init_error: Exception | None = None) -
     monkeypatch.setattr("src.tools.android_e2e_runner._popen", lambda *args, **kwargs: _FakeProcess())
     monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_tcp", lambda *args, **kwargs: None)
     monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_output", lambda *args, **kwargs: None)
-    monkeypatch.setattr("src.tools.android_e2e_runner._wait_for_bridge_logs", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "src.tools.android_e2e_runner._wait_for_bridge_logs",
+        bridge_ready or (lambda *args, **kwargs: None),
+    )
     monkeypatch.setattr("src.tools.android_e2e_runner._terminate", lambda processes: None)
     monkeypatch.setattr("src.tools.android_e2e_runner._run", lambda *args, **kwargs: 0)
 
@@ -128,6 +136,47 @@ def test_android_runner_records_context_lifecycle_for_external_login(tmp_path, m
     assert lifecycle["init"] == "success"
     assert lifecycle["login"] == "external"
     assert lifecycle["start_callback"] == "external"
+
+
+def test_android_runner_records_install_success_after_startup_readiness(tmp_path, monkeypatch):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+
+    def _bridge_ready(*args, **kwargs):
+        lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"][
+            "primary_a"
+        ]["lifecycle"]
+        assert lifecycle["install"] == "pending"
+
+    _patch_runner_runtime(monkeypatch, bridge_ready=_bridge_ready)
+
+    assert run(_runner_args(context_path, tmp_path)) == 0
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["install"] == "success"
+
+
+def test_android_runner_records_install_failure_when_bridge_readiness_fails(
+    tmp_path, monkeypatch
+):
+    context_path = tmp_path / "context.yaml"
+    _write_context(context_path)
+    _patch_runner_runtime(
+        monkeypatch,
+        bridge_ready=lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("bridge down")),
+    )
+
+    with pytest.raises(RuntimeError, match="bridge down"):
+        run(_runner_args(context_path, tmp_path))
+
+    lifecycle = yaml.safe_load(context_path.read_text(encoding="utf-8"))["clients"]["primary_a"][
+        "lifecycle"
+    ]
+    assert lifecycle["install"] == "failed"
+    assert lifecycle["install_error"] == {"message": "bridge down"}
+    assert lifecycle["init"] == "pending"
 
 
 def test_android_runner_records_init_failure_and_stops_before_pytest(tmp_path, monkeypatch):

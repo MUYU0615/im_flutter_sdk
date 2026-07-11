@@ -35,3 +35,23 @@ Result:
 - The first RED run failed on import as expected because `_write_client_lifecycle` did not exist.
 - After implementing the helper, the test initially attempted the global login fixture. I marked the tool test module with `pytest.mark.no_global_login`, consistent with existing tool tests, so it remains a local unit-style runner test.
 - No files outside the task ownership were edited.
+
+## Review Fix
+
+- Moved `install: success` lifecycle recording out of the uninstall loop and into the post-startup readiness path, after both Flutter launch markers and bridge readiness logs succeed.
+- Added startup failure handling around `flutter_run` readiness waits so `_wait_for_output` or `_wait_for_bridge_logs` failures record `install: failed` plus `install_error.message` before re-raising.
+- Kept SDK init lifecycle behavior unchanged after the install readiness boundary.
+- Added focused regression tests proving install remains `pending` during bridge readiness, becomes `success` only after readiness, and records `failed` with `install_error` when readiness fails before init.
+
+Review fix test command:
+
+```bash
+cd native-auto-test
+pytest -q tests/tools/test_android_topology_runner.py
+```
+
+Review fix result:
+
+```text
+5 passed, 1 warning in 0.18s
+```
