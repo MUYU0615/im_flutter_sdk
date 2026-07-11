@@ -21,7 +21,7 @@ def skip_reason_for_flow(
     requires_server_api: bool,
 ) -> str | None:
     if not flow:
-        return "缺少 e2e_flow marker，无法判断当前 topology 是否支持。"
+        return None
     requirement = FLOW_REQUIREMENTS.get(flow)
     if requirement is None:
         raise ValueError(f"未知 e2e_flow: {flow}")
