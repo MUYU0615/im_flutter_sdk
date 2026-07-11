@@ -199,10 +199,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     pytest_args = args.pytest_args
     if pytest_args and pytest_args[0] == "--":
         pytest_args = pytest_args[1:]
+    if not args.topology and not args.client:
+        parser.error("正式 E2E 需要 --topology；旧 --client 仅用于兼容调试。")
     if args.topology:
         commands = build_topology_runner_commands(
             topology=args.topology,

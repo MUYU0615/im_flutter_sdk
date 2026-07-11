@@ -30,7 +30,7 @@ help:
 	@echo "  test               Run pytest (pass ARGS=... to forward extra args)"
 	@echo "  test-allure        Run pytest with --alluredir=out/allure-results"
 	@echo "  test-html          Run pytest with HTML report to out/report.html"
-	@echo "  e2e-full-run       Official release E2E entry; android-android delegates to Android runner"
+	@echo "  e2e-full-run       Official release E2E entry; prefer --topology"
 	@echo "  e2e-prepare        Prepare SDK E2E context under out/run/<run_id>/"
 	@echo "  e2e-run            Run pytest with run context, pytest-html, Allure and case-results"
 	@echo "  e2e-api-coverage   Generate API coverage/gap backlog from case-results"

@@ -2,8 +2,10 @@ import pytest
 
 from src.tools.e2e_full_run import (
     build_android_runner_commands,
+    build_parser,
     build_stage_commands,
     build_topology_runner_commands,
+    main,
 )
 
 
@@ -94,6 +96,39 @@ def test_full_run_topology_builds_prepare_runner_coverage_stages():
         "tests/chat/test_chat_manager_remaining_api_coverage.py::test_chat_manager_send_to_non_friend_message_error_event",
         "-q",
     ]
+
+
+def test_topology_command_does_not_require_client_args():
+    commands = build_topology_runner_commands(
+        topology="config/topologies/android-primary-dual-remote.yaml",
+        run_id="android-topology-002",
+        output_root="out",
+        device_args=[],
+        install_mode="clean",
+        pytest_args=[],
+    )
+
+    assert "--client" not in commands[0]
+    assert "--topology" in commands[0]
+
+
+def test_full_run_parser_accepts_topology_without_client():
+    args = build_parser().parse_args(
+        [
+            "--topology",
+            "config/topologies/android-primary-dual-remote.yaml",
+            "--run-id",
+            "android-topology-002",
+        ]
+    )
+
+    assert args.client == []
+    assert args.topology == "config/topologies/android-primary-dual-remote.yaml"
+
+
+def test_full_run_requires_topology_or_legacy_client_args():
+    with pytest.raises(SystemExit, match="2"):
+        main(["--run-id", "android-topology-003"])
 
 
 def test_full_run_android_matrix_requires_android_clients():

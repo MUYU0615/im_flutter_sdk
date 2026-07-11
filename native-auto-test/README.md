@@ -186,7 +186,7 @@ out/android-4.23-wrapper-platform-alignment.csv
 
 ## SDK E2E 正式入口
 
-正式发版测试入口是 `e2e-full-run`。
+正式发版测试入口是 `e2e-full-run`，官方路径优先使用 `--topology`。
 
 当前已落地的真实环境编排是 `android-android`：入口会委托 Android runner 启动 WebSocket relay、执行 `adb reverse`、卸载旧 App、启动两个 `im_flutter_test` 客户端、登录前下发 `Client.init`、运行 pytest，并在最后生成 API 覆盖缺口文件。
 
@@ -201,13 +201,13 @@ e2e_prepare -> e2e_run(pytest) -> e2e_api_coverage
 示例：
 
 ```bash
-make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --run-id <run_id> --install-mode clean"
 ```
 
 只跑当前 Android real_e2e 小全集时，可以把 pytest 参数显式透传到 `--` 后：
 
 ```bash
-make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh -- tests --target-platform android -m 'real_e2e and not web' -q"
+make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --run-id <run_id> --install-mode clean -- tests --target-platform android -m 'real_e2e and not web' -q"
 ```
 
 阶段调试入口：
@@ -220,7 +220,7 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
 
 执行分支：
 
-- `--platform-matrix android-android` 且所有 `--client` 都是 Android 时，`e2e-full-run` 会走 Android 专用 runner 分支：
+- 传入 `--topology` 时，`e2e-full-run` 会走拓扑驱动的 Android runner 分支：
   - 启动 relay
   - 自动选择空闲 relay 端口
   - 模拟器使用 `10.0.2.2`，真机保留 `adb reverse`
@@ -228,7 +228,7 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
   - 下发 `Client.init`
   - 执行 pytest
   - 生成 Android API gap backlog
-- 其他矩阵当前仍走通用三阶段分支：
+- 未传 `--topology` 但传入旧 `--client` 参数时，仅保留兼容调试分支：
   - `e2e_prepare`
   - `e2e_run`
   - `e2e_api_coverage`
@@ -239,15 +239,22 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
 
 | 参数 | 作用 |
 |---|---|
-| `--client <platform>:<slot>@<version>` | 声明一个测试客户端。`slot` 是测试拓扑角色，不是账号。`@<version>` 是该客户端期望 SDK 版本。 |
-| `--sdk-version <platform>=<version>` | 平台级 SDK 版本。可替代 client 上的 `@<version>`，但不能与 client 版本冲突。 |
+| `--topology <path>` | 官方拓扑文件入口。正式发版 E2E 必须优先使用它。 |
+| `--device <slot>=<device_id>` | 覆盖拓扑中的设备绑定，可重复传入。 |
 | `--run-id` | 本次执行 ID，用于关联 context、日志、case-results 和 API coverage。 |
-| `--platform-matrix` | 本次执行的平台组合，例如 `android-android`、`android-ios`。 |
-| `--matrix-mode` | 用例角色展开方式。第一阶段默认 `pair`。 |
-| `--install-mode` | 安装策略。第一阶段写入 context，升级安装另行实现。 |
-| `--account-mode` | 账号策略。第一阶段只支持 `fresh`。 |
-| `--device-mode` | 设备策略。第一阶段只支持 `existing`。 |
+| `--install-mode` | 安装策略。当前正式 Android 路径稳定验证过的是 `clean`。 |
 | `--` 后面的 pytest 参数 | 透传给 pytest。Android-Android 矩阵下由 Android runner 执行，并自动补 HTML、Allure 和 case-results 环境变量。 |
+
+旧兼容调试参数：
+
+| 参数 | 作用 |
+|---|---|
+| `--client <platform>:<slot>@<version>` | 旧模型客户端声明，仅用于兼容调试，不作为正式发版入口。 |
+| `--sdk-version <platform>=<version>` | 旧模型平台级 SDK 版本。 |
+| `--platform-matrix` | 旧模型平台组合，例如 `android-android`、`android-ios`。 |
+| `--matrix-mode` | 旧模型用例角色展开方式。 |
+| `--account-mode` | 旧模型账号策略。 |
+| `--device-mode` | 旧模型设备策略。 |
 
 第一阶段限制：
 
@@ -259,17 +266,17 @@ make e2e-api-coverage ARGS="--run-id android-20260706-153000 --case-results out/
   - `--device-mode manual`
   - 未来扩展外的 `--account-mode`
   当前会直接报错，而不是静默降级。
-- `--matrix-mode` 虽然支持 `smoke / pair / full` 三个取值，但第一阶段主要先把它写入 context 和报告，只有 `pair` 是当前默认的正式执行模式。
+- `--matrix-mode` 虽然支持 `smoke / pair / full` 三个取值，但旧阶段入口主要先把它写入 context 和报告。
 - `--install-mode upgrade` 现在仍主要是 context 层语义，Android 专用 runner 当前稳定验证过的是 `clean` 路径。
 
-版本解析规则：
+旧模型版本解析规则：
 
-- 每个 client 最终都必须解析出一个 SDK 版本。
+- 兼容调试路径中的每个 client 最终都必须解析出一个 SDK 版本。
 - 版本可以来自：
   - `--client android:a@4.23.0`
   - 或 `--sdk-version android=4.23.0`
 - 两边同时写时，不能冲突。
-- Android `e2e-full-run` 会把解析出的 Android 版本继续写入 gap backlog 的 `sdk_version` 字段，作为本次报告的版本证据。
+- 旧 Android client 分支会把解析出的 Android 版本继续写入 gap backlog 的 `sdk_version` 字段，作为本次报告的版本证据。
 
 直接 `pytest` 只作为低层调试入口，不作为正式覆盖报告入口。正式执行必须能生成：
 
@@ -371,7 +378,7 @@ make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id
 运行 Android 正式发版 E2E：
 
 ```bash
-make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-20260706-153000 --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --run-id <run_id> --install-mode clean"
 ```
 
 底层 Android runner 调试：
@@ -410,7 +417,7 @@ make test-html ARGS="tests --target-platform android -m real_e2e"
 make test-allure ARGS="tests --target-platform android -m real_e2e"
 ```
 
-Android 正式发版 E2E 推荐使用 `e2e-full-run`。当 `--platform-matrix android-android` 且 client 都是 Android 时，它会委托 Android runner；runner 会启动 WebSocket relay、拉起 Android 设备、下发 `Client.init`，再调用 pytest，并默认同时输出 HTML 与 Allure。
+Android 正式发版 E2E 推荐使用 `e2e-full-run --topology ...`。拓扑路径会委托 Android runner；runner 会启动 WebSocket relay、拉起 Android 设备、下发 `Client.init`，再调用 pytest，并默认同时输出 HTML 与 Allure。
 
 `android-real-e2e` 是底层 runner 调试入口，用于只验证某个 Android case、runner 启动链路或设备连接问题，不作为发版报告的首选入口：
 
@@ -431,7 +438,7 @@ Android 三个入口的产物差异：
 
 | 入口 | 主要用途 | HTML / Allure | case-results | API gap backlog |
 |---|---|---:|---:|---:|
-| `make e2e-full-run` | 正式发版 E2E。`android-android` 会委托 Android runner，执行后继续生成覆盖缺口。 | 是 | 是 | 是，`out/api-coverage/<run_id>-gap-backlog.csv` |
+| `make e2e-full-run` | 正式发版 E2E。官方路径使用 `--topology`，执行后继续生成覆盖缺口。 | 是 | 是 | 是，`out/api-coverage/<run_id>-gap-backlog.csv` |
 | `make android-real-sanity` | 固定 Android 代表性健康检查。 | 是 | 是 | 否 |
 | `make android-real-e2e` | 底层 Android runner 调试、单 case 验证或设备链路排查。 | 是 | 是 | 否 |
 
