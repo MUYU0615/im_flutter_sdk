@@ -116,14 +116,11 @@ def _safe_bridge_error(message: str, response: dict | None = None) -> dict:
         return details
 
     source = response.get("error")
-    include_error_text = isinstance(source, dict)
     if not isinstance(source, dict):
         source = response
-    for key in ("code", "description", "error"):
+    for key in ("code", "description"):
         value = source.get(key)
         if value is None:
-            continue
-        if key == "error" and not include_error_text:
             continue
         if isinstance(value, (str, int, float, bool)):
             details[key] = value
