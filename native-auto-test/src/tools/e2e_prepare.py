@@ -3,8 +3,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .config import load_config
 from .e2e_cli import parse_client_arg, parse_sdk_version_arg, resolve_client_versions
 from .e2e_context import ClientContext, RunContext, SdkVersionCheck, build_run_id, write_context
+from .topology_loader import build_topology_context, load_topology, write_topology_context
+from .topology_model import parse_device_overrides
 
 
 def build_prepare_context(
@@ -81,7 +84,9 @@ def build_prepare_context(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="准备 SDK E2E 运行 context。")
-    parser.add_argument("--client", action="append", required=True)
+    parser.add_argument("--topology", default="")
+    parser.add_argument("--device", action="append", default=[])
+    parser.add_argument("--client", action="append", default=[])
     parser.add_argument("--sdk-version", action="append", default=[])
     parser.add_argument("--output-root", default="out")
     parser.add_argument("--run-id")
@@ -94,6 +99,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.topology:
+        from .android_e2e_runner import _connected_android_devices
+
+        spec = load_topology(Path(args.topology))
+        context = build_topology_context(
+            spec=spec,
+            run_id=args.run_id or build_run_id(list(spec.platforms_under_test)),
+            output_root=Path(args.output_root),
+            config=load_config(),
+            available_devices=_connected_android_devices(),
+            device_overrides=parse_device_overrides(args.device),
+            install_mode=args.install_mode,
+        )
+        write_topology_context(context, Path(context["artifacts"]["context_path"]))
+        print(context["artifacts"]["context_path"])
+        return 0
+    if not args.client:
+        raise SystemExit("--client is required when --topology is not set")
     ctx = build_prepare_context(
         client_args=args.client,
         sdk_version_args=args.sdk_version,
