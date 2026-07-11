@@ -13,6 +13,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
+import yaml
 
 # 保证能 import src
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -26,6 +27,8 @@ from src.tools.config import (
 )
 from src.rest_api.user_api import create_users, delete_user, get_user_access_token
 from src.tools.target_platforms import TARGET_PLATFORMS, target_device_pair_for_platform
+from src.tools.preflight import skip_reason_for_flow, topology_counts
+from src.tools.topology_fixture import Topology
 from src.tools.ws_client import (
     request as ws_request,
     request_and_wait_for_event as ws_request_and_wait_event,
@@ -340,6 +343,25 @@ def web_sdk_runtime(request) -> str:
     return request.config.getoption("--web-sdk-runtime")
 
 
+def _load_pytest_run_context(config):
+    path = config.getoption("--run-context")
+    if not path:
+        return {}
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+
+
+@pytest.fixture(scope="session")
+def topology(request, ws_debug):
+    context = _load_pytest_run_context(request.config)
+    if not context:
+        pytest.skip("未提供 --run-context，无法使用 topology fixture")
+    topo = Topology.from_context(context, start_connections=True, debug=ws_debug)
+    try:
+        yield topo
+    finally:
+        topo.close()
+
+
 @pytest.fixture(scope="session")
 def target_device_pair(target_platform) -> tuple[str, str]:
     return target_device_pair_for_platform(target_platform)
@@ -508,6 +530,9 @@ def global_login_logout(request):
     - setup：用 created_test_users 的两人在 device_a/device_b 上登录并清空回调。
     - teardown：登出两设备。用户删除由 created_test_users 的 teardown 负责。
     """
+    if request.config.getoption("--run-context"):
+        yield
+        return
     if bool(request.config.getoption("--skip-global-login")) or _all_items_marked_no_global_login(request.session.items):
         yield
         return
@@ -757,12 +782,20 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "expects_event: 本用例会等待并断言 websocket event")
     config.addinivalue_line("markers", "no_login_fixture: 本用例不使用默认登录 fixture")
     config.addinivalue_line("markers", "init_case: 本用例自行执行 Client.init")
+    config.addinivalue_line("markers", "e2e_flow(name): topology interaction flow required by this case")
+    config.addinivalue_line("markers", "e2e_optional(*names): optional topology capabilities asserted when present")
+    config.addinivalue_line("markers", "disruptive_session: case changes login/session state and must be isolated")
+    config.addinivalue_line("markers", "requires_server_api: case requires REST/server API support")
+    config.addinivalue_line("markers", "requires_capability(name): case requires platform or SDK capability")
     config._e2e_case_results = []
 
 
 def pytest_collection_modifyitems(config, items):
     """把历史 marker 归一到新的执行层 marker，避免覆盖统计拆分时漏算。"""
     target_platform = config.getoption("--target-platform")
+    context = _load_pytest_run_context(config)
+    counts = topology_counts(context) if context else {}
+    capabilities = context.get("capabilities") or {}
     for item in items:
         if (
             target_platform == "web"
@@ -777,6 +810,18 @@ def pytest_collection_modifyitems(config, items):
             and "/tests/web/" in item.path.as_posix()
         ):
             item.add_marker(pytest.mark.wrapper_mapping)
+        if context:
+            flow_marker = item.get_closest_marker("e2e_flow")
+            flow = flow_marker.args[0] if flow_marker and flow_marker.args else None
+            requires_server_api = item.get_closest_marker("requires_server_api") is not None
+            reason = skip_reason_for_flow(
+                flow=flow,
+                counts=counts,
+                capabilities=capabilities,
+                requires_server_api=requires_server_api,
+            )
+            if reason:
+                item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @pytest.hookimpl(hookwrapper=True)
