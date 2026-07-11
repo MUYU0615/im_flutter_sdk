@@ -56,3 +56,24 @@ def test_topology_returns_role_clients_without_starting_connection():
     assert topology.supports("primary_multi_device_sync") is True
     assert topology.supports("remote_multi_device_sync") is False
     assert topology.marker("send-text").startswith("run-1-send-text-")
+
+
+def test_topology_case_scope_creates_marker_and_drains_selected_clients():
+    class FakeClient:
+        def __init__(self, name):
+            self.name = name
+            self.drained = []
+
+        def drain_events(self, timeout=0.5):
+            self.drained.append(timeout)
+
+    topology = Topology.from_context(_context(), start_connections=False)
+    primary = FakeClient("primary_a")
+    remote = FakeClient("remote_c")
+
+    scope = topology.case_scope("send text", clients=[primary, remote])
+
+    assert scope.marker.startswith("run-1-send-text-")
+    assert scope.clients == [primary, remote]
+    assert primary.drained == [0.5]
+    assert remote.drained == [0.5]

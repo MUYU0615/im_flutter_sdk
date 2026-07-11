@@ -143,3 +143,11 @@ class Topology:
     def marker(self, label: str) -> str:
         safe_label = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in label)
         return f"{self.run_id}-{safe_label}-{uuid4().hex[:8]}"
+
+    def case_scope(self, label: str, clients: list[TopologyClient] | None = None):
+        from .case_scope import CaseScope
+
+        selected = clients if clients is not None else list(self._clients.values())
+        scope = CaseScope(marker=self.marker(label), clients=selected)
+        scope.drain()
+        return scope
