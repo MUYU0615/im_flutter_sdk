@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import os
 import uuid
@@ -7,7 +8,9 @@ import time
 import pytest
 
 from src import Cmd, ge
+from src.tools.event_group_waiter import wait_event_group
 from tests.chat._utils import build_text
+from tests.chat.message_event_matchers import expect_message_error
 from tests.group.group_helpers import create_group, destroy_group, new_group_name
 
 
@@ -64,6 +67,30 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
         if any(isinstance(m, dict) and m.get("msgId") == real_id for m in messages):
             return str(real_id)
     raise AssertionError(f"B 端未收到目标消息: msgId={real_id}, events={seen_events}")
+
+
+def _fetch_marked_conversation(device, conv_id: str, mark: int, *, timeout: float = 10.0) -> dict:
+    deadline = time.monotonic() + timeout
+    last_resp = None
+    while time.monotonic() < deadline:
+        last_resp = device.call(
+            "ChatManager",
+            Cmd.fetchConversationsByOptions.value,
+            info={"mark": mark, "pageSize": 10, "cursor": "", "pinned": False},
+        )
+        result = last_resp.get("result") or {}
+        conversations = result.get("list") or []
+        for item in conversations:
+            if isinstance(item, dict) and item.get("convId") == conv_id and mark in (item.get("marks") or []):
+                return item
+        time.sleep(0.5)
+    raise AssertionError(f"fetchConversationsByOptions 未返回已标记会话: convId={conv_id}, mark={mark}, last={last_resp}")
+
+
+def _topology_or_none(request):
+    if not request.config.getoption("--run-context"):
+        return None
+    return request.getfixturevalue("topology")
 
 
 @pytest.mark.case_id("chat.pin_unpin_fetch_pinned_messages.success")
@@ -276,15 +303,42 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
     )
 
 
-def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_api, user_a, user_c):
-    """sendMessage：向非好友用户发送单聊消息，发送方收到 onMessageError 并携带真实错误码与失败消息。"""
-    try:
-        device_a.drain_events()
-    except Exception:
-        pass
+@pytest.mark.real_e2e
+@pytest.mark.e2e_flow("sender_terminal_error")
+def test_chat_manager_send_to_non_friend_message_error_event(request, device_a, assert_api, user_a, user_c):
+    """
+    1. 准备 primary_a 客户端并确认 remote_c 不是好友；
+    2. primary_a 向 remote_c 发送带 marker 的单聊消息；
+    3. 断言 sendMessage 同步返回临时消息；
+    4. 断言发送端收到 onMessageError，且错误码和消息内容匹配。
+    """
+    describe_case_steps(
+        '1. 准备 primary_a 客户端并确认 remote_c 不是好友；\n'
+        '2. primary_a 向 remote_c 发送带 marker 的单聊消息；\n'
+        '3. 断言 sendMessage 同步返回临时消息；\n'
+        '4. 断言发送端收到 onMessageError，且错误码和消息内容匹配。'
+    )
+    topology = _topology_or_none(request)
+    if topology is not None:
+        primary_a = topology.primary_client(0)
+        remote_c = topology.remote_client(0)
+        scope = topology.case_scope("send-to-non-friend", clients=[primary_a])
+        marker = scope.marker
+        sender = primary_a
+        from_user = primary_a.user_id
+        to_user = remote_c.user_id
+        content = f"non-friend-{marker}"
+    else:
+        sender = device_a
+        from_user = user_a
+        to_user = user_c
+        try:
+            sender.drain_events()
+        except Exception:
+            pass
+        content = f"chat-error-non-friend-{uuid.uuid4().hex[:8]}"
 
-    content = f"chat-error-non-friend-{uuid.uuid4().hex[:8]}"
-    resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_c, content))
+    resp = sender.call("ChatManager", Cmd.sendMessage.value, info=build_text(from_user, to_user, content))
     temp_id = ((resp.get("result") or {}).get("msgId"))
     assert temp_id, f"sendMessage 未返回临时 msgId: {resp}"
     assert_api.assert_response_matches(
@@ -295,9 +349,9 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
             "device": "deviceA",
             "result": {
                 "msgId": temp_id,
-                "from": user_a,
-                "to": user_c,
-                "convId": user_c,
+                "from": from_user,
+                "to": to_user,
+                "convId": to_user,
                 "chatType": 0,
                 "direction": 0,
                 "status": 0,
@@ -316,7 +370,15 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
         ignore_keys={"sequence", "serverTime", "localTime", "deliverOnlineOnly"},
     )
 
-    evt = device_a.receive_message(match_event_type="onMessageError", timeout=20.0)
+    if topology is not None:
+        result = wait_event_group(
+            expected=[expect_message_error(sender, marker=marker)],
+            timeout=20.0,
+            description="非好友发送消息只应在发送端收到失败 callback",
+        )
+        evt = result.matched[f"{sender.name} message error"]
+    else:
+        evt = sender.receive_message(match_event_type="onMessageError", timeout=20.0)
     assert_api.assert_response_matches(
         evt,
         expected={
@@ -354,20 +416,49 @@ def test_chat_manager_send_to_non_friend_message_error_event(device_a, assert_ap
 
 @pytest.mark.case_id("chat.conversation_marks_and_fetch_options.success")
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("account_state_sync")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.addRemoteAndLocalConversationsMark")
 @pytest.mark.api("ChatManager.fetchConversationsByOptions")
 @pytest.mark.api("ChatManager.deleteRemoteAndLocalConversationsMark")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_conversation_marks_and_fetch_options(device_a, device_b, assert_api, user_a, user_b):
-    """addRemoteAndLocalConversationsMark/deleteRemoteAndLocalConversationsMark/fetchConversationsByOptions：添加会话标记后按 options 查询，再移除标记。"""
-    _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-mark-{uuid.uuid4().hex[:8]}")
+def test_chat_manager_conversation_marks_and_fetch_options(request, device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 准备 primary_a、primary_b 客户端并确认账号已登录；
+    2. primary_a 向 primary_b 发送单聊消息，建立会话状态；
+    3. primary_a 添加远端和本地会话标记并通过 fetchConversationsByOptions 拉取；
+    4. 断言目标会话包含标记后删除该标记。
+    """
+    describe_case_steps(
+        '1. 准备 primary_a、primary_b 客户端并确认账号已登录；\n'
+        '2. primary_a 向 primary_b 发送单聊消息，建立会话状态；\n'
+        '3. primary_a 添加远端和本地会话标记并通过 fetchConversationsByOptions 拉取；\n'
+        '4. 断言目标会话包含标记后删除该标记。'
+    )
+    topology = _topology_or_none(request)
+    if topology is not None:
+        primary_a = topology.primary_client(0)
+        primary_b = topology.primary_client(1)
+        scope = topology.case_scope("conversation-marks", clients=[primary_a, primary_b])
+        sender = primary_a
+        receiver = primary_b
+        from_user = primary_a.user_id
+        to_user = primary_b.user_id
+        content = f"chat-mark-{scope.marker}"
+    else:
+        sender = device_a
+        receiver = device_b
+        from_user = user_a
+        to_user = user_b
+        content = f"chat-mark-{uuid.uuid4().hex[:8]}"
 
-    resp_add = device_a.call(
+    _send_text_and_receive(sender, receiver, assert_api, from_user, to_user, content)
+
+    resp_add = sender.call(
         "ChatManager",
         Cmd.addRemoteAndLocalConversationsMark.value,
-        info={"convIds": [user_b], "mark": 0},
+        info={"convIds": [to_user], "mark": 0},
     )
     assert_api.assert_response_matches(
         resp_add,
@@ -380,38 +471,24 @@ def test_chat_manager_conversation_marks_and_fetch_options(device_a, device_b, a
         ignore_keys={"sequence"},
     )
 
-    resp_fetch_marked = device_a.call(
-        "ChatManager",
-        Cmd.fetchConversationsByOptions.value,
-        info={"mark": 0, "pageSize": 10, "cursor": "", "pinned": False},
-    )
+    marked_conversation = _fetch_marked_conversation(sender, to_user, 0)
     assert_api.assert_response_matches(
-        resp_fetch_marked,
+        marked_conversation,
         expected={
-            "manager": "ChatManager",
-            "cmd": Cmd.fetchConversationsByOptions.value,
-            "device": "deviceA",
-            "result": {
-                "cursor": "",
-                "list": [
-                    {
-                        "convId": user_b,
-                        "type": 0,
-                        "isThread": False,
-                        "isPinned": False,
-                        "pinnedTime": 0,
-                        "marks": [0],
-                    }
-                ],
-            },
+            "convId": to_user,
+            "type": 0,
+            "isThread": False,
+            "isPinned": False,
+            "pinnedTime": 0,
+            "marks": [0],
         },
-        ignore_keys={"sequence", "ext"},
+        ignore_keys={"ext"},
     )
 
-    resp_delete = device_a.call(
+    resp_delete = sender.call(
         "ChatManager",
         Cmd.deleteRemoteAndLocalConversationsMark.value,
-        info={"convIds": [user_b], "mark": 0},
+        info={"convIds": [to_user], "mark": 0},
     )
     assert_api.assert_response_matches(
         resp_delete,

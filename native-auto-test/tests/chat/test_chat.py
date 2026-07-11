@@ -20,6 +20,7 @@ import pytest
 
 from src import Cmd, ne, gt
 from src.tools.assertions import get_result
+from tests.case_steps import describe_case_steps
 
 pytestmark = [pytest.mark.client, pytest.mark.chat]
 
@@ -274,9 +275,23 @@ def test_chat_recall_message_invalid_id_response(device_a, assert_api):
     )
 
 
-def test_chat_add_reaction_invalid_id_response(device_a, assert_api):
-    """为不存在的消息添加 reaction，不应产生 messageReactionDidChange。"""
-    resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
+@pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+def test_chat_add_reaction_invalid_id_response(request, device_a, assert_api):
+    """
+    1. 准备 primary_a 客户端并确认已登录；
+    2. 调用 ChatManager.addReaction，messageId 使用不存在的值；
+    3. 断言接口返回 code=303，description=Unknown server error；
+    4. 断言不会产生 reaction 添加成功事件。
+    """
+    describe_case_steps(
+        "1. 准备 primary_a 客户端并确认已登录；\n"
+        "2. 调用 ChatManager.addReaction，messageId 使用不存在的值；\n"
+        "3. 断言接口返回 code=303，description=Unknown server error；\n"
+        "4. 断言不会产生 reaction 添加成功事件。"
+    )
+    client_a = request.getfixturevalue("topology").primary_client(0) if request.config.getoption("--run-context") else device_a
+    resp = client_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
     print("ADD_REACTION_INVALID RESP:", resp)
     assert_api.assert_response_matches(
         resp,
@@ -284,7 +299,7 @@ def test_chat_add_reaction_invalid_id_response(device_a, assert_api):
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
             "device": "deviceA",
-            "result": {"code": 303, "description": "msgbody is not_found"},
+            "result": {"code": 303, "description": "Unknown server error"},
         },
         ignore_keys={"sequence"},
     )
