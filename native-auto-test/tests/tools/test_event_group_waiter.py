@@ -19,6 +19,13 @@ class FakeClient:
         raise TimeoutError("no event")
 
 
+class BrokenClient:
+    name = "broken_a"
+
+    def receive_message(self, *, match_event_type=None, timeout=0.5):
+        raise RuntimeError("socket closed")
+
+
 def test_wait_event_group_matches_unordered_and_records_ignored():
     primary = FakeClient(
         "primary_a",
@@ -56,6 +63,125 @@ def test_wait_event_group_matches_unordered_and_records_ignored():
     assert result.ok is True
     assert sorted(result.matched) == ["remote receive", "send success"]
     assert result.ignored["primary_a"][0]["data"]["content"] == "external"
+
+
+def test_wait_event_group_records_optional_event_when_it_arrives():
+    primary = FakeClient(
+        "primary_a",
+        [
+            {"eventType": "onMessageSuccess", "data": {"content": "marker-1"}},
+            {"eventType": "onMessagesRead", "data": {"content": "marker-1"}},
+        ],
+    )
+
+    result = wait_event_group(
+        expected=[
+            EventExpectation(
+                name="send success",
+                client=primary,
+                event_type="onMessageSuccess",
+                predicate=lambda event: event["data"]["content"] == "marker-1",
+            ),
+            EventExpectation(
+                name="read ack",
+                client=primary,
+                event_type="onMessagesRead",
+                predicate=lambda event: event["data"]["content"] == "marker-1",
+                required=False,
+            ),
+        ],
+        timeout=0.1,
+        poll_timeout=0.01,
+    )
+
+    assert result.ok is True
+    assert sorted(result.matched) == ["read ack", "send success"]
+    assert result.missing == []
+
+
+def test_wait_event_group_does_not_require_absent_optional_event():
+    primary = FakeClient(
+        "primary_a",
+        [
+            {"eventType": "onMessageSuccess", "data": {"content": "marker-1"}},
+        ],
+    )
+
+    result = wait_event_group(
+        expected=[
+            EventExpectation(
+                name="send success",
+                client=primary,
+                event_type="onMessageSuccess",
+                predicate=lambda event: event["data"]["content"] == "marker-1",
+            ),
+            EventExpectation(
+                name="read ack",
+                client=primary,
+                event_type="onMessagesRead",
+                predicate=lambda event: event["data"]["content"] == "marker-1",
+                required=False,
+            ),
+        ],
+        timeout=0.01,
+        poll_timeout=0.01,
+    )
+
+    assert result.ok is True
+    assert sorted(result.matched) == ["send success"]
+    assert result.missing == []
+
+
+def test_wait_event_group_fails_distinctly_on_unexpected_receive_error():
+    with pytest.raises(AssertionError, match="事件接收异常: broken_a: socket closed"):
+        wait_event_group(
+            expected=[
+                EventExpectation(
+                    name="send success",
+                    client=BrokenClient(),
+                    event_type="onMessageSuccess",
+                    predicate=lambda event: event["data"]["content"] == "marker-1",
+                ),
+            ],
+            timeout=0.01,
+            poll_timeout=0.01,
+        )
+
+
+def test_wait_event_group_missing_failure_names_partial_matches_and_ignored():
+    primary = FakeClient(
+        "primary_a",
+        [
+            {"eventType": "onMessagesReceived", "data": {"content": "external"}},
+            {"eventType": "onMessageSuccess", "data": {"content": "marker-1"}},
+        ],
+    )
+    remote = FakeClient("remote_c", [])
+
+    with pytest.raises(AssertionError) as exc_info:
+        wait_event_group(
+            expected=[
+                EventExpectation(
+                    name="send success",
+                    client=primary,
+                    event_type="onMessageSuccess",
+                    predicate=lambda event: event["data"]["content"] == "marker-1",
+                ),
+                EventExpectation(
+                    name="remote receive",
+                    client=remote,
+                    event_type="onMessagesReceived",
+                    predicate=lambda event: event["data"]["content"] == "marker-1",
+                ),
+            ],
+            timeout=0.01,
+            poll_timeout=0.01,
+        )
+
+    message = str(exc_info.value)
+    assert "缺失事件: remote receive" in message
+    assert "已匹配事件: send success" in message
+    assert "ignored=primary_a:1" in message
 
 
 def test_wait_event_group_fails_on_forbidden_event():
