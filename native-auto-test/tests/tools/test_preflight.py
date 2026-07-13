@@ -41,6 +41,15 @@ def test_primary_send_sync_supported_by_dual_primary_and_remote():
     ) is None
 
 
+def test_api_response_requires_only_primary_client():
+    assert skip_reason_for_flow(
+        flow="api_response",
+        counts={"primary": 1, "remote": 0},
+        capabilities={"server_api": False},
+        requires_server_api=False,
+    ) is None
+
+
 def test_account_state_sync_requires_remote_for_current_chat_mark_case():
     reason = skip_reason_for_flow(
         flow="account_state_sync",

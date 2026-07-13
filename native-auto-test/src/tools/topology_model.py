@@ -51,8 +51,13 @@ class FlowRequirement:
 
 
 FLOW_REQUIREMENTS: dict[str, FlowRequirement] = {
+    "api_response": FlowRequirement(primary_clients=1),
     "local_state": FlowRequirement(primary_clients=1),
     "error_response": FlowRequirement(primary_clients=1),
+    "sender_event": FlowRequirement(primary_clients=1),
+    "receiver_event": FlowRequirement(primary_clients=1, remote_clients=1),
+    "server_state": FlowRequirement(primary_clients=1),
+    "state_change": FlowRequirement(primary_clients=1),
     "sender_terminal_error": FlowRequirement(primary_clients=1, remote_clients=1),
     "peer_interaction": FlowRequirement(primary_clients=1, remote_clients=1),
     "remote_fanout": FlowRequirement(primary_clients=2, remote_clients=1),
