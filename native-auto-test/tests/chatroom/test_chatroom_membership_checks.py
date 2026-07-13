@@ -11,6 +11,10 @@ from tests.chatroom.chatroom_helpers import create_chatroom_or_skip, safe_delete
 pytestmark = [pytest.mark.client, pytest.mark.chatroom, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 CHATROOM_JOIN_IGNORE_KEYS = {
     "sequence",
     "timestamp",
@@ -34,7 +38,9 @@ CHATROOM_JOIN_IGNORE_KEYS = {
 
 
 @pytest.mark.real_e2e
-def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_is_member_in_white_list_and_mute_list_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、is、成员、in、白名单、列表、and、禁言；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.isMemberInChatRoomWhiteListFromServer、ChatRoomManager.isMemberInChatRoomMuteList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -45,9 +51,11 @@ def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.isMemberInChatRoomWhiteListFromServer、ChatRoomManager.isMemberInChatRoomMuteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="member_check", desc_prefix="member_check")
     try:
-        resp_white = device_a.call(
+        resp_white = client.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
@@ -57,7 +65,7 @@ def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.isMemberInChatRoomWhiteListFromServer.value,
-                "device": "deviceA",
+                "device": expected_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -65,7 +73,7 @@ def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert
             f"isMemberInChatRoomWhiteListFromServer result 应为 bool: {resp_white}"
         )
 
-        resp_mute = device_a.call(
+        resp_mute = client.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomMuteList.value,
             info={"roomId": room_id},
@@ -75,7 +83,7 @@ def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.isMemberInChatRoomMuteList.value,
-                "device": "deviceA",
+                "device": expected_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -85,7 +93,9 @@ def test_chatroom_is_member_in_white_list_and_mute_list_success(device_a, assert
 
 
 @pytest.mark.real_e2e
-def test_chatroom_is_member_in_white_list_and_mute_list_nonexistent_room(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_is_member_in_white_list_and_mute_list_nonexistent_room(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、is、成员、in、白名单、列表、and、禁言；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、is、成员、in、白名单、列表、and、禁言，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -98,7 +108,7 @@ def test_chatroom_is_member_in_white_list_and_mute_list_nonexistent_room(device_
     )
     room_id = "nonexistent_chatroom_member_check_999999"
     for cmd in (Cmd.isMemberInChatRoomWhiteListFromServer.value, Cmd.isMemberInChatRoomMuteList.value):
-        resp = device_a.call("ChatRoomManager", cmd, info={"roomId": room_id})
+        resp = topology_primary_or_device_a.call("ChatRoomManager", cmd, info={"roomId": room_id})
         assert_api.assert_error(resp, code=700, description="do not find this group")
 
 
