@@ -494,8 +494,10 @@ def test_user_info_fetch_by_id_with_type_normal(topology_primary_or_device_a, as
 @pytest.mark.api("UserInfoManager.subscribeUsersInfo")
 @pytest.mark.api("UserInfoManager.fetchSubscribedUsers")
 @pytest.mark.api("UserInfoManager.unsubscribeUsersInfo")
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
 def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
-    device_a, assert_api, user_b
+    topology_primary_or_device_a, assert_api, user_b
 ):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、订阅、拉取、and、取消订阅、users、信息；
@@ -507,9 +509,11 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.subscribeUsersInfo、UserInfoManager.fetchSubscribedUsers、UserInfoManager.unsubscribeUsersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     subscribed = False
     try:
-        subscribe_resp = device_a.call(
+        subscribe_resp = client.call(
             "UserInfoManager",
             Cmd.subscribeUsersInfo.value,
             info={"userIds": [user_b]},
@@ -524,7 +528,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
         assert_api.assert_success(subscribe_resp)
         subscribed = True
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "UserInfoManager",
             Cmd.fetchSubscribedUsers.value,
             info={},
@@ -534,7 +538,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
             expected={
                 "manager": "UserInfoManager",
                 "cmd": Cmd.fetchSubscribedUsers.value,
-                "device": "deviceA",
+                "device": expected_device,
                 "result": [{"userId": user_b}],
             },
             ignore_keys={
@@ -550,7 +554,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
             },
         )
 
-        unsubscribe_resp = device_a.call(
+        unsubscribe_resp = client.call(
             "UserInfoManager",
             Cmd.unsubscribeUsersInfo.value,
             info={"userIds": [user_b]},
@@ -558,7 +562,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
         assert_api.assert_success(unsubscribe_resp)
         subscribed = False
 
-        fetch_after_unsubscribe = device_a.call(
+        fetch_after_unsubscribe = client.call(
             "UserInfoManager",
             Cmd.fetchSubscribedUsers.value,
             info={},
@@ -568,7 +572,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
             expected={
                 "manager": "UserInfoManager",
                 "cmd": Cmd.fetchSubscribedUsers.value,
-                "device": "deviceA",
+                "device": expected_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -582,7 +586,7 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
         original_exc_type = sys.exc_info()[0]
         if subscribed:
             try:
-                device_a.call(
+                client.call(
                     "UserInfoManager",
                     Cmd.unsubscribeUsersInfo.value,
                     info={"userIds": [user_b]},
