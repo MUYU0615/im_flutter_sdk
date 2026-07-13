@@ -41,7 +41,9 @@ def _group_state(device_a, assert_api, group_id: str):
 
 
 @pytest.mark.real_e2e
-def test_group_block_unblock_members_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_block_unblock_members_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、封禁、unblock、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers、GroupManager.unblockMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -52,24 +54,29 @@ def test_group_block_unblock_members_success(device_a, device_b, assert_api, use
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers、GroupManager.unblockMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_id = ""
     group_name = new_group_name("mod_block")
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[user_b],
         )
-        resp_block = device_a.call("GroupManager", Cmd.blockMembers.value, info={"groupId": group_id, "members": [user_b]})
+        resp_block = primary.call("GroupManager", Cmd.blockMembers.value, info={"groupId": group_id, "members": [user_b]})
         assert_api.assert_response_matches(
             resp_block,
-            expected={"manager": "GroupManager", "cmd": Cmd.blockMembers.value, "device": "deviceA", "result": True},
+            expected={"manager": "GroupManager", "cmd": Cmd.blockMembers.value, "device": primary_device, "result": True},
             ignore_keys={"sequence"},
         )
         removed_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_USER_REMOVED.value,
                 "onUserRemovedFromGroup",
@@ -92,34 +99,36 @@ def test_group_block_unblock_members_success(device_a, device_b, assert_api, use
         )
         assert_group_snapshot(
             assert_api,
-            _group_state(device_a, assert_api, group_id),
+            _group_state(primary, assert_api, group_id),
             cmd=Cmd.getGroupSpecificationFromServer.value,
             group_id=group_id,
             group_name=group_name,
             owner=user_a,
             member_count_value=1,
             block_list_value=[user_b],
+            device=primary_device,
         )
 
-        resp_unblock = device_a.call("GroupManager", Cmd.unblockMembers.value, info={"groupId": group_id, "members": [user_b]})
+        resp_unblock = primary.call("GroupManager", Cmd.unblockMembers.value, info={"groupId": group_id, "members": [user_b]})
         assert_api.assert_response_matches(
             resp_unblock,
-            expected={"manager": "GroupManager", "cmd": Cmd.unblockMembers.value, "device": "deviceA", "result": True},
+            expected={"manager": "GroupManager", "cmd": Cmd.unblockMembers.value, "device": primary_device, "result": True},
             ignore_keys={"sequence"},
         )
         assert_group_snapshot(
             assert_api,
-            _group_state(device_a, assert_api, group_id),
+            _group_state(primary, assert_api, group_id),
             cmd=Cmd.getGroupSpecificationFromServer.value,
             group_id=group_id,
             group_name=group_name,
             owner=user_a,
             member_count_value=1,
             block_list_value=[],
+            device=primary_device,
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
@@ -173,7 +182,9 @@ def test_group_block_members_non_member(topology, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_mute_unmute_members_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、unmute、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteMembers、GroupManager.unMuteMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -184,11 +195,16 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteMembers、GroupManager.unMuteMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_id = ""
     group_name = new_group_name("mod_mute")
     try:
-        group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
-        resp_mute = device_a.call("GroupManager", Cmd.muteMembers.value, info={"groupId": group_id, "members": [user_b], "duration": 60})
+        group_id, _ = create_group(primary, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
+        resp_mute = primary.call("GroupManager", Cmd.muteMembers.value, info={"groupId": group_id, "members": [user_b], "duration": 60})
         assert_group_snapshot(
             assert_api,
             resp_mute,
@@ -198,9 +214,10 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
             owner=user_a,
             member_count_value=2,
             mute_list_value=[user_b],
+            device=primary_device,
         )
         mute_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_MUTE_LIST_ADDED.value,
                 "onMuteListAddedFromGroup",
@@ -220,7 +237,7 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
             required_all_event_types={"onMuteListAddedFromGroup"},
             expected_member=user_b,
         )
-        resp_unmute = device_a.call("GroupManager", Cmd.unMuteMembers.value, info={"groupId": group_id, "members": [user_b]})
+        resp_unmute = primary.call("GroupManager", Cmd.unMuteMembers.value, info={"groupId": group_id, "members": [user_b]})
         assert_group_snapshot(
             assert_api,
             resp_unmute,
@@ -230,9 +247,10 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
             owner=user_a,
             member_count_value=2,
             mute_list_value=[],
+            device=primary_device,
         )
         unmute_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_MUTE_LIST_REMOVED.value,
                 "onMuteListRemovedFromGroup",
@@ -254,11 +272,13 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_mute_all_unmute_all_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、all、unmute、all、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteAllMembers、GroupManager.unMuteAllMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -269,11 +289,16 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteAllMembers、GroupManager.unMuteAllMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_id = ""
     group_name = new_group_name("mod_mute_all")
     try:
-        group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
-        resp_mute_all = device_a.call("GroupManager", Cmd.muteAllMembers.value, info={"groupId": group_id})
+        group_id, _ = create_group(primary, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
+        resp_mute_all = primary.call("GroupManager", Cmd.muteAllMembers.value, info={"groupId": group_id})
         assert_group_snapshot(
             assert_api,
             resp_mute_all,
@@ -283,11 +308,12 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
             owner=user_a,
             member_count_value=2,
             is_all_member_muted=True,
+            device=primary_device,
         )
         # SDK muteAllMembers 可能不向成员推送 onAllGroupMemberMuteStateChanged 事件
         # （群主 API 调用成功且返回 isAllMemberMuted=true 即可确认功能正确）
         mute_all_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_ALL_MEMBER_MUTE_STATE_CHANGED.value,
                 "onAllGroupMemberMuteStateChanged",
@@ -308,7 +334,7 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
             allow_missing_group_id=True,
             required_all_event_types=set(),
         )
-        resp_unmute_all = device_a.call("GroupManager", Cmd.unMuteAllMembers.value, info={"groupId": group_id})
+        resp_unmute_all = primary.call("GroupManager", Cmd.unMuteAllMembers.value, info={"groupId": group_id})
         assert_group_snapshot(
             assert_api,
             resp_unmute_all,
@@ -318,9 +344,10 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
             owner=user_a,
             member_count_value=2,
             is_all_member_muted=False,
+            device=primary_device,
         )
         unmute_all_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_ALL_MEMBER_MUTE_STATE_CHANGED.value,
                 "onAllGroupMemberMuteStateChanged",
@@ -343,11 +370,13 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_add_remove_white_list_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_add_remove_white_list_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、白名单、列表、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.addWhiteList、GroupManager.removeWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -358,18 +387,23 @@ def test_group_add_remove_white_list_success(device_a, device_b, assert_api, use
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addWhiteList、GroupManager.removeWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_id = ""
     group_name = new_group_name("mod_white")
     try:
-        group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
-        resp_add = device_a.call("GroupManager", Cmd.addWhiteList.value, info={"groupId": group_id, "members": [user_b]})
+        group_id, _ = create_group(primary, assert_api, owner=user_a, group_name=group_name, invite_members=[user_b])
+        resp_add = primary.call("GroupManager", Cmd.addWhiteList.value, info={"groupId": group_id, "members": [user_b]})
         assert_api.assert_response_matches(
             resp_add,
-            expected={"manager": "GroupManager", "cmd": Cmd.addWhiteList.value, "device": "deviceA", "result": True},
+            expected={"manager": "GroupManager", "cmd": Cmd.addWhiteList.value, "device": primary_device, "result": True},
             ignore_keys={"sequence"},
         )
         add_white_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_WHITE_LIST_ADDED.value,
                 "onAllowListAddedFromGroup",
@@ -389,14 +423,14 @@ def test_group_add_remove_white_list_success(device_a, device_b, assert_api, use
             required_all_event_types={"onAllowListAddedFromGroup"},
             expected_member=user_b,
         )
-        resp_remove = device_a.call("GroupManager", Cmd.removeWhiteList.value, info={"groupId": group_id, "members": [user_b]})
+        resp_remove = primary.call("GroupManager", Cmd.removeWhiteList.value, info={"groupId": group_id, "members": [user_b]})
         assert_api.assert_response_matches(
             resp_remove,
-            expected={"manager": "GroupManager", "cmd": Cmd.removeWhiteList.value, "device": "deviceA", "result": True},
+            expected={"manager": "GroupManager", "cmd": Cmd.removeWhiteList.value, "device": primary_device, "result": True},
             ignore_keys={"sequence"},
         )
         remove_white_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_WHITE_LIST_REMOVED.value,
                 "onAllowListRemovedFromGroup",
@@ -418,7 +452,7 @@ def test_group_add_remove_white_list_success(device_a, device_b, assert_api, use
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
