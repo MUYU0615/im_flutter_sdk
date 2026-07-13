@@ -38,6 +38,14 @@ def _members_from_allow_list_event(data: dict) -> list:
     return members
 
 
+def _topology_clients(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    primary_device = getattr(primary, "name", "deviceA")
+    remote_device = getattr(remote, "name", "deviceB")
+    return primary, remote, primary.user_id, remote.user_id, primary_device, remote_device
+
+
 def _join_chatroom_as_b_and_wait_ready(device_b, assert_api, room_id: str) -> None:
     _join_chatroom_as_b(device_b, assert_api, room_id)
     _first_chatroom_event(
@@ -48,7 +56,9 @@ def _join_chatroom_as_b_and_wait_ready(device_b, assert_api, room_id: str) -> No
 
 
 @pytest.mark.real_e2e
-def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_admin_added_and_removed_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、admin、added、and、removed、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -59,6 +69,7 @@ def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_a
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_admin", desc_prefix="cb_admin")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -68,7 +79,7 @@ def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_a
             Cmd.addChatRoomAdmin.value,
             info={"roomId": room_id, "admin": user_b},
         )
-        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addChatRoomAdmin.value, device="deviceA")
+        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addChatRoomAdmin.value, device=primary_device)
         add_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -83,7 +94,7 @@ def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_a
             Cmd.removeChatRoomAdmin.value,
             info={"roomId": room_id, "admin": user_b},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAdmin.value, device="deviceA")
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAdmin.value, device=primary_device)
         remove_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -97,7 +108,9 @@ def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_a
 
 
 @pytest.mark.real_e2e
-def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_owner_changed_callback(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、owner、changed、callback；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomOwner，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -108,6 +121,7 @@ def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a,
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomOwner，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_owner", desc_prefix="cb_owner")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -117,7 +131,7 @@ def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a,
             Cmd.changeChatRoomOwner.value,
             info={"roomId": room_id, "newOwner": user_b},
         )
-        _assert_success_envelope(assert_api, change_resp, cmd=Cmd.changeChatRoomOwner.value, device="deviceA")
+        _assert_success_envelope(assert_api, change_resp, cmd=Cmd.changeChatRoomOwner.value, device=primary_device)
         evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -132,7 +146,9 @@ def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a,
 
 
 @pytest.mark.real_e2e
-def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_all_member_mute_state_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、all、成员、禁言、state、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -143,13 +159,14 @@ def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, _, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_mute_all", desc_prefix="cb_mute_all")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
         event_types = {ChatRoomEvent.ON_ALL_MEMBER_MUTE_STATE_CHANGED.value, "onAllChatRoomMemberMuteStateChanged"}
 
         mute_resp = device_a.call("ChatRoomManager", Cmd.muteAllChatRoomMembers.value, info={"roomId": room_id})
-        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteAllChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteAllChatRoomMembers.value, device=primary_device)
         mute_evt = _first_chatroom_event(device_b, room_id=room_id, event_types=event_types)
         mute_data = _event_data(mute_evt)
         assert mute_data.get("roomId") == room_id, f"全员禁言回调 roomId 不匹配: {mute_evt}"
@@ -158,7 +175,7 @@ def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api
         )
 
         unmute_resp = device_a.call("ChatRoomManager", Cmd.unMuteAllChatRoomMembers.value, info={"roomId": room_id})
-        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteAllChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteAllChatRoomMembers.value, device=primary_device)
         unmute_evt = _first_chatroom_event(device_b, room_id=room_id, event_types=event_types)
         unmute_data = _event_data(unmute_evt)
         assert unmute_data.get("roomId") == room_id, f"解除全员禁言回调 roomId 不匹配: {unmute_evt}"
@@ -170,7 +187,9 @@ def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api
 
 
 @pytest.mark.real_e2e
-def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_attributes_updated_and_removed_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、attributes、updated、and、removed、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.removeChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -181,6 +200,7 @@ def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, a
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.removeChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, _, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_attrs", desc_prefix="cb_attrs")
     attr_key = f"cb_attr_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
@@ -197,7 +217,7 @@ def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, a
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=primary_device)
         updated_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -215,7 +235,7 @@ def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, a
             Cmd.removeChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key], "forced": True},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device=primary_device)
         removed_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -234,8 +254,10 @@ def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, a
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
 @pytest.mark.xfail(reason="当前实测 updateChatRoomAnnouncement 成功但未派发公告变更回调，待 SDK/服务端确认。")
-def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, user_a):
+def test_chatroom_announcement_changed_callback(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、announcement、changed、callback；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -246,6 +268,7 @@ def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, 
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, _, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_announcement", desc_prefix="cb_announcement")
     announcement = f"notice-{uuid.uuid4().hex[:8]}"
     try:
@@ -256,7 +279,7 @@ def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, 
             Cmd.updateChatRoomAnnouncement.value,
             info={"roomId": room_id, "announcement": announcement},
         )
-        _assert_success_envelope(assert_api, update_resp, cmd=Cmd.updateChatRoomAnnouncement.value, device="deviceA")
+        _assert_success_envelope(assert_api, update_resp, cmd=Cmd.updateChatRoomAnnouncement.value, device=primary_device)
         evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -270,7 +293,9 @@ def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, 
 
 
 @pytest.mark.real_e2e
-def test_chatroom_specification_changed_callback(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_specification_changed_callback(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、specification、changed、callback；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -281,6 +306,7 @@ def test_chatroom_specification_changed_callback(device_a, device_b, assert_api,
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, _, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_spec", desc_prefix="cb_spec")
     subject = f"spec-{uuid.uuid4().hex[:8]}"
     try:
@@ -291,7 +317,7 @@ def test_chatroom_specification_changed_callback(device_a, device_b, assert_api,
             Cmd.changeChatRoomSubject.value,
             info={"roomId": room_id, "subject": subject},
         )
-        _assert_success_envelope(assert_api, change_resp, cmd=Cmd.changeChatRoomSubject.value, device="deviceA")
+        _assert_success_envelope(assert_api, change_resp, cmd=Cmd.changeChatRoomSubject.value, device=primary_device)
         evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -307,7 +333,9 @@ def test_chatroom_specification_changed_callback(device_a, device_b, assert_api,
 
 
 @pytest.mark.real_e2e
-def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_allow_list_added_and_removed_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、allow、列表、added、and、removed、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -318,6 +346,7 @@ def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, ass
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_allow", desc_prefix="cb_allow")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -327,7 +356,7 @@ def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, ass
             Cmd.addMembersToChatRoomWhiteList.value,
             info={"roomId": room_id, "members": [user_b]},
         )
-        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addMembersToChatRoomWhiteList.value, device="deviceA")
+        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addMembersToChatRoomWhiteList.value, device=primary_device)
         add_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -346,7 +375,7 @@ def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, ass
             assert_api,
             remove_resp,
             cmd=Cmd.removeMembersFromChatRoomWhiteList.value,
-            device="deviceA",
+            device=primary_device,
         )
         remove_evt = _first_chatroom_event(
             device_b,
@@ -361,7 +390,9 @@ def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, ass
 
 
 @pytest.mark.real_e2e
-def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_mute_list_added_and_removed_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、禁言、列表、added、and、removed、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -372,6 +403,7 @@ def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, asse
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_clients(topology)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_mute", desc_prefix="cb_mute")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -381,7 +413,7 @@ def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, asse
             Cmd.muteChatRoomMembers.value,
             info={"roomId": room_id, "muteMembers": [user_b], "duration": 60000},
         )
-        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteChatRoomMembers.value, device=primary_device)
         mute_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -399,7 +431,7 @@ def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, asse
             Cmd.unMuteChatRoomMembers.value,
             info={"roomId": room_id, "unMuteMembers": [user_b]},
         )
-        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteChatRoomMembers.value, device=primary_device)
         unmute_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -415,7 +447,9 @@ def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, asse
 
 
 @pytest.mark.real_e2e
-def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_member_exited_callback(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、成员、exited、callback；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -426,6 +460,7 @@ def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a,
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, _, remote_device = _topology_clients(topology)
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="cb_exit", desc_prefix="cb_exit")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -436,7 +471,7 @@ def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.leaveChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -455,7 +490,9 @@ def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a,
 
 
 @pytest.mark.real_e2e
-def test_chatroom_removed_and_destroyed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_removed_and_destroyed_callbacks(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、removed、and、destroyed、callbacks；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomMembers、ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -466,6 +503,7 @@ def test_chatroom_removed_and_destroyed_callbacks(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomMembers、ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_clients(topology)
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="cb_remove", desc_prefix="cb_remove")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -475,7 +513,7 @@ def test_chatroom_removed_and_destroyed_callbacks(device_a, device_b, assert_api
             Cmd.removeChatRoomMembers.value,
             info={"roomId": room_id, "members": [user_b]},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomMembers.value, device=primary_device)
         removed_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
@@ -488,7 +526,7 @@ def test_chatroom_removed_and_destroyed_callbacks(device_a, device_b, assert_api
 
         _join_chatroom_as_b(device_b, assert_api, room_id)
         destroy_resp = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
-        _assert_success_envelope(assert_api, destroy_resp, cmd=Cmd.destroyChatRoom.value, device="deviceA")
+        _assert_success_envelope(assert_api, destroy_resp, cmd=Cmd.destroyChatRoom.value, device=primary_device)
         destroyed_evt = _first_chatroom_event(
             device_b,
             room_id=room_id,
