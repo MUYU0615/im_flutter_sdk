@@ -18,6 +18,16 @@ pytestmark = [
 ]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _skip_if_missing_plugin(resp: dict, api_name: str) -> None:
     desc = str((resp.get("error") or {}).get("description", ""))
     if resp.get("success") is False and "MissingPluginException" in desc:
@@ -243,7 +253,7 @@ def _assert_received_attachment_message(
     )
 
 
-def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message: dict) -> None:
+def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message: dict, device_name: str) -> None:
     msg_id = message["msgId"]
     resp = device.call("ChatManager", cmd, info={"message": message})
     _skip_if_missing_plugin(resp, cmd)
@@ -252,7 +262,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
         expected={
             "manager": "ChatManager",
             "cmd": cmd,
-            "device": "deviceB",
+            "device": device_name,
             "result": {
                 "msgId": "{{msgId}}",
                 "body": {"type": ne(None), "fileStatus": ne(None)},
@@ -367,7 +377,7 @@ def _assert_download_api_with_progress(device, assert_api, *, cmd: str, message:
     )
 
 
-def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd: str, message: dict) -> None:
+def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd: str, message: dict, device_name: str) -> None:
     msg_id = message["msgId"]
     resp = device.call("ChatManager", cmd, info={"message": message})
     _skip_if_missing_plugin(resp, cmd)
@@ -376,7 +386,7 @@ def _assert_combine_inner_download_api_with_progress(device, assert_api, *, cmd:
         expected={
             "manager": "ChatManager",
             "cmd": cmd,
-            "device": "deviceB",
+            "device": device_name,
             "result": {
                 "msgId": "{{msgId}}",
                 "body": {"type": ne(None), "fileStatus": ne(None)},
@@ -592,7 +602,7 @@ def _send_with_type(device_a, device_b, assert_api, user_a: str, user_b: str, *,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessageWithType.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": "{{tempId}}",
                 "from": "{{fromUser}}",
@@ -687,7 +697,8 @@ def _send_with_type_sent_only(device_a, user_a: str, user_b: str, *, type_key: s
     return resp, sent_msg
 
 
-def test_attachment_messages_send_receive_and_public_download_methods(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_attachment_messages_send_receive_and_public_download_methods(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为attachment、消息、send、receive、and、public、download、methods；
     2. 通过 WebSocket 控制测试 App 调用 attachment、消息、send、receive、and、public、download、methods，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -698,6 +709,7 @@ def test_attachment_messages_send_receive_and_public_download_methods(device_a, 
         '2. 通过 WebSocket 控制测试 App 调用 attachment、消息、send、receive、and、public、download、methods，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     file_media = _prepare_media_asset(device_a, "normalGif.gif")
     _, file_sent, file_received = _send_with_type(
         device_a,
@@ -719,6 +731,7 @@ def test_attachment_messages_send_receive_and_public_download_methods(device_a, 
         assert_api,
         cmd=Cmd.downloadAttachment.value,
         message=file_received,
+        device_name=device_b_name,
     )
 
     image_media = _prepare_media_asset(device_a, "bigPic.jpg")
@@ -742,12 +755,14 @@ def test_attachment_messages_send_receive_and_public_download_methods(device_a, 
         assert_api,
         cmd=Cmd.downloadThumbnail.value,
         message=image_received,
+        device_name=device_b_name,
     )
     _assert_download_api_with_progress(
         device_b,
         assert_api,
         cmd=Cmd.downloadBigImage.value,
         message=image_received,
+        device_name=device_b_name,
     )
 
     video_media = _prepare_media_asset(device_a, "video.mov")
@@ -774,12 +789,14 @@ def test_attachment_messages_send_receive_and_public_download_methods(device_a, 
         assert_api,
         cmd=Cmd.downloadThumbnail.value,
         message=video_received,
+        device_name=device_b_name,
     )
     _assert_download_api_with_progress(
         device_b,
         assert_api,
         cmd=Cmd.downloadAttachment.value,
         message=video_received,
+        device_name=device_b_name,
     )
 
     assert file_sent["msgId"]
@@ -834,7 +851,7 @@ def _send_text_message_with_webhook_env(
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": "{{tempId}}",
                 "from": "{{fromUser}}",
@@ -937,7 +954,8 @@ def _send_text_message_with_webhook_env(
     return resp, sent_msg, received_msg
 
 @pytest.mark.parametrize(("case_name", "webhook_env"), [("default", "default")])
-def test_send_text_message_with_webhook_env(device_a, device_b, assert_api, user_a, user_b, webhook_env, case_name):
+@pytest.mark.topology_ready
+def test_send_text_message_with_webhook_env(topology, assert_api, webhook_env, case_name):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、text、消息、with、webhook、env；
     2. 通过 WebSocket 控制测试 App 调用 send、text、消息、with、webhook、env，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -948,6 +966,7 @@ def test_send_text_message_with_webhook_env(device_a, device_b, assert_api, user
         '2. 通过 WebSocket 控制测试 App 调用 send、text、消息、with、webhook、env，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     content = f"message-callback-webhook-{case_name}-{uuid.uuid4().hex[:6]}"
     _send_text_message_with_webhook_env(
         device_a,
@@ -960,7 +979,8 @@ def test_send_text_message_with_webhook_env(device_a, device_b, assert_api, user
     )
 
 
-def test_combine_forward_send_receive_and_inner_attachment_download(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_combine_forward_send_receive_and_inner_attachment_download(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为combine、forward、send、receive、and、inner、attachment、download；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.downloadAndParseCombineMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -971,6 +991,7 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.downloadAndParseCombineMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     image_media = _prepare_media_asset(device_a, "bigPic.jpg")
     _, image_sent, _ = _send_with_type(
         device_a,
@@ -1080,7 +1101,7 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.downloadAndParseCombineMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": ne(None),
         },
         ignore_keys={"sequence"},
@@ -1107,10 +1128,12 @@ def test_combine_forward_send_receive_and_inner_attachment_download(device_a, de
             assert_api,
             cmd=cmd,
             message=message,
+            device_name=device_a_name,
         )
 
 
-def test_combine_forward_media_inner_attachment_download(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_combine_forward_media_inner_attachment_download(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为combine、forward、media、inner、attachment、download；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.downloadAndParseCombineMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1121,6 +1144,7 @@ def test_combine_forward_media_inner_attachment_download(device_a, device_b, ass
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.downloadAndParseCombineMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     image_media = _prepare_media_asset(device_a, "bigPic.jpg")
     _, image_sent, _ = _send_with_type(
         device_a,
@@ -1184,7 +1208,7 @@ def test_combine_forward_media_inner_attachment_download(device_a, device_b, ass
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.downloadAndParseCombineMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": ne(None),
         },
         ignore_keys={"sequence"},
