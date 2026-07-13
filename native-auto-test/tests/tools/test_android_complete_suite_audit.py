@@ -124,3 +124,16 @@ def test_classify_case_no_global_login_excludes_real_e2e_from_formal_suite():
 
     assert row.status == "not_real_e2e"
     assert row.should_include_android_complete is False
+
+
+def test_classify_case_skip_excludes_real_e2e_from_formal_suite():
+    row = classify_case(
+        nodeid="tests/group/test_group.py::test_legacy_reproduction",
+        path="tests/group/test_group.py",
+        markers={"real_e2e", "skip", "group"},
+        fixtures={"device_a", "assert_api"},
+        source='device_a.call("GroupManager", "getGroupWithId", info={})',
+    )
+
+    assert row.status == "not_real_e2e"
+    assert row.should_include_android_complete is False

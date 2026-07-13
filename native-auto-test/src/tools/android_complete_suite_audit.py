@@ -37,7 +37,7 @@ DEVICE_FIXTURES = {
     "api_device_b",
 }
 SDK_CALL_NAMES = {"call", "request", "request_and_wait_for_event"}
-NON_E2E_MARKERS = {"unit", "fixture", "wrapper_mapping", "capability", "no_global_login"}
+NON_E2E_MARKERS = {"unit", "fixture", "wrapper_mapping", "capability", "no_global_login", "skip", "skipif"}
 
 
 @dataclass(frozen=True)

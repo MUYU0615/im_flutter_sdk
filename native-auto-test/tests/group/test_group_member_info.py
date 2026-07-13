@@ -13,6 +13,10 @@ from tests.group.group_helpers import create_group, destroy_group, new_group_nam
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _cursor_list(resp: dict) -> list[dict]:
     result = resp.get("result")
     assert isinstance(result, dict), f"fetchGroupMembersInfo result 不是 dict: {resp}"
@@ -38,7 +42,9 @@ def _assert_text_contains(text: str, expected_parts: list[str], *, field_name: s
 
 
 @pytest.mark.real_e2e
-def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_fetch_members_info_contains_updated_own_profile(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、拉取、成员、信息、contains、updated、当前用户、profile；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById、GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -49,13 +55,15 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById、GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     group_id = ""
     ts = int(time.time() * 1000)
     nickname = f"group-member-nick-{ts}"
     avatar_url = f"https://example.com/avatar/{user_a}-{ts}.png"
 
     try:
-        resp_update = device_a.call(
+        resp_update = client.call(
             "UserInfoManager",
             Cmd.updateOwnUserInfo.value,
             info={"nickName": nickname, "avatarUrl": avatar_url},
@@ -65,7 +73,7 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
             expected={
                 "manager": "UserInfoManager",
                 "cmd": Cmd.updateOwnUserInfo.value,
-                "device": "deviceA",
+                "device": expected_device,
                 "result": {
                     "userId": user_a,
                     "nickName": nickname,
@@ -75,7 +83,7 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
             ignore_keys={"sequence", "ext", "phone", "birth", "gender", "mail", "sign"},
         )
 
-        resp_fetch_user = device_a.call(
+        resp_fetch_user = client.call(
             "UserInfoManager",
             Cmd.fetchUserInfoById.value,
             info={"userIds": [user_a]},
@@ -86,14 +94,14 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
         assert fetched_user.get("avatarUrl") == avatar_url, f"头像未更新成功: {resp_fetch_user}"
 
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("member_info"),
             invite_members=[],
         )
 
-        resp_member_info = device_a.call(
+        resp_member_info = client.call(
             "GroupManager",
             Cmd.fetchGroupMembersInfo.value,
             info={"groupId": group_id, "cursor": None, "limit": 50},
@@ -103,7 +111,7 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.fetchGroupMembersInfo.value,
-                "device": "deviceA",
+                "device": expected_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -130,4 +138,4 @@ def test_group_fetch_members_info_contains_updated_own_profile(device_a, assert_
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)

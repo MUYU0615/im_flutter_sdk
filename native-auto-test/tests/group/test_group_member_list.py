@@ -11,6 +11,10 @@ from tests.group.group_helpers import create_group, destroy_group, new_group_nam
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _extract_member_ids(result: object, *, resp: dict) -> set[str]:
     members = result
     if isinstance(result, dict):
@@ -37,7 +41,9 @@ def _extract_member_ids(result: object, *, resp: dict) -> set[str]:
 
 
 @pytest.mark.real_e2e
-def test_group_get_group_member_list_from_server_success(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_get_group_member_list_from_server_success(topology_primary_or_device_a, assert_api, user_a, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、成员、列表、from、服务端、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupMemberListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -48,16 +54,17 @@ def test_group_get_group_member_list_from_server_success(device_a, assert_api, u
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupMemberListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("member_list"),
             invite_members=[user_b],
         )
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.getGroupMemberListFromServer.value,
             info={"groupId": group_id, "pageNum": 1, "pageSize": 20},
@@ -67,7 +74,7 @@ def test_group_get_group_member_list_from_server_success(device_a, assert_api, u
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.getGroupMemberListFromServer.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
             },
             ignore_keys={"sequence", "result"},
         )
@@ -77,4 +84,4 @@ def test_group_get_group_member_list_from_server_success(device_a, assert_api, u
         assert user_a not in user_ids, f"成员列表不应包含群主: owner={user_a}, resp={resp}"
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)

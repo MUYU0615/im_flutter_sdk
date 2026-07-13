@@ -17,6 +17,10 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
 def test_group_set_and_fetch_member_attributes_success(device_a, device_b, assert_api, user_a, user_b):
     """
@@ -126,7 +130,9 @@ def test_group_set_and_fetch_member_attributes_success(device_a, device_b, asser
 
 
 @pytest.mark.real_e2e
-def test_group_update_and_get_namecard_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_update_and_get_namecard_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、更新、and、获取、namecard、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupNamecard、GroupManager.getGroupNamecard，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -137,18 +143,20 @@ def test_group_update_and_get_namecard_success(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupNamecard、GroupManager.getGroupNamecard，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     group_id = ""
     namecard = f"card_{user_a}"
     try:
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("namecard"),
             invite_members=[],
         )
 
-        resp_update = device_a.call(
+        resp_update = client.call(
             "GroupManager",
             Cmd.updateGroupNamecard.value,
             info={"groupId": group_id, "namecard": namecard},
@@ -158,13 +166,13 @@ def test_group_update_and_get_namecard_success(device_a, assert_api, user_a):
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.updateGroupNamecard.value,
-                "device": "deviceA",
+                "device": expected_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
         )
 
-        resp_get = device_a.call(
+        resp_get = client.call(
             "GroupManager",
             Cmd.getGroupNamecard.value,
             info={"groupId": group_id, "userId": user_a},
@@ -174,11 +182,11 @@ def test_group_update_and_get_namecard_success(device_a, assert_api, user_a):
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.getGroupNamecard.value,
-                "device": "deviceA",
+                "device": expected_device,
                 "result": namecard,
             },
             ignore_keys={"sequence"},
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
