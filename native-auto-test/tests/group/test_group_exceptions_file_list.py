@@ -22,12 +22,14 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
     ],
 )
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.get_file_list_from_server.nonexistent_group.error")
 @pytest.mark.api("GroupManager.getGroupFileListFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_get_group_file_list_from_server_nonexistent_group(
-    device_a,
+    topology_primary_or_device_a,
     assert_api,
     page_num,
     page_size,
@@ -42,7 +44,7 @@ def test_group_get_group_file_list_from_server_nonexistent_group(
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupFileListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "GroupManager",
         Cmd.getGroupFileListFromServer.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "pageNum": page_num, "pageSize": page_size},
