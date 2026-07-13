@@ -73,7 +73,7 @@ case 负责：
 - `sdk_options` 由 `src/tools/sdk_options_resolver.py` 转换后通过 WebSocket `Client.init` 下发。
 - 不要恢复 `native-auto-test/flutter_config.yaml`、`im_flutter_test/assets/config.yaml` 或 `im_flutter_test/lib/sdk_config_loader.dart`。
 - SDK 版本、SDK 来源、版本差异、平台专属和暂不覆盖原因写入 `native-auto-test/config/sdk_version_capability_policy.yaml`。
-- 每个 client 必须能解析出 SDK 版本；版本来自 `--client <platform>:<slot>@<version>` 或 `--sdk-version <platform>=<version>`。
+- 每个 topology client 必须声明 `sdk_version`；覆盖报告使用 topology 中 subject clients 的 SDK 版本。
 
 ## 登录和回调
 
@@ -99,7 +99,7 @@ case 负责：
 - SDK API 级覆盖表：回答原生 SDK API 是否被 wrapper 和真实 E2E 覆盖。
 - 测试用例结果表：回答本次 run 哪些 case 通过、失败或阻塞。
 
-日志放在 `out/log/<platform>/` 或 `out/log/<platform-matrix>/`。生成报告、审计结果和临时产物不要放入 `docs/`、`tests/` 或 skill 目录。
+日志放在 `out/log/<platform>/`。生成报告、审计结果和临时产物不要放入 `docs/`、`tests/` 或 skill 目录。
 
 ## 相关入口
 

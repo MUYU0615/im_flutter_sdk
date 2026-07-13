@@ -4,131 +4,63 @@ import argparse
 from pathlib import Path
 
 from .config import load_config
-from .e2e_cli import parse_client_arg, parse_sdk_version_arg, resolve_client_versions
-from .e2e_context import ClientContext, RunContext, SdkVersionCheck, build_run_id, write_context
 from .topology_loader import build_topology_context, load_topology, write_topology_context
 from .topology_model import parse_device_overrides
 
 
+def build_run_id(platforms: list[str]) -> str:
+    from datetime import datetime
+
+    return f"{'-'.join(platforms)}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
+
 def build_prepare_context(
     *,
-    client_args: list[str],
-    sdk_version_args: list[str],
+    topology: str,
     output_root: Path,
-    device_mode: str,
-    matrix_mode: str,
+    device_args: list[str],
     install_mode: str,
-    account_mode: str,
     run_id: str | None = None,
-) -> RunContext:
-    if device_mode != "existing":
-        raise ValueError("第一阶段只支持 --device-mode existing")
-    if account_mode != "fresh":
-        raise ValueError("第一阶段只支持 --account-mode fresh")
-    clients = [parse_client_arg(value) for value in client_args]
-    versions = dict(parse_sdk_version_arg(value) for value in sdk_version_args)
-    resolved = resolve_client_versions(clients, versions)
-    run_id = run_id or build_run_id([client.platform for client in resolved])
-    context_path = output_root / "run" / run_id / "context.yaml"
-    case_results_json = output_root / "test-results" / f"{run_id}-case-results.json"
-    case_results_csv = output_root / "test-results" / f"{run_id}-case-results.csv"
-    return RunContext(
-        run_id=run_id,
-        status="ready",
-        matrix_mode=matrix_mode,
-        device_mode=device_mode,
+    available_devices: list[str] | None = None,
+    config: dict | None = None,
+) -> dict:
+    spec = load_topology(Path(topology))
+    if available_devices is None:
+        from .android_e2e_runner import _connected_android_devices
+
+        available_devices = _connected_android_devices()
+    return build_topology_context(
+        spec=spec,
+        run_id=run_id or build_run_id(list(spec.platforms_under_test)),
+        output_root=output_root,
+        config=config or load_config(),
+        available_devices=available_devices,
+        device_overrides=parse_device_overrides(device_args),
         install_mode=install_mode,
-        account_mode=account_mode,
-        sdk_initialized=True,
-        sdk_options_summary={
-            "source": "config.yaml",
-            "profile": "default",
-            "app_key_present": True,
-            "dns_config_enabled": True,
-            "custom_server_present": False,
-            "debug_enabled": True,
-            "auto_login_enabled": False,
-            "resolved": True,
-            "resolved_platforms": sorted({client.platform for client in resolved}),
-        },
-        clients={
-            client.slot: ClientContext(
-                platform=client.platform,
-                device_id="",
-                device_source="existing",
-                topic=f"im-auto-{run_id}-{client.slot}",
-                requested_sdk_version=client.sdk_version or "",
-                actual_sdk_version=None,
-                version_required=True,
-                version_check=SdkVersionCheck(status="not_checked", source="prepare_context"),
-            )
-            for client in resolved
-        },
-        accounts={
-            client.slot: {
-                "mode": "fresh",
-                "status": "planned",
-                "credential_ref": "config.accounts.default_password",
-            }
-            for client in resolved
-        },
-        artifacts={
-            "context_path": str(context_path),
-            "case_results_json": str(case_results_json),
-            "case_results_csv": str(case_results_csv),
-            "api_coverage_html": str(output_root / "api-coverage" / f"{run_id}-api-coverage.html"),
-            "api_gap_backlog_csv": str(output_root / "api-coverage" / f"{run_id}-gap-backlog.csv"),
-        },
     )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="准备 SDK E2E 运行 context。")
-    parser.add_argument("--topology", default="")
+    parser.add_argument("--topology", required=True)
     parser.add_argument("--device", action="append", default=[])
-    parser.add_argument("--client", action="append", default=[])
-    parser.add_argument("--sdk-version", action="append", default=[])
     parser.add_argument("--output-root", default="out")
     parser.add_argument("--run-id")
-    parser.add_argument("--device-mode", default="existing", choices=["existing", "auto", "manual"])
-    parser.add_argument("--matrix-mode", default="pair", choices=["smoke", "pair", "full"])
     parser.add_argument("--install-mode", default="clean", choices=["clean", "keep", "upgrade"])
-    parser.add_argument("--account-mode", default="fresh", choices=["fresh"])
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.topology:
-        from .android_e2e_runner import _connected_android_devices
-
-        spec = load_topology(Path(args.topology))
-        context = build_topology_context(
-            spec=spec,
-            run_id=args.run_id or build_run_id(list(spec.platforms_under_test)),
-            output_root=Path(args.output_root),
-            config=load_config(),
-            available_devices=_connected_android_devices(),
-            device_overrides=parse_device_overrides(args.device),
-            install_mode=args.install_mode,
-        )
-        write_topology_context(context, Path(context["artifacts"]["context_path"]))
-        print(context["artifacts"]["context_path"])
-        return 0
-    if not args.client:
-        raise SystemExit("--client is required when --topology is not set")
-    ctx = build_prepare_context(
-        client_args=args.client,
-        sdk_version_args=args.sdk_version,
+    context = build_prepare_context(
+        topology=args.topology,
         output_root=Path(args.output_root),
-        device_mode=args.device_mode,
-        matrix_mode=args.matrix_mode,
+        device_args=args.device,
         install_mode=args.install_mode,
-        account_mode=args.account_mode,
         run_id=args.run_id,
     )
-    write_context(ctx, Path(ctx.artifacts["context_path"]))
-    print(ctx.artifacts["context_path"])
+    write_topology_context(context, Path(context["artifacts"]["context_path"]))
+    print(context["artifacts"]["context_path"])
     return 0
 
 

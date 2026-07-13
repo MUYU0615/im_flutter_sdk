@@ -56,7 +56,7 @@ def test_build_topology_context_resolves_accounts_and_devices(tmp_path):
         run_id="android-topology-001",
         output_root=tmp_path,
         config=config,
-        available_devices=["emulator-5554", "emulator-5558", "emulator-5560"],
+        available_devices=["emulator-5554", "emulator-5556", "emulator-5560"],
         device_overrides={},
         install_mode="clean",
     )
@@ -66,7 +66,7 @@ def test_build_topology_context_resolves_accounts_and_devices(tmp_path):
     assert context["accounts"]["primary"]["user_id"] == "user1"
     assert context["accounts"]["remote"]["user_id"] == "user2"
     assert context["clients"]["primary_a"]["device"]["id"] == "emulator-5554"
-    assert context["clients"]["primary_b"]["device"]["id"] == "emulator-5558"
+    assert context["clients"]["primary_b"]["device"]["id"] == "emulator-5556"
     assert context["clients"]["remote_c"]["device"]["id"] == "emulator-5560"
     assert context["clients"]["primary_a"]["relay"]["topic"] == "im-auto-android-topology-001-primary_a"
     assert "secret-token" not in str(context)
@@ -81,7 +81,7 @@ def test_build_topology_context_rejects_missing_user_ref(tmp_path):
             run_id="android-topology-001",
             output_root=tmp_path,
             config={"accounts": {"users": {}}},
-            available_devices=["emulator-5554", "emulator-5558", "emulator-5560"],
+            available_devices=["emulator-5554", "emulator-5556", "emulator-5560"],
             device_overrides={},
             install_mode="clean",
         )

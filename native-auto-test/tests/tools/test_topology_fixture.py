@@ -28,7 +28,7 @@ def _context():
                 "account": "primary",
                 "user_id": "user1",
                 "sdk_version": "4.23.0",
-                "device": {"id": "emulator-5558"},
+                "device": {"id": "emulator-5556"},
                 "relay": {"topic": "im-auto-run-1-primary_b"},
             },
             "remote_c": {

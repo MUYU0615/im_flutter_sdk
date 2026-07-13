@@ -5,15 +5,28 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 
-def build_marker_expression(platform_matrix: str) -> str:
-    platforms = {part.lower() for part in platform_matrix.split("-") if part}
-    if not platforms:
+def load_run_context(path: Path) -> dict[str, Any]:
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+
+def platforms_from_context(context: dict[str, Any]) -> list[str]:
+    topology = context.get("topology") or {}
+    platforms = topology.get("platforms_under_test") or []
+    return [str(platform).lower() for platform in platforms if platform]
+
+
+def build_marker_expression(platforms: list[str]) -> str:
+    platform_set = {part.lower() for part in platforms if part}
+    if not platform_set:
         return "real_e2e"
-    if platforms == {"web"}:
+    if platform_set == {"web"}:
         return "real_e2e and web"
-    if "web" not in platforms:
+    if "web" not in platform_set:
         return "real_e2e and not web"
     return "real_e2e"
 
@@ -22,15 +35,15 @@ def build_pytest_args(
     *,
     run_context: Path,
     run_id: str,
-    platform_matrix: str,
+    platforms: list[str],
+    log_dir: Path,
     extra_args: list[str],
 ) -> list[str]:
-    log_dir = Path("out") / "log" / platform_matrix
     return [
         "tests",
         "-s",
         "-m",
-        build_marker_expression(platform_matrix),
+        build_marker_expression(platforms),
         "--run-context",
         str(run_context),
         "--html",
@@ -46,7 +59,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="运行 SDK E2E pytest 用例。")
     parser.add_argument("--run-context", required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--platform-matrix", required=True)
     parser.add_argument("pytest_args", nargs=argparse.REMAINDER)
     return parser
 
@@ -63,6 +75,12 @@ def main(argv: list[str] | None = None) -> int:
     env["NATIVE_AUTO_TEST_RUN_CONTEXT"] = args.run_context
     env["NATIVE_AUTO_TEST_CASE_RESULTS_JSON"] = str(case_json)
     env["NATIVE_AUTO_TEST_CASE_RESULTS_CSV"] = str(case_csv)
+    context = load_run_context(Path(args.run_context))
+    platforms = platforms_from_context(context)
+    log_root = (
+        ((context.get("environment") or {}).get("logs") or {}).get("root_dir")
+        or str(Path("out") / "log" / "-".join(platforms or ["unknown"]))
+    )
     command = [
         sys.executable,
         "-m",
@@ -70,7 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         *build_pytest_args(
             run_context=Path(args.run_context),
             run_id=args.run_id,
-            platform_matrix=args.platform_matrix,
+            platforms=platforms,
+            log_dir=Path(log_root),
             extra_args=pytest_args,
         ),
     ]

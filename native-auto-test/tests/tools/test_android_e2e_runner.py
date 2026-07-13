@@ -191,13 +191,13 @@ def test_connected_android_devices_parses_only_online_devices(monkeypatch):
         stdout = """List of devices attached
 emulator-5554\tdevice
 emulator-5556\toffline
-emulator-5558\tdevice product:sdk
+emulator-5560\tdevice product:sdk
 """
         stderr = ""
 
     monkeypatch.setattr("src.tools.android_e2e_runner.subprocess.run", lambda *_, **__: _Completed())
 
-    assert _connected_android_devices() == ["emulator-5554", "emulator-5558"]
+    assert _connected_android_devices() == ["emulator-5554", "emulator-5560"]
 
 
 @pytest.mark.parametrize(
