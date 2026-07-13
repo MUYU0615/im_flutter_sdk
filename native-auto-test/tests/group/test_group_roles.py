@@ -17,8 +17,14 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_add_admin_and_remove_admin_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、admin、and、移除、admin、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.addAdmin、GroupManager.getGroupSpecificationFromServer、GroupManager.removeAdmin，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -29,18 +35,23 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addAdmin、GroupManager.getGroupSpecificationFromServer、GroupManager.removeAdmin，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_id = ""
     group_name = new_group_name("role_admin")
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[user_b],
         )
 
-        resp_add_admin = device_a.call(
+        resp_add_admin = primary.call(
             "GroupManager",
             Cmd.addAdmin.value,
             info={"groupId": group_id, "admin": user_b},
@@ -50,7 +61,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.addAdmin.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -64,7 +75,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
         assert user_b in admin_list_add, f"addAdmin adminList 不包含 {user_b}: {resp_add_admin}"
 
         admin_added_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_ADMIN_ADDED.value,
                 "onAdminAddedFromGroup",
@@ -85,7 +96,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             expected_member=user_b,
         )
 
-        resp_get_admin_added = device_a.call(
+        resp_get_admin_added = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -95,7 +106,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.getGroupSpecificationFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -108,7 +119,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
         assert isinstance(admin_list, list), f"adminList 不是 list: {resp_get_admin_added}"
         assert user_b in admin_list, f"addAdmin 后 adminList 缺少 {user_b}: {resp_get_admin_added}"
 
-        resp_remove_admin = device_a.call(
+        resp_remove_admin = primary.call(
             "GroupManager",
             Cmd.removeAdmin.value,
             info={"groupId": group_id, "admin": user_b},
@@ -118,7 +129,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.removeAdmin.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -132,7 +143,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
         assert user_b not in admin_list_remove, f"removeAdmin adminList 仍包含 {user_b}: {resp_remove_admin}"
 
         admin_removed_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_ADMIN_REMOVED.value,
                 "onAdminRemovedFromGroup",
@@ -153,7 +164,7 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             expected_member=user_b,
         )
 
-        resp_get_admin_removed = device_a.call(
+        resp_get_admin_removed = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -165,11 +176,13 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_update_owner_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、更新、owner、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupOwner、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -180,18 +193,24 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupOwner、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_id = ""
     group_name = new_group_name("role_owner")
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[user_b],
         )
 
-        resp_update_owner = device_a.call(
+        resp_update_owner = primary.call(
             "GroupManager",
             Cmd.updateGroupOwner.value,
             info={"groupId": group_id, "owner": user_b},
@@ -201,7 +220,7 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.updateGroupOwner.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -213,7 +232,7 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
         assert owner_result.get("isMemberOnly") is True, f"updateGroupOwner isMemberOnly 不匹配: {resp_update_owner}"
 
         owner_changed_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_OWNER_CHANGED.value,
                 "onOwnerChangedFromGroup",
@@ -233,7 +252,7 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
             required_all_event_types={"onOwnerChangedFromGroup"},
         )
 
-        resp_get_after_owner_change = device_b.call(
+        resp_get_after_owner_change = remote.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -241,7 +260,7 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
         result = resp_get_after_owner_change.get("result")
         assert isinstance(result, dict), f"getGroupSpecificationFromServer result 非 dict: {resp_get_after_owner_change}"
         assert result.get("owner") == user_b, f"群主未切换为新群主: {resp_get_after_owner_change}"
-        resp_owner_back = device_b.call(
+        resp_owner_back = remote.call(
             "GroupManager",
             Cmd.updateGroupOwner.value,
             info={"groupId": group_id, "owner": user_a},
@@ -251,7 +270,7 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.updateGroupOwner.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -263,4 +282,4 @@ def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user
         assert owner_back_result.get("isMemberOnly") is True, f"owner 回切 isMemberOnly 不匹配: {resp_owner_back}"
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
