@@ -68,6 +68,7 @@ def test_client_get_current_user(topology_primary_or_device_a, assert_api):
     assert result is not None or "result" in resp
 
 @pytest.mark.real_e2e
+@pytest.mark.no_global_login
 def test_client_change_app_id(device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、change、app、id；

@@ -116,7 +116,11 @@ def classify_case(
     has_device = bool(fixtures & DEVICE_FIXTURES) or uses_dynamic_device_fixture(source)
     sdk_candidate = is_sdk_e2e_candidate(source)
 
-    if has_real and topology_ready:
+    if markers & NON_E2E_MARKERS:
+        status = "not_real_e2e"
+        include = False
+        reason = "标记为 unit/fixture/wrapper/capability/no_global_login，不纳入真实 Android E2E。"
+    elif has_real and topology_ready:
         status = "included_topology_ready"
         include = True
         reason = "已标记 real_e2e 和 topology_ready，可纳入正式 topology E2E。"
@@ -128,10 +132,6 @@ def classify_case(
         status = "real_e2e_marker_needs_review"
         include = True
         reason = "已标记 real_e2e，但未发现标准 device fixture，需要人工确认是否为真实 Android E2E。"
-    elif markers & NON_E2E_MARKERS:
-        status = "not_real_e2e"
-        include = False
-        reason = "标记为 unit/fixture/wrapper/capability/no_global_login，不纳入真实 Android E2E。"
     elif has_device and sdk_candidate:
         status = "missing_real_e2e_marker"
         include = True

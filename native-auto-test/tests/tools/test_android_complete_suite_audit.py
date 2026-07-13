@@ -111,3 +111,16 @@ def test_classify_case_marks_non_e2e_helper():
 
     assert row.status == "not_real_e2e"
     assert row.should_include_android_complete is False
+
+
+def test_classify_case_no_global_login_excludes_real_e2e_from_formal_suite():
+    row = classify_case(
+        nodeid="tests/client/test_client.py::test_client_change_app_id",
+        path="tests/client/test_client.py",
+        markers={"real_e2e", "no_global_login", "client"},
+        fixtures={"device_a", "assert_api"},
+        source='device_a.call("Client", "changeAppId", info={})',
+    )
+
+    assert row.status == "not_real_e2e"
+    assert row.should_include_android_complete is False

@@ -71,7 +71,9 @@ def test_client_connection_state_queries(topology_primary_or_device_a, assert_ap
 @pytest.mark.api("Client.init")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_init_repeated_call_idempotent(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_init_repeated_call_idempotent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、init、repeated、call、idempotent；
     2. 通过 WebSocket 控制测试 App 调用 Client.init，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -82,9 +84,11 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.init，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     app_key = get_sdk_app_key()
     assert app_key, "config.yaml sdk_options.app_key 不能为空"
-    resp = device_a.call(
+    resp = client.call(
         "Client",
         Cmd.init.value,
         info={"appKey": app_key, "debugModel": True},
@@ -94,19 +98,19 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
         expected={
             "manager": "Client",
             "cmd": Cmd.init.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
     assert isinstance(resp.get("result"), bool), f"重复 init 当前端返回应为 bool: {resp}"
 
-    current_user_resp = device_a.call("Client", Cmd.getCurrentUser.value, info={})
+    current_user_resp = client.call("Client", Cmd.getCurrentUser.value, info={})
     assert_api.assert_response_matches(
         current_user_resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.getCurrentUser.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
