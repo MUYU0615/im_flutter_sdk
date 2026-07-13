@@ -267,7 +267,9 @@ def test_presence_publish_128k_desc(topology_primary_or_device_a, assert_api):
 @pytest.mark.api("PresenceManager.presenceSubscribe")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_presence_subscribe_nonexistent_user(device_a, assert_api):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_presence_subscribe_nonexistent_user(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -278,7 +280,8 @@ def test_presence_subscribe_nonexistent_user(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [USER_NONEXISTENT], "expiry": PRESENCE_EXPIRY},
@@ -291,7 +294,7 @@ def test_presence_subscribe_nonexistent_user(device_a, assert_api):
             "device": "{{device}}",
             "result": [{"statusDescription": "", "publisher": "{{publisher}}", "expiryTime": gt(0),"statusDetails":{},"lastTime":0}],
         },
-        context={"device": "deviceA", "publisher": USER_NONEXISTENT},
+        context={"device": _expected_device(client), "publisher": USER_NONEXISTENT},
         ignore_keys={"sequence"},
     )
 
