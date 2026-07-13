@@ -16,13 +16,17 @@ pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 NONEXISTENT_GROUP_ID = "nonexistent_group_remaining_999999"
 
 
-def _assert_error_result(assert_api, resp: dict, *, cmd: str, code: int, description: str) -> None:
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _assert_error_result(assert_api, resp: dict, *, cmd: str, code: int, description: str, device: str = "deviceA") -> None:
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "GroupManager",
             "cmd": cmd,
-            "device": "deviceA",
+            "device": device,
             "result": {
                 "code": code,
                 "description": description,
@@ -33,11 +37,13 @@ def _assert_error_result(assert_api, resp: dict, *, cmd: str, code: int, descrip
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.clear_all_groups_from_local.success")
 @pytest.mark.api("GroupManager.clearAllGroupsFromDB")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a):
+def test_group_clear_all_groups_from_local_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、clear、all、groups、from、本地、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.clearAllGroupsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -48,13 +54,14 @@ def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a)
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.clearAllGroupsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_a.call("GroupManager", Cmd.clearAllGroupsFromDB.value)
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.clearAllGroupsFromDB.value)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.clearAllGroupsFromDB.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -62,11 +69,13 @@ def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.fetch_members_info.empty_group_id.error")
 @pytest.mark.api("GroupManager.fetchGroupMembersInfo")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
+def test_group_fetch_members_info_empty_group_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、空值参数、群组、id；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -77,7 +86,8 @@ def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "GroupManager",
         Cmd.fetchGroupMembersInfo.value,
         info={"groupId": "", "cursor": None, "limit": 20},
@@ -88,15 +98,18 @@ def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
         cmd=Cmd.fetchGroupMembersInfo.value,
         code=600,
         description="Group ID is invalid",
+        device=_expected_device(client),
     )
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.fetch_members_info.limit_zero.current_result")
 @pytest.mark.api("GroupManager.fetchGroupMembersInfo")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
+def test_group_fetch_members_info_invalid_limit(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、无效参数、limit；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -108,8 +121,9 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     group_id = ""
+    client = topology_primary_or_device_a
     try:
-        resp_user_info = device_a.call(
+        resp_user_info = client.call(
             "UserInfoManager",
             Cmd.fetchUserInfoById.value,
             info={"userIds": [user_a]},
@@ -119,20 +133,20 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
             expected={
                 "manager": "UserInfoManager",
                 "cmd": Cmd.fetchUserInfoById.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
             },
             ignore_keys={"sequence", "result"},
         )
         current_user_info = (resp_user_info.get("result") or {}).get(user_a) or {}
 
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("member_info_limit"),
             invite_members=[],
         )
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.fetchGroupMembersInfo.value,
             info={"groupId": group_id, "cursor": None, "limit": 0},
@@ -142,7 +156,7 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.fetchGroupMembersInfo.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "cursor": "",
                     "list": [
@@ -161,15 +175,17 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.update_avatar.success")
 @pytest.mark.api("GroupManager.updateGroupAvatar")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_group_update_avatar_success(device_a, assert_api, user_a):
+def test_group_update_avatar_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、avatar、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -182,16 +198,17 @@ def test_group_update_avatar_success(device_a, assert_api, user_a):
     )
     group_id = ""
     avatar_url = f"https://example.com/group-avatar/{uuid.uuid4().hex}.png"
+    client = topology_primary_or_device_a
     try:
         group_id, group_resp = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("avatar"),
             invite_members=[],
         )
         group_name = (group_resp.get("result") or {}).get("name")
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.updateGroupAvatar.value,
             info={"groupId": group_id, "avatarUrl": avatar_url},
@@ -201,7 +218,7 @@ def test_group_update_avatar_success(device_a, assert_api, user_a):
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.updateGroupAvatar.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "groupId": group_id,
                     "name": group_name,
@@ -233,7 +250,7 @@ def test_group_update_avatar_success(device_a, assert_api, user_a):
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
 
 
 @pytest.mark.parametrize(
@@ -246,12 +263,14 @@ def test_group_update_avatar_success(device_a, assert_api, user_a):
     ],
 )
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.update_avatar.abnormal_values.current_success")
 @pytest.mark.api("GroupManager.updateGroupAvatar")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_abnormal_values(
-    device_a,
+    topology_primary_or_device_a,
     assert_api,
     user_a,
     avatar_url,
@@ -267,16 +286,17 @@ def test_group_update_avatar_abnormal_values(
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
     group_id = ""
+    client = topology_primary_or_device_a
     try:
         group_id, group_resp = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("avatar_bad"),
             invite_members=[],
         )
         group_name = (group_resp.get("result") or {}).get("name")
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.updateGroupAvatar.value,
             info={"groupId": group_id, "avatarUrl": avatar_url},
@@ -286,7 +306,7 @@ def test_group_update_avatar_abnormal_values(
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.updateGroupAvatar.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "groupId": group_id,
                     "name": group_name,
@@ -317,15 +337,17 @@ def test_group_update_avatar_abnormal_values(
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.update_avatar.empty_group_id.error")
 @pytest.mark.api("GroupManager.updateGroupAvatar")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_group_update_avatar_empty_group_id(device_a, assert_api):
+def test_group_update_avatar_empty_group_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、avatar、空值参数、群组、id；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -336,7 +358,8 @@ def test_group_update_avatar_empty_group_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "GroupManager",
         Cmd.updateGroupAvatar.value,
         info={"groupId": "", "avatarUrl": "https://example.com/group-avatar/empty.png"},
@@ -347,4 +370,5 @@ def test_group_update_avatar_empty_group_id(device_a, assert_api):
         cmd=Cmd.updateGroupAvatar.value,
         code=600,
         description="Group ID is invalid",
+        device=_expected_device(client),
     )
