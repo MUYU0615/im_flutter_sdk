@@ -17,6 +17,11 @@ from src import Cmd
 
 pytestmark = [pytest.mark.client]
 
+
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 # assert_response_matches 的 expected 若写成 result: resp.get("result")，预期与 actual 在 result
 # 上完全一致，无法发现「实际多出字段」。应对关心的字段写显式 dict（含 userId 等）。
 
@@ -335,7 +340,9 @@ def test_user_info_update_then_all_fetch_paths_in_one_flow(device_a, assert_api,
 
 
 @pytest.mark.real_e2e
-def test_user_info_update_own_nickname_length_over_64(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_user_info_update_own_nickname_length_over_64(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、length、over、64；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -346,7 +353,7 @@ def test_user_info_update_own_nickname_length_over_64(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
         info={"nickName": "n" * 2050},
@@ -354,7 +361,9 @@ def test_user_info_update_own_nickname_length_over_64(device_a, assert_api):
     assert_api.assert_error(resp, code=901, description="User info exceeds the data length")
 
 @pytest.mark.real_e2e
-def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_user_info_update_own_nickname_empty(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、空值参数；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -365,7 +374,8 @@ def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
         info={"nickName": ""},
@@ -375,7 +385,7 @@ def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
         expected={
             "manager": "UserInfoManager",
             "cmd": Cmd.updateOwnUserInfo.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "userId": user_a,
             },
@@ -385,7 +395,9 @@ def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
-def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_user_info_fetch_by_id_normal(topology_primary_or_device_a, assert_api, user_a, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、normal；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -396,7 +408,8 @@ def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "UserInfoManager",
         Cmd.fetchUserInfoById.value,
         info={"userIds": [user_a, user_b]},
@@ -406,7 +419,7 @@ def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
         expected={
             "manager": "UserInfoManager",
             "cmd": Cmd.fetchUserInfoById.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 user_a: {"userId": user_a},
                 user_b: {"userId": user_b},
@@ -417,7 +430,9 @@ def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
 
 
 @pytest.mark.real_e2e
-def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_user_info_fetch_by_id_with_type_normal(topology_primary_or_device_a, assert_api, user_a, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、with、type、normal；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -428,7 +443,8 @@ def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, us
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "UserInfoManager",
         Cmd.fetchUserInfoByIdWithType.value,
         info={
@@ -441,7 +457,7 @@ def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, us
         expected={
             "manager": "UserInfoManager",
             "cmd": Cmd.fetchUserInfoByIdWithType.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 user_a: {"userId": user_a},
                 user_b: {"userId": user_b},
@@ -555,7 +571,9 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
 
 
 @pytest.mark.real_e2e
-def test_user_info_fetch_by_id_empty_user_ids(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_user_info_fetch_by_id_empty_user_ids(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、空值参数、用户、ids；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -566,7 +584,7 @@ def test_user_info_fetch_by_id_empty_user_ids(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "UserInfoManager",
         Cmd.fetchUserInfoById.value,
         info={"userIds": []},
@@ -575,7 +593,9 @@ def test_user_info_fetch_by_id_empty_user_ids(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_user_info_fetch_by_id_user_ids_over_100(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_user_info_fetch_by_id_user_ids_over_100(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、用户、ids、over；
     2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -587,7 +607,7 @@ def test_user_info_fetch_by_id_user_ids_over_100(device_a, assert_api):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     user_ids = [f"uid_{i}" for i in range(101)]
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "UserInfoManager",
         Cmd.fetchUserInfoById.value,
         info={"userIds": user_ids},
