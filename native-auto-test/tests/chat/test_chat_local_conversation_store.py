@@ -349,7 +349,9 @@ def test_chat_get_unread_count_positive_then_zero(device_a, device_b, assert_api
 
 
 @pytest.mark.real_e2e
-def test_chat_mark_all_as_read_idempotent(device_b, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chat_mark_all_as_read_idempotent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、mark、all、as、已读、idempotent；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.markAllChatMsgAsRead、ChatManager.getUnreadMessageCount，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -360,32 +362,34 @@ def test_chat_mark_all_as_read_idempotent(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.markAllChatMsgAsRead、ChatManager.getUnreadMessageCount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp_1 = device_b.call("ChatManager", Cmd.markAllChatMsgAsRead.value, info={})
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
+    resp_1 = client.call("ChatManager", Cmd.markAllChatMsgAsRead.value, info={})
     assert_api.assert_response_matches(
         resp_1,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
-            "device": "deviceB",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_2 = device_b.call("ChatManager", Cmd.markAllChatMsgAsRead.value, info={})
+    resp_2 = client.call("ChatManager", Cmd.markAllChatMsgAsRead.value, info={})
     assert_api.assert_response_matches(
         resp_2,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.markAllChatMsgAsRead.value,
-            "device": "deviceB",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_unread = device_b.call("ChatManager", Cmd.getUnreadMessageCount.value, info={})
-    _assert_chat_response(assert_api, resp_unread, Cmd.getUnreadMessageCount.value, "deviceB", 0)
+    resp_unread = client.call("ChatManager", Cmd.getUnreadMessageCount.value, info={})
+    _assert_chat_response(assert_api, resp_unread, Cmd.getUnreadMessageCount.value, expected_device, 0)
 
 
 @pytest.mark.real_e2e

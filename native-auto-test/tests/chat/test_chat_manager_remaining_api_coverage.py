@@ -671,7 +671,9 @@ def test_chat_manager_delete_all_message_and_conversation_local(device_a, device
 @pytest.mark.api("ChatManager.resendMessage")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chat_manager_message_object_boundary_methods(topology_primary_or_device_a, assert_api, user_a, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、manager、消息、object、boundary、methods；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.importMessages、ChatManager.updateChatMessage、ChatManager.resendMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -701,13 +703,15 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
         "body": original_body,
     }
 
-    resp_import = device_a.call("ChatManager", Cmd.importMessages.value, info={"messages": [message]})
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
+    resp_import = client.call("ChatManager", Cmd.importMessages.value, info={"messages": [message]})
     assert_api.assert_response_matches(
         resp_import,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.importMessages.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -715,13 +719,13 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
 
     updated_body = {"type": 0, "content": f"chat-object-updated-{uuid.uuid4().hex[:8]}"}
     updated = {**message, "status": 2, "body": updated_body}
-    resp_update = device_a.call("ChatManager", Cmd.updateChatMessage.value, info={"message": updated})
+    resp_update = client.call("ChatManager", Cmd.updateChatMessage.value, info={"message": updated})
     assert_api.assert_response_matches(
         resp_update,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.updateChatMessage.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {
                 "msgId": msg_id,
                 "from": user_a,
@@ -752,13 +756,13 @@ def test_chat_manager_message_object_boundary_methods(device_a, assert_api, user
         },
     )
 
-    resp_resend = device_a.call("ChatManager", Cmd.resendMessage.value, info=message)
+    resp_resend = client.call("ChatManager", Cmd.resendMessage.value, info=message)
     assert_api.assert_response_matches(
         resp_resend,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.resendMessage.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {
                 "msgId": msg_id,
                 "from": user_a,
@@ -1079,7 +1083,9 @@ def test_chat_manager_voice_file_to_text_invalid_audio_params(topology_primary_o
 @pytest.mark.api("ChatManager.ackGroupMessageRead")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_group_ack_boundary_methods(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_manager_group_ack_boundary_methods(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、manager、群组、已读回执、boundary、methods；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackGroupMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1091,13 +1097,14 @@ def test_chat_manager_group_ack_boundary_methods(device_a, assert_api):
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
     info = {"msgId": "__invalid_group_msg_id__", "group_id": "__invalid_group_id__"}
-    resp_ack = device_a.call("ChatManager", Cmd.ackGroupMessageRead.value, info=info)
+    client = topology_primary_or_device_a
+    resp_ack = client.call("ChatManager", Cmd.ackGroupMessageRead.value, info=info)
     assert_api.assert_response_matches(
         resp_ack,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.ackGroupMessageRead.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
