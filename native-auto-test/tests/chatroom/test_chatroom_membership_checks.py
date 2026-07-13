@@ -113,7 +113,9 @@ def test_chatroom_is_member_in_white_list_and_mute_list_nonexistent_room(topolog
 
 
 @pytest.mark.real_e2e
-def test_chatroom_member_white_list_check_reflects_server_state(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_member_white_list_check_reflects_server_state(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、成员、白名单、列表、check、reflects、服务端、state；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.isMemberInChatRoomWhiteListFromServer、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -124,15 +126,21 @@ def test_chatroom_member_white_list_check_reflects_server_state(device_a, device
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.isMemberInChatRoomWhiteListFromServer、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="white_check", desc_prefix="white_check")
     try:
-        join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
+        join_resp = remote.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             join_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "roomId": room_id,
                     "memberCount": ge(1),
@@ -141,14 +149,14 @@ def test_chatroom_member_white_list_check_reflects_server_state(device_a, device
             ignore_keys=CHATROOM_JOIN_IGNORE_KEYS,
         )
 
-        before_resp = device_b.call(
+        before_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
         )
         assert before_resp.get("result") is False, f"加入白名单前 B 不应在白名单: {before_resp}"
 
-        add_resp = device_a.call(
+        add_resp = primary.call(
             "ChatRoomManager",
             Cmd.addMembersToChatRoomWhiteList.value,
             info={"roomId": room_id, "members": [user_b]},
@@ -158,19 +166,19 @@ def test_chatroom_member_white_list_check_reflects_server_state(device_a, device
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.addMembersToChatRoomWhiteList.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
-        after_add_resp = device_b.call(
+        after_add_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
         )
         assert after_add_resp.get("result") is True, f"加入白名单后 B 应在白名单: {after_add_resp}"
 
-        remove_resp = device_a.call(
+        remove_resp = primary.call(
             "ChatRoomManager",
             Cmd.removeMembersFromChatRoomWhiteList.value,
             info={"roomId": room_id, "members": [user_b]},
@@ -180,12 +188,12 @@ def test_chatroom_member_white_list_check_reflects_server_state(device_a, device
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.removeMembersFromChatRoomWhiteList.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
-        after_remove_resp = device_b.call(
+        after_remove_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
@@ -196,7 +204,9 @@ def test_chatroom_member_white_list_check_reflects_server_state(device_a, device
 
 
 @pytest.mark.real_e2e
-def test_chatroom_member_mute_list_check_reflects_server_state(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_member_mute_list_check_reflects_server_state(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、成员、禁言、列表、check、reflects、服务端、state；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.isMemberInChatRoomMuteList、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -207,15 +217,21 @@ def test_chatroom_member_mute_list_check_reflects_server_state(device_a, device_
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.isMemberInChatRoomMuteList、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute_check", desc_prefix="mute_check")
     try:
-        join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
+        join_resp = remote.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             join_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "roomId": room_id,
                     "memberCount": ge(1),
@@ -224,14 +240,14 @@ def test_chatroom_member_mute_list_check_reflects_server_state(device_a, device_
             ignore_keys=CHATROOM_JOIN_IGNORE_KEYS,
         )
 
-        before_resp = device_b.call(
+        before_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomMuteList.value,
             info={"roomId": room_id},
         )
         assert before_resp.get("result") is False, f"禁言前 B 不应在禁言列表: {before_resp}"
 
-        mute_resp = device_a.call(
+        mute_resp = primary.call(
             "ChatRoomManager",
             Cmd.muteChatRoomMembers.value,
             info={"roomId": room_id, "muteMembers": [user_b], "duration": 60000},
@@ -241,19 +257,19 @@ def test_chatroom_member_mute_list_check_reflects_server_state(device_a, device_
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.muteChatRoomMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
-        after_mute_resp = device_b.call(
+        after_mute_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomMuteList.value,
             info={"roomId": room_id},
         )
         assert after_mute_resp.get("result") is True, f"禁言后 B 应在禁言列表: {after_mute_resp}"
 
-        unmute_resp = device_a.call(
+        unmute_resp = primary.call(
             "ChatRoomManager",
             Cmd.unMuteChatRoomMembers.value,
             info={"roomId": room_id, "unMuteMembers": [user_b]},
@@ -263,12 +279,12 @@ def test_chatroom_member_mute_list_check_reflects_server_state(device_a, device_
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.unMuteChatRoomMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
-        after_unmute_resp = device_b.call(
+        after_unmute_resp = remote.call(
             "ChatRoomManager",
             Cmd.isMemberInChatRoomMuteList.value,
             info={"roomId": room_id},

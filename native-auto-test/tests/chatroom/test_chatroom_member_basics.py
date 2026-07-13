@@ -304,7 +304,9 @@ def test_chatroom_get_all_local_rooms_returns_list(topology_primary_or_device_a,
 
 
 @pytest.mark.real_e2e
-def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_fetch_members_after_join_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、after、加入、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -315,11 +317,16 @@ def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="members", desc_prefix="members")
     try:
-        _join_room(device_b, assert_api, room_id=room_id)
+        _join_room(remote, assert_api, room_id=room_id, device_name=remote_device)
 
-        resp = device_b.call(
+        resp = remote.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMembers.value,
             info={"roomId": room_id, "cursor": "", "pageSize": 20},
@@ -329,7 +336,7 @@ def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_ap
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomMembers.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "cursor": ne(None),
                     "list": ne(None),
@@ -347,7 +354,9 @@ def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_ap
 
 
 @pytest.mark.real_e2e
-def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_fetch_members_with_cursor_pagination(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、with、cursor、pagination；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -358,11 +367,17 @@ def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, asser
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="members_page", desc_prefix="members_page")
     try:
-        _join_room(device_b, assert_api, room_id=room_id)
+        _join_room(remote, assert_api, room_id=room_id, device_name=remote_device)
 
-        first_resp = device_a.call(
+        first_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMembers.value,
             info={"roomId": room_id, "cursor": "", "pageSize": 1},
@@ -372,7 +387,7 @@ def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, asser
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": {
                     "cursor": ne(None),
                     "list": ne(None),
@@ -389,7 +404,7 @@ def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, asser
         cursor = first_result.get("cursor")
         all_members = list(first_members)
         if cursor:
-            second_resp = device_a.call(
+            second_resp = primary.call(
                 "ChatRoomManager",
                 Cmd.fetchChatRoomMembers.value,
                 info={"roomId": room_id, "cursor": cursor, "pageSize": 20},
@@ -399,7 +414,7 @@ def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, asser
                 expected={
                     "manager": "ChatRoomManager",
                     "cmd": Cmd.fetchChatRoomMembers.value,
-                    "device": "deviceA",
+                    "device": primary_device,
                     "result": {
                         "cursor": ne(None),
                         "list": ne(None),
@@ -497,7 +512,9 @@ def test_chatroom_join_leave_other_rooms_option_controls_existing_rooms(device_a
 
 
 @pytest.mark.real_e2e
-def test_chatroom_leave_room_updates_local_cache(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_leave_room_updates_local_cache(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、离开、room、updates、本地、cache；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -508,23 +525,29 @@ def test_chatroom_leave_room_updates_local_cache(device_a, device_b, assert_api,
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="leave", desc_prefix="leave")
     try:
-        _join_room(device_b, assert_api, room_id=room_id)
+        _join_room(remote, assert_api, room_id=room_id, device_name=remote_device)
 
-        leave_resp = device_b.call("ChatRoomManager", Cmd.leaveChatRoom.value, info={"roomId": room_id})
+        leave_resp = remote.call("ChatRoomManager", Cmd.leaveChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             leave_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.leaveChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
         )
 
-        members_resp = device_a.call(
+        members_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMembers.value,
             info={"roomId": room_id, "cursor": "", "pageSize": 20},
@@ -534,7 +557,7 @@ def test_chatroom_leave_room_updates_local_cache(device_a, device_b, assert_api,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": {
                     "cursor": ne(None),
                     "list": ne(None),
