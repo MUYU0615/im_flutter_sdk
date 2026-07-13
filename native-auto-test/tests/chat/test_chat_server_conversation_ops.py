@@ -29,6 +29,12 @@ def _expected_device(client) -> str:
     return getattr(client, "name", "deviceA")
 
 
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     resp_send, success_msg, _received_msg = send_text_and_wait(
         device_a,
@@ -37,7 +43,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         user_b=user_b,
         content=content,
     )
-    _assert_chat_response(assert_api, resp_send, Cmd.sendMessage.value, "deviceA", ne(None))
+    _assert_chat_response(assert_api, resp_send, Cmd.sendMessage.value, _expected_device(device_a), ne(None))
     send_result = resp_send.get("result") or {}
     assert str(send_result.get("from")) == str(user_a)
     assert str(send_result.get("to")) == str(user_b)
@@ -49,10 +55,12 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.get_conversations_from_server.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.getConversationsFromServer")
-def test_chat_get_conversations_from_server_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_get_conversations_from_server_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、获取、conversations、from、服务端、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getConversationsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -63,6 +71,7 @@ def test_chat_get_conversations_from_server_success(device_a, device_b, assert_a
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getConversationsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"server-conversation-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
     resp = device_a.call("ChatManager", Cmd.getConversationsFromServer.value, info={})
@@ -78,13 +87,13 @@ def test_chat_get_conversations_from_server_success(device_a, device_b, assert_a
         {
             "manager": "ChatManager",
             "cmd": Cmd.getConversationsFromServer.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": projected,
         },
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.getConversationsFromServer.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": [{"convId": "{{convId}}", "type": 0}],
         },
         context={"convId": user_b},
@@ -201,10 +210,12 @@ def test_chat_get_conversations_from_server_with_cursor_invalid_page_size_negati
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_conversations_from_server_with_page.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.fetchConversationsFromServerWithPage")
-def test_chat_fetch_conversations_from_server_with_page_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_fetch_conversations_from_server_with_page_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、conversations、from、服务端、with、page、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -215,6 +226,7 @@ def test_chat_fetch_conversations_from_server_with_page_success(device_a, device
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-fetch-page-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
     resp = device_a.call(
@@ -234,13 +246,13 @@ def test_chat_fetch_conversations_from_server_with_page_success(device_a, device
         {
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": projected,
         },
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": [{"convId": "{{convId}}", "type": 0}],
         },
         context={"convId": user_b},
@@ -249,7 +261,9 @@ def test_chat_fetch_conversations_from_server_with_page_success(device_a, device
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_conversations_from_server_with_page_invalid_page_num_zero(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chat_fetch_conversations_from_server_with_page_invalid_page_num_zero(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、conversations、from、服务端、with、page、无效参数；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -260,6 +274,7 @@ def test_chat_fetch_conversations_from_server_with_page_invalid_page_num_zero(de
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-fetch-page-num0-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
     resp = device_a.call(
@@ -279,13 +294,13 @@ def test_chat_fetch_conversations_from_server_with_page_invalid_page_num_zero(de
         {
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": projected,
         },
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": [{"convId": "{{convId}}", "type": 0}],
         },
         context={"convId": user_b},
@@ -294,7 +309,9 @@ def test_chat_fetch_conversations_from_server_with_page_invalid_page_num_zero(de
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_conversations_from_server_with_page_invalid_page_size_zero(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chat_fetch_conversations_from_server_with_page_invalid_page_size_zero(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、conversations、from、服务端、with、page、无效参数；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -305,6 +322,7 @@ def test_chat_fetch_conversations_from_server_with_page_invalid_page_size_zero(d
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchConversationsFromServerWithPage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-fetch-page-size0-{uuid.uuid4().hex[:6]}")
     time.sleep(2)
     resp = device_a.call(
@@ -324,13 +342,13 @@ def test_chat_fetch_conversations_from_server_with_page_invalid_page_size_zero(d
         {
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": projected,
         },
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchConversationsFromServerWithPage.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": [{"convId": "{{convId}}", "type": 0}],
         },
         context={"convId": user_b},
@@ -447,10 +465,12 @@ def test_chat_get_pinned_conversations_from_server_with_cursor_invalid_page_size
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.delete_remote_conversation.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.deleteRemoteConversation")
-def test_chat_delete_remote_conversation_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_delete_remote_conversation_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、删除、remote、会话、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.deleteRemoteConversation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -461,13 +481,14 @@ def test_chat_delete_remote_conversation_success(device_a, device_b, assert_api,
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.deleteRemoteConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-del-remote-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
         "ChatManager",
         Cmd.deleteRemoteConversation.value,
         info={"convId": user_b, "conversationType": 0, "isDeleteRemoteMessage": False},
     )
-    _assert_chat_response(assert_api, resp, Cmd.deleteRemoteConversation.value, "deviceA", None)
+    _assert_chat_response(assert_api, resp, Cmd.deleteRemoteConversation.value, primary_device, None)
 
 
 @pytest.mark.real_e2e
@@ -516,10 +537,12 @@ def test_chat_delete_remote_conversation_invalid_type(topology_primary_or_device
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.remove_messages_from_server_with_msg_ids.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.removeMessagesFromServerWithMsgIds")
-def test_chat_remove_messages_from_server_with_msg_ids_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_remove_messages_from_server_with_msg_ids_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、移除、消息、from、服务端、with、msg、ids；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeMessagesFromServerWithMsgIds，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -530,13 +553,14 @@ def test_chat_remove_messages_from_server_with_msg_ids_success(device_a, device_
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeMessagesFromServerWithMsgIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-rm-server-ids-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
         "ChatManager",
         Cmd.removeMessagesFromServerWithMsgIds.value,
         info={"convId": user_b, "type": 0, "msgIds": [real_id]},
     )
-    _assert_chat_response(assert_api, resp, Cmd.removeMessagesFromServerWithMsgIds.value, "deviceA", None)
+    _assert_chat_response(assert_api, resp, Cmd.removeMessagesFromServerWithMsgIds.value, primary_device, None)
 
 
 @pytest.mark.real_e2e
@@ -563,7 +587,7 @@ def test_chat_remove_messages_from_server_with_msg_ids_missing_msg_ids(device_a,
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("error_response")
 @pytest.mark.topology_ready
-def test_chat_remove_messages_from_server_with_msg_ids_empty_msg_ids(topology_primary_or_device_a, user_b):
+def test_chat_remove_messages_from_server_with_msg_ids_empty_msg_ids(topology):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、消息、from、服务端、with、msg、ids；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithMsgIds，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -574,7 +598,9 @@ def test_chat_remove_messages_from_server_with_msg_ids_empty_msg_ids(topology_pr
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithMsgIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = topology_primary_or_device_a.call(
+    client = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
+    resp = client.call(
         "ChatManager",
         Cmd.removeMessagesFromServerWithMsgIds.value,
         info={"convId": user_b, "type": 0, "msgIds": []},
@@ -606,7 +632,7 @@ def test_chat_remove_messages_from_server_with_msg_ids_missing_conv_id(device_a)
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("local_state")
 @pytest.mark.topology_ready
-def test_chat_remove_messages_from_server_with_ts_success(topology_primary_or_device_a, assert_api, user_b):
+def test_chat_remove_messages_from_server_with_ts_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、移除、消息、from、服务端、with、ts、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithTs，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -617,7 +643,8 @@ def test_chat_remove_messages_from_server_with_ts_success(topology_primary_or_de
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithTs，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    client = topology_primary_or_device_a
+    client = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
     resp = client.call(
         "ChatManager",
         Cmd.removeMessagesFromServerWithTs.value,
@@ -650,7 +677,7 @@ def test_chat_remove_messages_from_server_with_ts_missing_timestamp(device_a, us
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("error_response")
 @pytest.mark.topology_ready
-def test_chat_remove_messages_from_server_with_ts_timestamp_zero(topology_primary_or_device_a, user_b):
+def test_chat_remove_messages_from_server_with_ts_timestamp_zero(topology):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、消息、from、服务端、with、ts、timestamp；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithTs，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -661,7 +688,9 @@ def test_chat_remove_messages_from_server_with_ts_timestamp_zero(topology_primar
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeMessagesFromServerWithTs，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = topology_primary_or_device_a.call(
+    client = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
+    resp = client.call(
         "ChatManager",
         Cmd.removeMessagesFromServerWithTs.value,
         info={"convId": user_b, "type": 0, "timestamp": 0},
@@ -691,10 +720,12 @@ def test_chat_remove_messages_from_server_with_ts_missing_conv_id(device_a):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.report_message.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.reportMessage")
-def test_chat_report_message_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_report_message_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、report、消息、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.reportMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -705,13 +736,14 @@ def test_chat_report_message_success(device_a, device_b, assert_api, user_a, use
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.reportMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s2-report-{uuid.uuid4().hex[:6]}")
     resp = device_a.call(
         "ChatManager",
         Cmd.reportMessage.value,
         info={"msgId": real_id, "tag": "spam", "reason": "s2-report-message"},
     )
-    _assert_chat_response(assert_api, resp, Cmd.reportMessage.value, "deviceA", True)
+    _assert_chat_response(assert_api, resp, Cmd.reportMessage.value, primary_device, True)
 
 
 @pytest.mark.real_e2e
