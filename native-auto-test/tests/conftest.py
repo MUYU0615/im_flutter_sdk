@@ -430,6 +430,14 @@ def topology(request, ws_debug):
         topo.close()
 
 
+@pytest.fixture
+def topology_primary_or_device_a(request):
+    """正式 topology run 使用 primary_a；无 run context 的低层调试继续使用 device_a。"""
+    if request.config.getoption("--run-context"):
+        return request.getfixturevalue("topology").primary_client(0)
+    return request.getfixturevalue("device_a")
+
+
 @pytest.fixture(scope="session")
 def target_device_pair(target_platform) -> tuple[str, str]:
     return target_device_pair_for_platform(target_platform)
