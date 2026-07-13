@@ -26,6 +26,12 @@ def _expected_device(client) -> str:
     return getattr(client, "name", "deviceA")
 
 
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     try:
         device_a.drain_events()
@@ -41,7 +47,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         {
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": str(send_msg_id),
                 "from": send_result.get("from"),
@@ -52,7 +58,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": "{{msgId}}",
                 "from": "{{fromUser}}",
@@ -213,7 +219,9 @@ def _assert_invalid_conv_returns_cursor(assert_api, resp: dict, cmd: str, device
 
 
 @pytest.mark.real_e2e
-def test_chat_ack_conversation_read_success_with_event(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chat_ack_conversation_read_success_with_event(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、会话、已读、成功路径、with、event；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -224,6 +232,7 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, _, remote_device = _topology_pair(topology)
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s3-ack-conv-{uuid.uuid4().hex[:6]}")
     resp_ack = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"convId": user_a})
     assert_api.assert_response_matches(
@@ -231,7 +240,7 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.ackConversationRead.value,
-            "device": "deviceB",
+            "device": remote_device,
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -336,6 +345,8 @@ def test_chat_ack_conversation_read_empty_conv_id(topology, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.pin_conversation.toggle_after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.pinConversation")
@@ -343,7 +354,7 @@ def test_chat_ack_conversation_read_empty_conv_id(topology, assert_api):
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_pin_conversation_success_toggle(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、置顶、会话、成功路径、toggle；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinConversation、ChatManager.getConversation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -354,6 +365,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinConversation、ChatManager.getConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s3-pin-{uuid.uuid4().hex[:6]}")
 
     resp_pin = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": user_b, "isPinned": True})
@@ -362,7 +374,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.pinConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -374,7 +386,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         {
             "manager": "ChatManager",
             "cmd": Cmd.getConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "convId": conv.get("convId"),
                 "type": conv.get("type"),
@@ -384,7 +396,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.getConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "convId": "{{convId}}",
                 "type": 0,
@@ -401,7 +413,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.pinConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -413,7 +425,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         {
             "manager": "ChatManager",
             "cmd": Cmd.getConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "convId": conv2.get("convId"),
                 "type": conv2.get("type"),
@@ -423,7 +435,7 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.getConversation.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "convId": "{{convId}}",
                 "type": 0,
@@ -492,13 +504,15 @@ def test_chat_pin_conversation_empty_conv_id(topology_primary_or_device_a, asser
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_history_messages.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.fetchHistoryMessages")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_fetch_history_messages_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -509,6 +523,7 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     content = f"s3-history-{uuid.uuid4().hex[:6]}"
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content)
     time.sleep(2)
@@ -537,7 +552,7 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
         {
             "manager": "ChatManager",
             "cmd": Cmd.fetchHistoryMessages.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "list": hits,
             },
@@ -545,7 +560,7 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchHistoryMessages.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"list": [{"msgId": "{{msgId}}", "convId": "{{convId}}"}]},
         },
         context={"msgId": str(real_id), "convId": user_b},
@@ -607,13 +622,15 @@ def test_chat_fetch_history_messages_empty_conv_id(topology_primary_or_device_a,
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_history_messages_by_options.after_send.success")
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.fetchHistoryMessagesByOptions")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_fetch_history_messages_by_options_success(device_a, device_b, assert_api, user_a, user_b):
+def test_chat_fetch_history_messages_by_options_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、by、options、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -624,6 +641,7 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     content = f"s3-history-opt-{uuid.uuid4().hex[:6]}"
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content)
     time.sleep(2)
@@ -652,7 +670,7 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
         {
             "manager": "ChatManager",
             "cmd": Cmd.fetchHistoryMessagesByOptions.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {
                 "list": hits,
             },
@@ -660,7 +678,7 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchHistoryMessagesByOptions.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"list": [{"msgId": "{{msgId}}", "convId": "{{convId}}"}]},
         },
         context={"msgId": str(real_id), "convId": user_b},
