@@ -17,6 +17,10 @@ def _conversation(user_b: str) -> dict:
     return {"convId": user_b, "type": 0, "isThread": False}
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _expected_sent_message(msg_id: str, user_a: str, user_b: str, content: str, *, status=2) -> dict:
     return {
         "broadcast": False,
@@ -674,7 +678,9 @@ def test_conversation_ext_and_count_queries(device_a, device_b, assert_api, user
 @pytest.mark.api("ConversationManager.deleteMessageByIds")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_conversation_invalid_message_id_boundaries(topology_primary_or_device_a, assert_api, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为会话、无效参数、消息、id、boundaries；
     2. 通过 WebSocket 控制测试 App 调用 ConversationManager.loadMsgWithId、ConversationManager.markMessageAsRead、ConversationManager.deleteMessageByIds，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -686,8 +692,10 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     conv_a = _conversation(user_b)
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
 
-    resp_load_invalid = device_a.call(
+    resp_load_invalid = client.call(
         "ConversationManager",
         Cmd.loadMsgWithId.value,
         info={**conv_a, "msgId": "__not_exists_msg_id__"},
@@ -697,13 +705,13 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.loadMsgWithId.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": None,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_mark_invalid = device_a.call(
+    resp_mark_invalid = client.call(
         "ConversationManager",
         Cmd.markMessageAsRead.value,
         info={**conv_a, "msgId": "__not_exists_msg_id__"},
@@ -713,13 +721,13 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.markMessageAsRead.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_delete_empty = device_a.call(
+    resp_delete_empty = client.call(
         "ConversationManager",
         Cmd.deleteMessageByIds.value,
         info={**conv_a, "messageIds": []},
@@ -729,7 +737,7 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.deleteMessageByIds.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
