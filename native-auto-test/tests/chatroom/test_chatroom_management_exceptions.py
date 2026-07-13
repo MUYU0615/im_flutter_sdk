@@ -293,13 +293,21 @@ _EMPTY_ROOM_ID_MANAGEMENT_CASES = [
 ]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "info", "expected_code", "expected_description"),
     _NONEXISTENT_MANAGEMENT_CASES,
     ids=[case[0] for case in _NONEXISTENT_MANAGEMENT_CASES],
 )
-def test_chatroom_management_api_nonexistent_room(device_a, assert_api, cmd, info, expected_code, expected_description):
+def test_chatroom_management_api_nonexistent_room(
+    topology_primary_or_device_a, assert_api, cmd, info, expected_code, expected_description
+):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、不存在对象、room；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、不存在对象、room，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -310,17 +318,21 @@ def test_chatroom_management_api_nonexistent_room(device_a, assert_api, cmd, inf
         '2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、不存在对象、room，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatRoomManager", cmd, info=info)
+    resp = topology_primary_or_device_a.call("ChatRoomManager", cmd, info=info)
     assert_api.assert_error(resp, code=expected_code, description=expected_description)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "info", "expected_code", "expected_description"),
     _EMPTY_ROOM_ID_MANAGEMENT_CASES,
     ids=[case[0] for case in _EMPTY_ROOM_ID_MANAGEMENT_CASES],
 )
-def test_chatroom_management_api_empty_room_id(device_a, assert_api, cmd, info, expected_code, expected_description):
+def test_chatroom_management_api_empty_room_id(
+    topology_primary_or_device_a, assert_api, cmd, info, expected_code, expected_description
+):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、空值参数、room、id；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -331,14 +343,15 @@ def test_chatroom_management_api_empty_room_id(device_a, assert_api, cmd, info, 
         '2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatRoomManager", cmd, info=info)
+    client = topology_primary_or_device_a
+    resp = client.call("ChatRoomManager", cmd, info=info)
     if expected_description == "":
         assert_api.assert_response_matches(
             resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": cmd,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "code": expected_code,
                     "description": "",
