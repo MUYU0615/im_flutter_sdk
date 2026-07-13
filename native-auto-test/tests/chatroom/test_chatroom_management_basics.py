@@ -500,7 +500,9 @@ def test_chatroom_change_subject_and_description_success(topology_primary_or_dev
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_add_and_remove_admin_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、添加、and、移除、admin、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -511,18 +513,23 @@ def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, u
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="admin", desc_prefix="admin")
     try:
-        _join_chatroom_as_b(device_b, assert_api, room_id)
+        _join_chatroom_as_b(remote, assert_api, room_id)
 
-        add_resp = device_a.call(
+        add_resp = primary.call(
             "ChatRoomManager",
             Cmd.addChatRoomAdmin.value,
             info={"roomId": room_id, "admin": user_b},
         )
-        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addChatRoomAdmin.value, device="deviceA")
+        _assert_success_envelope(assert_api, add_resp, cmd=Cmd.addChatRoomAdmin.value, device=primary_device)
 
-        fetch_after_add = device_a.call(
+        fetch_after_add = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id},
@@ -531,14 +538,14 @@ def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, u
         assert isinstance(admin_list, list), f"adminList 应为 list: {fetch_after_add}"
         assert user_b in admin_list, f"添加管理员后 adminList 缺少成员: user_b={user_b}, adminList={admin_list}"
 
-        remove_resp = device_a.call(
+        remove_resp = primary.call(
             "ChatRoomManager",
             Cmd.removeChatRoomAdmin.value,
             info={"roomId": room_id, "admin": user_b},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAdmin.value, device="deviceA")
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAdmin.value, device=primary_device)
 
-        fetch_after_remove = device_a.call(
+        fetch_after_remove = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id},
@@ -559,7 +566,9 @@ def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, u
 @pytest.mark.api("ChatRoomManager.fetchChatRoomMembers")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_remove_member_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.removeChatRoomMembers、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -570,18 +579,23 @@ def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, 
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.removeChatRoomMembers、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="kick", desc_prefix="kick")
     try:
-        _join_chatroom_as_b(device_b, assert_api, room_id)
+        _join_chatroom_as_b(remote, assert_api, room_id)
 
-        remove_resp = device_a.call(
+        remove_resp = primary.call(
             "ChatRoomManager",
             Cmd.removeChatRoomMembers.value,
             info={"roomId": room_id, "members": [user_b]},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomMembers.value, device=primary_device)
 
-        members_resp = device_a.call(
+        members_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMembers.value,
             info={"roomId": room_id, "cursor": "", "pageSize": 20},
@@ -591,7 +605,7 @@ def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, 
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": {
                     "cursor": ne(None),
                     "list": ne(None),
@@ -998,7 +1012,9 @@ def test_chatroom_update_attribute_overwrites_previous_value(topology_primary_or
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_change_owner_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、owner、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.changeChatRoomOwner、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1009,11 +1025,16 @@ def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, u
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.changeChatRoomOwner、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="owner", desc_prefix="owner")
     try:
-        _join_chatroom_as_b(device_b, assert_api, room_id)
+        _join_chatroom_as_b(remote, assert_api, room_id)
 
-        change_resp = device_a.call(
+        change_resp = primary.call(
             "ChatRoomManager",
             Cmd.changeChatRoomOwner.value,
             info={"roomId": room_id, "newOwner": user_b},
@@ -1023,7 +1044,7 @@ def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, u
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.changeChatRoomOwner.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": {
                     "owner": user_b,
                     "maxUsers": 200,
