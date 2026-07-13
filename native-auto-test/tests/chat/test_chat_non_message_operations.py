@@ -22,6 +22,10 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
 }
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     try:
         device_a.drain_events()
@@ -426,7 +430,9 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
 
 
 @pytest.mark.real_e2e
-def test_chat_pin_conversation_invalid_conv_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_pin_conversation_invalid_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、无效参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -437,23 +443,26 @@ def test_chat_pin_conversation_invalid_conv_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": "__invalid__", "isPinned": True})
+    client = topology_primary_or_device_a
+    resp = client.call("ChatManager", Cmd.pinConversation.value, info={"convId": "__invalid__", "isPinned": True})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.pinConversation.value,
-        "deviceA",
+        _expected_device(client),
         code=107,
         desc_contains="Invalid conversation",
     )
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.pin_conversation.empty_conv_id.error")
 @pytest.mark.api("ChatManager.pinConversation")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
+def test_chat_pin_conversation_empty_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、空值参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -464,12 +473,13 @@ def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": "", "isPinned": True})
+    client = topology_primary_or_device_a
+    resp = client.call("ChatManager", Cmd.pinConversation.value, info={"convId": "", "isPinned": True})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.pinConversation.value,
-        "deviceA",
+        _expected_device(client),
         code=107,
         desc_contains="Invalid conversation",
     )
@@ -538,7 +548,9 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_history_messages_invalid_conv_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_history_messages_invalid_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、无效参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -549,16 +561,19 @@ def test_chat_fetch_history_messages_invalid_conv_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ChatManager",
         Cmd.fetchHistoryMessages.value,
         info={"convId": "__invalid__", "type": 0, "pageSize": 20, "startMsgId": "", "direction": 0},
     )
-    _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessages.value, "deviceA")
+    _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessages.value, _expected_device(client))
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_history_messages_empty_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、空值参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -569,7 +584,8 @@ def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ChatManager",
         Cmd.fetchHistoryMessages.value,
         info={"convId": "", "type": 0, "pageSize": 20, "startMsgId": "", "direction": 0},
@@ -578,7 +594,7 @@ def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
         assert_api,
         resp,
         Cmd.fetchHistoryMessages.value,
-        "deviceA",
+        _expected_device(client),
         code=110,
         desc_contains="'convId' can not be null",
     )
@@ -647,7 +663,9 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_history_messages_by_options_invalid_conv_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_history_messages_by_options_invalid_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、无效参数、conv；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -658,16 +676,19 @@ def test_chat_fetch_history_messages_by_options_invalid_conv_id(device_a, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ChatManager",
         Cmd.fetchHistoryMessagesByOptions.value,
         info={"convId": "__invalid__", "type": 0, "pageSize": 20, "cursor": ""},
     )
-    _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessagesByOptions.value, "deviceA")
+    _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessagesByOptions.value, _expected_device(client))
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_history_messages_by_options_empty_conv_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_history_messages_by_options_empty_conv_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、空值参数、conv；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -678,7 +699,8 @@ def test_chat_fetch_history_messages_by_options_empty_conv_id(device_a, assert_a
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ChatManager",
         Cmd.fetchHistoryMessagesByOptions.value,
         info={"convId": "", "type": 0, "pageSize": 20, "cursor": ""},
@@ -687,7 +709,7 @@ def test_chat_fetch_history_messages_by_options_empty_conv_id(device_a, assert_a
         assert_api,
         resp,
         Cmd.fetchHistoryMessagesByOptions.value,
-        "deviceA",
+        _expected_device(client),
         code=110,
         desc_contains="'convId' can not be null",
     )
