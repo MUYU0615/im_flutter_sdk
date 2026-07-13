@@ -284,7 +284,9 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
 
 
 @pytest.mark.real_e2e
-def test_chat_ack_conversation_read_invalid_conv_id(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_ack_conversation_read_invalid_conv_id(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、无效参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -295,19 +297,22 @@ def test_chat_ack_conversation_read_invalid_conv_id(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": "__invalid_conversation_id__"})
+    client = topology.remote_client(0)
+    resp = client.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": "__invalid_conversation_id__"})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.ackConversationRead.value,
-        "deviceB",
+        _expected_device(client),
         code=110,
         desc_contains="convId",
     )
 
 
 @pytest.mark.real_e2e
-def test_chat_ack_conversation_read_empty_conv_id(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_ack_conversation_read_empty_conv_id(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、空值参数、conv、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -318,12 +323,13 @@ def test_chat_ack_conversation_read_empty_conv_id(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": ""})
+    client = topology.remote_client(0)
+    resp = client.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": ""})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.ackConversationRead.value,
-        "deviceB",
+        _expected_device(client),
         code=110,
         desc_contains="convId",
     )
