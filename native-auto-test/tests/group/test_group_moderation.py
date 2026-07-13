@@ -21,6 +21,10 @@ pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _group_state(device_a, assert_api, group_id: str):
     resp = device_a.call("GroupManager", Cmd.getGroupSpecificationFromServer.value, info={"groupId": group_id, "fetchMembers": True})
     assert_api.assert_response_matches(
@@ -119,7 +123,9 @@ def test_group_block_unblock_members_success(device_a, device_b, assert_api, use
 
 @pytest.mark.real_e2e
 @pytest.mark.parametrize("cmd", [Cmd.blockMembers.value, Cmd.unblockMembers.value])
-def test_group_block_unblock_members_nonexistent_group(device_a, assert_api, cmd):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_block_unblock_members_nonexistent_group(topology_primary_or_device_a, assert_api, cmd):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、封禁、unblock、成员、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 群组、封禁、unblock、成员、不存在对象、群组，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -130,7 +136,11 @@ def test_group_block_unblock_members_nonexistent_group(device_a, assert_api, cmd
         '2. 通过 WebSocket 控制测试 App 调用 群组、封禁、unblock、成员、不存在对象、群组，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("GroupManager", cmd, info={"groupId": _NONEXISTENT_GROUP_ID, "members": ["user_x"]})
+    resp = topology_primary_or_device_a.call(
+        "GroupManager",
+        cmd,
+        info={"groupId": _NONEXISTENT_GROUP_ID, "members": ["user_x"]},
+    )
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
@@ -406,7 +416,9 @@ def test_group_add_remove_white_list_success(device_a, device_b, assert_api, use
 
 
 @pytest.mark.real_e2e
-def test_group_update_group_ext_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_update_group_ext_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、群组、ext、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupExt，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -417,11 +429,12 @@ def test_group_update_group_ext_success(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupExt，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    client = topology_primary_or_device_a
     group_id = ""
     group_name = new_group_name("mod_ext")
     try:
-        group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=group_name, invite_members=[])
-        resp = device_a.call("GroupManager", Cmd.updateGroupExt.value, info={"groupId": group_id, "ext": "{\"k\":\"v\"}"})
+        group_id, _ = create_group(client, assert_api, owner=user_a, group_name=group_name, invite_members=[])
+        resp = client.call("GroupManager", Cmd.updateGroupExt.value, info={"groupId": group_id, "ext": "{\"k\":\"v\"}"})
         assert_group_snapshot(
             assert_api,
             resp,
@@ -431,13 +444,16 @@ def test_group_update_group_ext_success(device_a, assert_api, user_a):
             owner=user_a,
             expected_desc="auto-test group",
             expected_ext="{\"k\":\"v\"}",
+            device=_expected_device(client),
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     "cmd,info,code,desc",
     [
@@ -450,7 +466,7 @@ def test_group_update_group_ext_success(device_a, assert_api, user_a):
         (Cmd.updateGroupExt.value, {"groupId": _NONEXISTENT_GROUP_ID, "ext": "{}"}, 600, "do not find this group"),
     ],
 )
-def test_group_moderation_nonexistent_group_errors(device_a, assert_api, cmd, info, code, desc):
+def test_group_moderation_nonexistent_group_errors(topology_primary_or_device_a, assert_api, cmd, info, code, desc):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、moderation、不存在对象、群组、errors；
     2. 通过 WebSocket 控制测试 App 调用 群组、moderation、不存在对象、群组、errors，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -461,5 +477,5 @@ def test_group_moderation_nonexistent_group_errors(device_a, assert_api, cmd, in
         '2. 通过 WebSocket 控制测试 App 调用 群组、moderation、不存在对象、群组、errors，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("GroupManager", cmd, info=info)
+    resp = topology_primary_or_device_a.call("GroupManager", cmd, info=info)
     assert_api.assert_error(resp, code=code, description=desc)
