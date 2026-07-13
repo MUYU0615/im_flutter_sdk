@@ -316,6 +316,8 @@ def test_group_join_and_leave_public_group(topology, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.requires_extra_distinct_accounts
+@pytest.mark.skip(reason="需要 owner + 两个不同成员账号；当前 Android complete topology 只有 primary account 与 remote account。")
 def test_group_members_batch_join_exit_new_events(device_a, device_b, assert_api, user_a, user_b, user_c):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、成员、batch、加入、exit、new、events；

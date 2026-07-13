@@ -137,3 +137,17 @@ def test_classify_case_skip_excludes_real_e2e_from_formal_suite():
 
     assert row.status == "not_real_e2e"
     assert row.should_include_android_complete is False
+
+
+def test_classify_case_marks_extra_account_topology_requirement():
+    row = classify_case(
+        nodeid="tests/group/test_group.py::test_batch_members",
+        path="tests/group/test_group.py",
+        markers={"real_e2e", "group", "requires_extra_distinct_accounts"},
+        fixtures={"device_a", "device_b", "assert_api"},
+        source='device_a.call("GroupManager", "addMembers", info={})',
+    )
+
+    assert row.status == "requires_unsupported_topology"
+    assert row.should_include_android_complete is False
+    assert "额外独立账号" in row.reason_zh

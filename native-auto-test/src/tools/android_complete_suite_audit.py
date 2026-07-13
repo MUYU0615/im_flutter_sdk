@@ -38,6 +38,7 @@ DEVICE_FIXTURES = {
 }
 SDK_CALL_NAMES = {"call", "request", "request_and_wait_for_event"}
 NON_E2E_MARKERS = {"unit", "fixture", "wrapper_mapping", "capability", "no_global_login", "skip", "skipif"}
+TOPOLOGY_UNSUPPORTED_MARKERS = {"requires_extra_distinct_accounts"}
 
 
 @dataclass(frozen=True)
@@ -116,7 +117,11 @@ def classify_case(
     has_device = bool(fixtures & DEVICE_FIXTURES) or uses_dynamic_device_fixture(source)
     sdk_candidate = is_sdk_e2e_candidate(source)
 
-    if markers & NON_E2E_MARKERS:
+    if markers & TOPOLOGY_UNSUPPORTED_MARKERS:
+        status = "requires_unsupported_topology"
+        include = False
+        reason = "该真实 E2E 需要当前 Android complete topology 未提供的额外独立账号或设备组合，不纳入本套件。"
+    elif markers & NON_E2E_MARKERS:
         status = "not_real_e2e"
         include = False
         reason = "标记为 unit/fixture/wrapper/capability/no_global_login，不纳入真实 Android E2E。"
