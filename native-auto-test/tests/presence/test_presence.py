@@ -36,7 +36,11 @@ USER_NONEXISTENT = "nonexistent_user_xyz_999"
 @pytest.mark.api("PresenceManager.fetchPresenceStatus")
 @pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
 @pytest.mark.api("PresenceManager.presenceUnsubscribe")
-def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert_api, user_a):
+@pytest.mark.clients("sender,receiver")
+@pytest.mark.roles_mode("ordered")
+@pytest.mark.e2e_flow("peer_interaction")
+@pytest.mark.topology_ready
+def test_presence_publish_subscribe_query_unsubscribe(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为在线状态、发布、订阅、query、取消订阅；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -47,8 +51,14 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
+
     # 1. A 发布自定义在线状态（PresenceManager.publishPresenceWithDescription）
-    resp_pub = device_a.call(
+    resp_pub = primary.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": "online"},
@@ -63,12 +73,12 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": True,
         },
-        context={"device": "deviceA"},
+        context={"device": primary_device},
         ignore_keys={"sequence"},
     )
 
     # 2. B 订阅 A 的在线状态（PresenceManager.presenceSubscribe）
-    resp_sub = device_b.call(
+    resp_sub = remote.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [user_a], "expiry": PRESENCE_EXPIRY},
@@ -83,12 +93,12 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": [{"statusDescription": "online", "publisher": "{{publisher}}", "expiryTime": gt(0)}],
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence", "lastTime", "statusDetails"},
     )
 
     # 3. B 查询指定用户 A 的当前在线状态（fetchPresenceStatus）
-    resp_status = device_b.call(
+    resp_status = remote.call(
         "PresenceManager",
         Cmd.fetchPresenceStatus.value,
         info={"members": [user_a]},
@@ -108,7 +118,7 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
     # )
     #
     # # 4. B 获取订阅用户列表（fetchSubscribedMembersWithPageNum）
-    resp_members = device_b.call(
+    resp_members = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 1, "pageSize": 20},
@@ -121,12 +131,12 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": ["{{publisher}}"]
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence"},
     )
     #
     # # 5. B 取消订阅 A（presenceUnsubscribe）
-    resp_unsub = device_b.call(
+    resp_unsub = remote.call(
         "PresenceManager",
         Cmd.presenceUnsubscribe.value,
         info={"members": [user_a]},
@@ -139,12 +149,12 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": None,
         },
-        context={"device": "deviceB"},
+        context={"device": remote_device},
         ignore_keys={"sequence"},
     )
 
     # # 6. B 再次查询订阅列表，应返回空
-    resp_members_after = device_b.call(
+    resp_members_after = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 1, "pageSize": 20},
@@ -158,7 +168,7 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
             "device": "{{device}}",
             "result": [],
         },
-        context={"device": "deviceB"},
+        context={"device": remote_device},
         ignore_keys={"sequence"},
     )
 
@@ -170,7 +180,9 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
 @pytest.mark.api("PresenceManager.fetchPresenceStatus")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("peer_interaction")
+@pytest.mark.topology_ready
+def test_presence_publish_empty_desc_then_fetch(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、发布、空值参数、desc、then、拉取；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -181,8 +193,13 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    remote_device = _expected_device(remote)
+
     # 1. A 发布 desc 为空
-    resp_pub = device_a.call(
+    resp_pub = primary.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": ""},
@@ -190,7 +207,7 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
     assert_api.assert_success(resp_pub)
 
     # 2. B 订阅 A
-    resp_sub = device_b.call(
+    resp_sub = remote.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [user_a], "expiry": PRESENCE_EXPIRY},
@@ -198,7 +215,7 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
     assert_api.assert_success(resp_sub)
 
     # 3. B 查询 A 的在线状态，断言 statusDescription 为空
-    resp_status = device_b.call(
+    resp_status = remote.call(
         "PresenceManager",
         Cmd.fetchPresenceStatus.value,
         info={"members": [user_a]},
@@ -212,7 +229,7 @@ def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, 
             "device": "{{device}}",
             "result": [{"statusDescription": "", "publisher": "{{publisher}}"}],
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence", "lastTime", "expiryTime", "statusDetails"},
     )
 
@@ -304,7 +321,9 @@ def test_presence_subscribe_nonexistent_user(topology_primary_or_device_a, asser
 @pytest.mark.api("PresenceManager.presenceSubscribe")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_presence_subscribe_expiry_over_30_days(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_presence_subscribe_expiry_over_30_days(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、expiry、over、30、days；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -315,15 +334,19 @@ def test_presence_subscribe_expiry_over_30_days(device_a, device_b, assert_api, 
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+
     # A 先发布 presence，确保 A 存在且在线
-    resp_pub = device_a.call(
+    resp_pub = primary.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": "online"},
     )
     assert_api.assert_success(resp_pub)
     # B 订阅 A，但 expiry 超过 30 天（30*24*3600 + 1 秒）
-    resp = device_b.call(
+    resp = remote.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [user_a], "expiry": SECONDS_30_DAYS + 1},
@@ -426,7 +449,9 @@ def test_presence_unsubscribe_over_100_members(topology_primary_or_device_a, ass
 @pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("peer_interaction")
+@pytest.mark.topology_ready
+def test_fetch_subscribed_members_pagination(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -437,14 +462,19 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    remote_device = _expected_device(remote)
+
     # 准备：A 发布，B 订阅 A
-    resp_pub = device_a.call(
+    resp_pub = primary.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": "online"},
     )
     assert_api.assert_success(resp_pub)
-    resp_sub = device_b.call(
+    resp_sub = remote.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [user_a], "expiry": PRESENCE_EXPIRY},
@@ -452,7 +482,7 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
     assert_api.assert_success(resp_sub)
 
     # 第 1 页：pageNum=1, pageSize=20，应返回 [user_a]
-    resp_p1 = device_b.call(
+    resp_p1 = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 1, "pageSize": 20},
@@ -465,12 +495,12 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
             "device": "{{device}}",
             "result": ["{{publisher}}"],
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence"},
     )
 
     # 第 2 页：应为空列表
-    resp_p2 = device_b.call(
+    resp_p2 = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 2, "pageSize": 20},
@@ -483,7 +513,7 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
             "device": "{{device}}",
             "result": [],
         },
-        context={"device": "deviceB"},
+        context={"device": remote_device},
         ignore_keys={"sequence"},
     )
 
@@ -495,7 +525,9 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
 @pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("peer_interaction")
+@pytest.mark.topology_ready
+def test_fetch_subscribed_members_pagination_page_size_one(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination、page、size、one；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -506,20 +538,25 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp_pub = device_a.call(
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    remote_device = _expected_device(remote)
+
+    resp_pub = primary.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": "online"},
     )
     assert_api.assert_success(resp_pub)
-    resp_sub = device_b.call(
+    resp_sub = remote.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": [user_a], "expiry": PRESENCE_EXPIRY},
     )
     assert_api.assert_success(resp_sub)
 
-    resp_1 = device_b.call(
+    resp_1 = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 1, "pageSize": 1},
@@ -532,11 +569,11 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
             "device": "{{device}}",
             "result": ["{{publisher}}"],
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence"},
     )
 
-    resp_2 = device_b.call(
+    resp_2 = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 2, "pageSize": 1},
@@ -549,7 +586,7 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
             "device": "{{device}}",
             "result": [],
         },
-        context={"device": "deviceB"},
+        context={"device": remote_device},
         ignore_keys={"sequence"},
     )
 
@@ -559,7 +596,9 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
 @pytest.mark.api("PresenceManager.fetchSubscribedMembersWithPageNum")
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
-def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_fetch_subscribed_members_invalid_pagination(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为拉取、subscribed、成员、无效参数、pagination；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -570,7 +609,25 @@ def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp_zero_page = device_b.call(
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    remote_device = _expected_device(remote)
+
+    resp_pub = primary.call(
+        "PresenceManager",
+        Cmd.presenceWithDescription.value,
+        info={"desc": "online"},
+    )
+    assert_api.assert_success(resp_pub)
+    resp_sub = remote.call(
+        "PresenceManager",
+        Cmd.presenceSubscribe.value,
+        info={"members": [user_a], "expiry": PRESENCE_EXPIRY},
+    )
+    assert_api.assert_success(resp_sub)
+
+    resp_zero_page = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 0, "pageSize": 20},
@@ -584,11 +641,11 @@ def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_
             "device": "{{device}}",
             "result": ["{{publisher}}"],
         },
-        context={"device": "deviceB", "publisher": user_a},
+        context={"device": remote_device, "publisher": user_a},
         ignore_keys={"sequence"},
     )
 
-    resp_zero_size = device_b.call(
+    resp_zero_size = remote.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,
         info={"pageNum": 1, "pageSize": 0},
