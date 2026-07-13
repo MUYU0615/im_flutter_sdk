@@ -26,6 +26,16 @@ _BODY_TYPE_BY_SEND_TYPE = {
 }
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _body_matches_payload(body: dict, *, type_key: str, payload: dict) -> bool:
     if not isinstance(body, dict):
         return False
@@ -73,7 +83,17 @@ def _wait_received_payload_message(device, *, real_id: str, from_user: str, to_u
     return None, last_event
 
 
-def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, *, content: str, target_languages: list[str] | None = None):
+def _assert_send_success_and_events(
+    device_a,
+    device_b,
+    assert_api,
+    user_a,
+    user_b,
+    *,
+    sender_device: str,
+    content: str,
+    target_languages: list[str] | None = None,
+):
     info = {
         "type": "txt",
         "payload": {
@@ -150,7 +170,7 @@ def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user
         {
             "manager": "ChatManager",
             "cmd": Cmd.sendMessageWithType.value,
-            "device": "deviceA",
+            "device": sender_device,
             "result": resp_expected,
         }
         if "result" in resp
@@ -189,7 +209,9 @@ def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user
     return real_id
 
 
-def test_send_message_with_type_text_basic(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_text_basic(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、basic；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、basic，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -200,11 +222,22 @@ def test_send_message_with_type_text_basic(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、basic，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     content = f"txt-{uuid.uuid4().hex[:6]}"
-    _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, content=content)
+    _assert_send_success_and_events(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        content=content,
+    )
 
 
-def test_send_message_with_type_text_with_languages(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_text_with_languages(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、with、languages；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、with、languages，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -215,11 +248,23 @@ def test_send_message_with_type_text_with_languages(device_a, device_b, assert_a
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、with、languages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     content = f"txttr-{uuid.uuid4().hex[:6]}"
-    _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, content=content, target_languages=["zh-Hans"])
+    _assert_send_success_and_events(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        content=content,
+        target_languages=["zh-Hans"],
+    )
 
 
-def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_cmd_received_by_cmd_callback(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、cmd、received、by、cmd；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -230,6 +275,7 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     action = f"cmd-action-{uuid.uuid4().hex[:8]}"
     info = {
         "type": "cmd",
@@ -257,7 +303,7 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessageWithType.value,
-            "device": "deviceA",
+            "device": sender_device,
             "result": {
                 "msgId": temp_id,
                 "from": user_a,
@@ -359,7 +405,17 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
     )
 
 
-def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, *, type_key: str, payload: dict):
+def _send_with_payload_and_assert(
+    device_a,
+    device_b,
+    assert_api,
+    user_a,
+    user_b,
+    *,
+    sender_device: str,
+    type_key: str,
+    payload: dict,
+):
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -434,7 +490,7 @@ def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b
         {
             "manager": "ChatManager",
             "cmd": Cmd.sendMessageWithType.value,
-            "device": "deviceA",
+            "device": sender_device,
             "result": resp_expected,
         }
         if "result" in resp
@@ -573,7 +629,9 @@ def _prepare_media_asset(device, asset_name: str) -> dict:
     assert result.get("localPath"), f"prepareTestMediaAsset 未返回 localPath: {resp}"
     return result
 
-def test_send_message_with_type_file(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_file(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、file；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、file，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -584,6 +642,7 @@ def test_send_message_with_type_file(device_a, device_b, assert_api, user_a, use
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、file，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     media = _prepare_media_asset(device_a, "normalGif.gif")
     payload = {
         "targetId": user_b,
@@ -591,10 +650,21 @@ def test_send_message_with_type_file(device_a, device_b, assert_api, user_a, use
         "displayName": "normalGif.gif",
         "fileSize": media.get("fileSize"),
     }
-    _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, type_key="file", payload=payload)
+    _send_with_payload_and_assert(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        type_key="file",
+        payload=payload,
+    )
 
 
-def test_send_message_with_type_image(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_image(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -605,6 +675,7 @@ def test_send_message_with_type_image(device_a, device_b, assert_api, user_a, us
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     media = _prepare_media_asset(device_a, "normalGif.gif")
     payload = {
         "targetId": user_b,
@@ -614,10 +685,21 @@ def test_send_message_with_type_image(device_a, device_b, assert_api, user_a, us
         "isGif": True,
         "sendOriginalImage": True,
     }
-    _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, type_key="image", payload=payload)
+    _send_with_payload_and_assert(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        type_key="image",
+        payload=payload,
+    )
 
 
-def test_send_message_with_type_image_heic(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_image_heic(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image、heic；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image、heic，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -628,6 +710,7 @@ def test_send_message_with_type_image_heic(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image、heic，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     media = _prepare_media_asset(device_a, "imgHeic.HEIC")
     payload = {
         "targetId": user_b,
@@ -635,10 +718,21 @@ def test_send_message_with_type_image_heic(device_a, device_b, assert_api, user_
         "displayName": "imgHeic.HEIC",
         "fileSize": media.get("fileSize"),
     }
-    _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, type_key="image", payload=payload)
+    _send_with_payload_and_assert(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        type_key="image",
+        payload=payload,
+    )
 
 
-def test_send_message_with_type_video(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_video(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、video；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、video，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -649,6 +743,7 @@ def test_send_message_with_type_video(device_a, device_b, assert_api, user_a, us
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、video，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     media = _prepare_media_asset(device_a, "video.mov")
     thumb = _prepare_media_asset(device_a, "bigPic.jpg")
     payload = {
@@ -659,10 +754,21 @@ def test_send_message_with_type_video(device_a, device_b, assert_api, user_a, us
         "thumbnailLocalPath": thumb["localPath"],
         "duration": 1,
     }
-    _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, type_key="video", payload=payload)
+    _send_with_payload_and_assert(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        type_key="video",
+        payload=payload,
+    )
 
 
-def test_send_message_with_type_location(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_location(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、location；
     2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、location，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -673,6 +779,7 @@ def test_send_message_with_type_location(device_a, device_b, assert_api, user_a,
         '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、location，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     payload = {
         "targetId": user_b,
         "latitude": 39.984154,
@@ -680,10 +787,21 @@ def test_send_message_with_type_location(device_a, device_b, assert_api, user_a,
         "address": "Haidian District, Beijing",
         "buildingName": "Easemob Tower",
     }
-    _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, type_key="location", payload=payload)
+    _send_with_payload_and_assert(
+        device_a,
+        device_b,
+        assert_api,
+        user_a,
+        user_b,
+        sender_device=sender_device,
+        type_key="location",
+        payload=payload,
+    )
 
 
-def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_send_message_with_type_voice(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、voice；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -694,6 +812,7 @@ def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, us
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, sender_device, _ = _topology_pair(topology)
     media = _prepare_media_asset(device_a, "testVoice.aac")
     payload = {
         "targetId": user_b,
@@ -748,7 +867,7 @@ def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessageWithType.value,
-            "device": "deviceA",
+            "device": sender_device,
             "result": expected_resp,
         }
         if "result" in resp
