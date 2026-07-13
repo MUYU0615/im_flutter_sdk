@@ -7,10 +7,21 @@ import uuid
 import pytest
 
 from src import Cmd
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 from tests.chat._utils import build_text
 
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat1_4_0]
+
+
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
 
 
 def _send_text_and_get_real_id(
@@ -39,7 +50,7 @@ def _send_text_and_get_real_id(
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "from": user_a,
                 "to": to_user,
@@ -70,14 +81,19 @@ def _send_text_and_get_real_id(
         },
     )
 
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    assert evt_success is not None, "发送端未收到 onMessageSuccess"
+    success_msg = wait_for_success_message(device_a, from_user=user_a, to_user=to_user, content=content)
     if expect_receive_on_b:
-        evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-        assert evt_received is not None, "接收端未收到 onMessagesReceived"
+        received_msg = wait_for_matching_event_message(
+            device_b,
+            event_type=Cmd.onMessagesReceived.value,
+            from_user=user_a,
+            to_user=to_user,
+            content=content,
+        )
+        assert received_msg, "接收端未收到 onMessagesReceived"
 
-    real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
-    assert isinstance(real_id, str) and real_id, f"未从 onMessageSuccess 获取真实 msgId: {evt_success}"
+    real_id = success_msg.get("msgId")
+    assert isinstance(real_id, str) and real_id, f"未从 onMessageSuccess 获取真实 msgId: {success_msg}"
     return real_id
 
 
@@ -102,7 +118,8 @@ def _extract_conv_ids_in_order(resp: dict) -> list[str]:
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_get_all_conversations_by_sort_orders_latest_first(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_get_all_conversations_by_sort_orders_latest_first(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、获取、all、conversations、by、sort、orders、latest；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadAllConversations，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -113,6 +130,7 @@ def test_chat_get_all_conversations_by_sort_orders_latest_first(device_a, device
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadAllConversations，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, _device_b_name = _topology_pair(topology)
     self_conv_id = user_a
     peer_conv_id = user_b
 
@@ -156,7 +174,7 @@ def test_chat_get_all_conversations_by_sort_orders_latest_first(device_a, device
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.loadAllConversations.value,
-            "device": "deviceA",
+            "device": device_a_name,
         },
         ignore_keys={"sequence", "result"},
     )

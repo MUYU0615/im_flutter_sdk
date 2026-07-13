@@ -22,6 +22,16 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
 }
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     resp_send, success_msg, _received_msg = send_text_and_wait(
         device_a,
@@ -40,7 +50,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": real_id,
                 "from": user_a,
@@ -111,7 +121,8 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_load_conversation_messages_with_keyword_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_load_conversation_messages_with_keyword_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、load、会话、消息、with、keyword、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadConversationMessagesWithKeyword，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -122,6 +133,7 @@ def test_chat_load_conversation_messages_with_keyword_success(device_a, device_b
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadConversationMessagesWithKeyword，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, _device_b_name = _topology_pair(topology)
     keyword = f"kw_{uuid.uuid4().hex[:10]}"
     content = f"s4-keyword-{keyword}"
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content)
@@ -152,7 +164,7 @@ def test_chat_load_conversation_messages_with_keyword_success(device_a, device_b
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.loadConversationMessagesWithKeyword.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": {
                 user_b: [real_id],
             },
@@ -166,7 +178,8 @@ def test_chat_load_conversation_messages_with_keyword_success(device_a, device_b
 @pytest.mark.api("ChatManager.loadConversationMessagesWithKeyword")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_load_conversation_messages_with_keyword_no_hit(device_a, assert_api, user_a):
+@pytest.mark.topology_ready
+def test_chat_load_conversation_messages_with_keyword_no_hit(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、load、会话、消息、with、keyword、no、hit；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.loadConversationMessagesWithKeyword，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -177,6 +190,8 @@ def test_chat_load_conversation_messages_with_keyword_no_hit(device_a, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.loadConversationMessagesWithKeyword，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a = topology.primary_client(0)
+    user_a = device_a.user_id
     keyword = f"kw_no_hit_{uuid.uuid4().hex[:10]}"
     resp = device_a.call(
         "ChatManager",
@@ -194,7 +209,7 @@ def test_chat_load_conversation_messages_with_keyword_no_hit(device_a, assert_ap
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.loadConversationMessagesWithKeyword.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {},
         },
         ignore_keys={"sequence"},

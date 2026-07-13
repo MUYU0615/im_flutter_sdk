@@ -6,6 +6,7 @@ import uuid
 import pytest
 
 from src import Cmd
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 from tests.chat._utils import build_text
 
 
@@ -17,6 +18,12 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
     "translations",
     "isListened",
 }
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
 
 
 def _expected_device(client) -> str:
@@ -56,7 +63,9 @@ def test_chat_ack_message_read_invalid_msg_id(topology, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chat_ack_message_read_success_with_event(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、消息、已读、成功路径、with、event；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -67,6 +76,7 @@ def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -75,24 +85,19 @@ def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api
 
     content = f"ack-read-{uuid.uuid4().hex[:8]}"
     _ = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    sent_real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert sent_real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    success_msg = wait_for_success_message(device_a, from_user=user_a, to_user=user_b, content=content)
+    sent_real_id = success_msg.get("msgId")
+    assert sent_real_id, f"missing real msgId from onMessageSuccess: {success_msg!r}"
 
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-    recv_msgs = ((evt_received or {}).get("data") or {}).get("messages") or []
-    recv_msg_id = None
-    for msg in recv_msgs:
-        body = (msg or {}).get("body") or {}
-        if (
-            (msg or {}).get("from") == user_a
-            and (msg or {}).get("to") == user_b
-            and body.get("content") == content
-            and (msg or {}).get("msgId")
-        ):
-            recv_msg_id = (msg or {}).get("msgId")
-            break
-    assert recv_msg_id, f"missing received msgId from onMessagesReceived: {evt_received!r}"
+    received_msg = wait_for_matching_event_message(
+        device_b,
+        event_type=Cmd.onMessagesReceived.value,
+        from_user=user_a,
+        to_user=user_b,
+        content=content,
+    )
+    recv_msg_id = received_msg.get("msgId")
+    assert recv_msg_id, f"missing received msgId from onMessagesReceived: {received_msg!r}"
 
     resp_ack = device_b.call(
         "ChatManager",
@@ -104,7 +109,7 @@ def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.ackMessageRead.value,
-            "device": "deviceB",
+            "device": device_b_name,
             "result": True,
         },
         ignore_keys={"sequence"},

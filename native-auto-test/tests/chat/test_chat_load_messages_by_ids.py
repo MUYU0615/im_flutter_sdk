@@ -25,6 +25,12 @@ def _expected_device(client) -> str:
     return getattr(client, "name", "deviceA")
 
 
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
     resp_send, success_msg, _received_msg = send_text_and_wait(
         device_a,
@@ -43,7 +49,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
+            "device": _expected_device(device_a),
             "result": {
                 "msgId": real_id,
                 "from": user_a,
@@ -148,7 +154,8 @@ def _assert_loaded_messages_contains_ids(resp: dict, expected_ids: list[str], us
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_load_messages_with_ids_single_and_multi_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、load、消息、with、ids、single、and、multi；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -159,6 +166,7 @@ def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, _device_b_name = _topology_pair(topology)
     content_1 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-1"
     content_2 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-2"
     msg_id_1 = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content_1)
@@ -178,7 +186,7 @@ def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.loadMessagesWithIds.value,
-            "device": "deviceA",
+            "device": device_a_name,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -198,7 +206,7 @@ def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.loadMessagesWithIds.value,
-            "device": "deviceA",
+            "device": device_a_name,
         },
         ignore_keys={"sequence", "result"},
     )
