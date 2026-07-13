@@ -483,7 +483,9 @@ def test_contact_decline_invitation_without_pending(topology_primary_or_device_a
 
 
 @pytest.mark.real_e2e
-def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_contact_remark_set_then_list_includes_remark(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、remark、set、then、列表、includes、remark；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -494,10 +496,15 @@ def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_normal")
+    flow.establish_friends(primary, remote, user_a, user_b, reason="remark_normal")
     remark_text = "同事-B备注"
-    response = device_a.call(
+    response = primary.call(
         "ContactManager",
         Cmd.setContactRemark.value,
         info={"userId": user_b, "remark": remark_text},
@@ -510,10 +517,10 @@ def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert
             "device": "{{device}}",
             "result": None,
         },
-        context={"device": "deviceA"},
+        context={"device": expected_device},
         ignore_keys={"sequence"},
     )
-    content_resp = device_a.call(
+    content_resp = primary.call(
         "ContactManager",
         Cmd.getContact.value,
         info={"userId": user_b},
@@ -526,14 +533,16 @@ def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert
             "device": "{{device}}",
             "result": {"userId": "{{userId}}", "remark": "{{remark}}"},
         },
-        context={"device": "deviceA", "userId": user_b, "remark": remark_text},
+        context={"device": expected_device, "userId": user_b, "remark": remark_text},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
-def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_contact_remark_empty_string(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、remark、空值参数、string；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -544,10 +553,15 @@ def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, use
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_empty")
+    flow.establish_friends(primary, remote, user_a, user_b, reason="remark_empty")
     remark_text = ""
-    response = device_a.call(
+    response = primary.call(
         "ContactManager",
         Cmd.setContactRemark.value,
         info={"userId": user_b, "remark": remark_text},
@@ -560,10 +574,10 @@ def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, use
             "device": "{{device}}",
             "result": None,
         },
-        context={"device": "deviceA"},
+        context={"device": expected_device},
         ignore_keys={"sequence"},
     )
-    content_resp = device_a.call(
+    content_resp = primary.call(
         "ContactManager",
         Cmd.getContact.value,
         info={"userId": user_b},
@@ -576,14 +590,16 @@ def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, use
             "device": "{{device}}",
             "result": {"userId": "{{userId}}", "remark": "{{remark}}"},
         },
-        context={"device": "deviceA", "userId": user_b, "remark": remark_text},
+        context={"device": expected_device, "userId": user_b, "remark": remark_text},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
-def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_contact_remark_special_chars_length_101(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、remark、special、chars、length、101；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -594,10 +610,14 @@ def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api,
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_101")
+    flow.establish_friends(primary, remote, user_a, user_b, reason="remark_101")
     assert_api.assert_error(
-        device_a.call(
+        primary.call(
             "ContactManager",
             Cmd.setContactRemark.value,
             info={"userId": user_b, "remark": REMARK_SPECIAL_101},
@@ -605,11 +625,13 @@ def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api,
         code=4,
         description="remark length must less than 100",
     )
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
-def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_contact_remark_not_preserved_after_delete_and_readd(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、remark、not、preserved、after、删除、and、readd；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -620,10 +642,15 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     old = "持久化备注-删除后应失效"
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_readd")
-    resp_set = device_a.call(
+    flow.establish_friends(primary, remote, user_a, user_b, reason="remark_readd")
+    resp_set = primary.call(
         "ContactManager",
         Cmd.setContactRemark.value,
         info={"userId": user_b, "remark": old},
@@ -636,10 +663,10 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
             "device": "{{device}}",
             "result": None,
         },
-        context={"device": "deviceA"},
+        context={"device": expected_device},
         ignore_keys={"sequence"},
     )
-    content_after_set = device_a.call(
+    content_after_set = primary.call(
         "ContactManager",
         Cmd.getContact.value,
         info={"userId": user_b},
@@ -652,13 +679,13 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
             "device": "{{device}}",
             "result": {"userId": "{{userId}}", "remark": "{{remark}}"},
         },
-        context={"device": "deviceA", "userId": user_b, "remark": old},
+        context={"device": expected_device, "userId": user_b, "remark": old},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_readd_2")
-    content_after_readd = _wait_get_contact(device_a, user_b)
+    flow.establish_friends(primary, remote, user_a, user_b, reason="remark_readd_2")
+    content_after_readd = _wait_get_contact(primary, user_b)
     assert_api.assert_response_matches(
         content_after_readd,
         expected={
@@ -667,10 +694,10 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
             "device": "{{device}}",
             "result": {"userId": "{{userId}}", "remark": ne(old)},
         },
-        context={"device": "deviceA", "userId": user_b},
+        context={"device": expected_device, "userId": user_b},
         ignore_keys={"sequence"},
     )
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
