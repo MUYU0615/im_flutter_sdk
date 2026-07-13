@@ -27,6 +27,10 @@ FRIEND_START_SYNC = "onFriendStartSync"
 FRIEND_SYNC_FINISHED = "onFriendSyncFinished"
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _wait_friend_sync_events(device, *, start_timeout: float = 10.0, finish_timeout: float = 20.0):
     """等待一轮好友信息同步的开始与结束事件；返回 (start_evt, finish_evt)。"""
     start_evt = device.receive_message(match_event_type=FRIEND_START_SYNC, timeout=start_timeout)
@@ -94,7 +98,9 @@ def test_friend_info_auto_sync_after_login(device_a, device_b, assert_api, user_
 
 
 @pytest.mark.real_e2e
-def test_friend_info_sync_on_peer_metadata_change(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_friend_info_sync_on_peer_metadata_change(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为friend、信息、sync、on、peer、metadata、change；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -105,6 +111,10 @@ def test_friend_info_sync_on_peer_metadata_change(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a = topology.primary_client(0)
+    device_b = topology.remote_client(0)
+    user_a = device_a.user_id
+    user_b = device_b.user_id
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="friend_info_sync_change")
 
@@ -133,7 +143,7 @@ def test_friend_info_sync_on_peer_metadata_change(device_a, device_b, assert_api
             "device": "{{device}}",
             "result": {"userId": "{{userId}}", "remark": ""},
         },
-        context={"device": "deviceA", "userId": user_b},
+        context={"device": _expected_device(device_a), "userId": user_b},
         ignore_keys={"sequence","updatedAt"},
     )
     if "updatedAt" in content_after_readd:

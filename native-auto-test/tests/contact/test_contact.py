@@ -179,13 +179,15 @@ def test_contact_delete_contact_nonexistent_user(topology_primary_or_device_a, a
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.add_accept_list_delete.friend_flow.success")
 @pytest.mark.api("ContactManager.acceptInvitation")
 @pytest.mark.api("ContactManager.deleteContact")
 @pytest.mark.api("ContactManager.getAllContactsFromServer")
 @pytest.mark.clients("owner", "peer")
 @pytest.mark.roles_mode("ordered")
-def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user_b):
+def test_friend_add_accept_and_list(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为friend、添加、accept、and、列表；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation、ContactManager.deleteContact、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -196,6 +198,12 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation、ContactManager.deleteContact、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a = topology.primary_client(0)
+    device_b = topology.remote_client(0)
+    user_a = device_a.user_id
+    user_b = device_b.user_id
+    primary_device = _expected_device(device_a)
+    remote_device = _expected_device(device_b)
     flow = ContactTestFlow(assert_api)
     flow.delete_friend(device_a, user_b, wait_event=False)
     flow.delete_friend(device_b, user_a, wait_event=False)
@@ -211,7 +219,7 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
         assert_api.assert_response_matches(
             resp_add,
             expected={"manager": "ContactManager", "cmd": Cmd.addContact.value, "device": "{{device}}", "result": "{{userId}}"},
-            context={"userId": user_b, "device": "deviceA"},
+            context={"userId": user_b, "device": primary_device},
             ignore_keys={"sequence", "result"},
         )
         # 1.1 设备 B 获取好友邀请回调
@@ -251,7 +259,7 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -269,7 +277,7 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -281,12 +289,14 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.add_decline_and_verify_not_friends.success")
 @pytest.mark.api("ContactManager.declineInvitation")
 @pytest.mark.api("ContactManager.getAllContactsFromServer")
 @pytest.mark.clients("owner", "peer")
 @pytest.mark.roles_mode("ordered")
-def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_api, user_a, user_b):
+def test_friend_add_decline_and_verify_not_friends(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为friend、添加、decline、and、verify、not、friends；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -297,6 +307,12 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    device_a = topology.primary_client(0)
+    device_b = topology.remote_client(0)
+    user_a = device_a.user_id
+    user_b = device_b.user_id
+    primary_device = _expected_device(device_a)
+    remote_device = _expected_device(device_b)
     flow = ContactTestFlow(assert_api)
     flow.delete_friend(device_a, user_b, wait_event=False)
     flow.delete_friend(device_b, user_a, wait_event=False)
@@ -316,7 +332,7 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
                 "device": "{{device}}",
                 "result": "{{userId}}",
             },
-            context={"userId": user_b, "device": "deviceA"},
+            context={"userId": user_b, "device": primary_device},
             ignore_keys={"sequence"},
         )
         # 2. B 收到好友邀请
@@ -372,7 +388,7 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -390,7 +406,7 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
