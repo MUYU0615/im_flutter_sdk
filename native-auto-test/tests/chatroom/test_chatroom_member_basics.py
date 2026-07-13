@@ -39,6 +39,10 @@ CHATROOM_IGNORE_KEYS = {
 }
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _join_room(
     device,
     assert_api,
@@ -210,7 +214,9 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
 
 
 @pytest.mark.real_e2e
-def test_chatroom_get_local_room_empty_id_returns_none(device_b, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_get_local_room_empty_id_returns_none(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、空值参数、id、returns、none；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -221,13 +227,14 @@ def test_chatroom_get_local_room_empty_id_returns_none(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_b.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": ""})
+    client = topology_primary_or_device_a
+    resp = client.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": ""})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.getChatRoom.value,
-            "device": "deviceB",
+            "device": _expected_device(client),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -235,7 +242,9 @@ def test_chatroom_get_local_room_empty_id_returns_none(device_b, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_chatroom_get_local_room_nonexistent_returns_placeholder(device_b, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_get_local_room_nonexistent_returns_placeholder(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、不存在对象、returns、placeholder；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -246,14 +255,15 @@ def test_chatroom_get_local_room_nonexistent_returns_placeholder(device_b, asser
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    client = topology_primary_or_device_a
     room_id = f"nonexistent_local_room_{uuid4().hex[:8]}"
-    resp = device_b.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": room_id})
+    resp = client.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.getChatRoom.value,
-            "device": "deviceB",
+            "device": _expected_device(client),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -261,7 +271,9 @@ def test_chatroom_get_local_room_nonexistent_returns_placeholder(device_b, asser
 
 
 @pytest.mark.real_e2e
-def test_chatroom_get_all_local_rooms_returns_list(device_b, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_get_all_local_rooms_returns_list(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、获取、all、本地、rooms、returns、列表；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -272,13 +284,14 @@ def test_chatroom_get_all_local_rooms_returns_list(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_b.call("ChatRoomManager", Cmd.getAllChatRooms.value, info={})
+    client = topology_primary_or_device_a
+    resp = client.call("ChatRoomManager", Cmd.getAllChatRooms.value, info={})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.getAllChatRooms.value,
-            "device": "deviceB",
+            "device": _expected_device(client),
             "result": ne(None),
         },
         ignore_keys={"sequence"},

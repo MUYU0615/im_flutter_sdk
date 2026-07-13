@@ -12,12 +12,18 @@ from tests.chatroom.chatroom_helpers import create_chatroom_or_skip, safe_delete
 pytestmark = [pytest.mark.client, pytest.mark.chatroom, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
 @pytest.mark.case_id("chatroom.create_room_via_sdk_without_permission.error")
 @pytest.mark.api("ChatRoomManager.createChatRoom")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_create_room_via_sdk_without_permission(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_create_room_via_sdk_without_permission(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、创建、room、via、sdk、without、permission；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.createChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -30,7 +36,7 @@ def test_chatroom_create_room_via_sdk_without_permission(device_a, assert_api):
     )
     room_name = f"sdk_create_{uuid4().hex[:8]}"
     room_desc = f"sdk_desc_{uuid4().hex[:8]}"
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ChatRoomManager",
         Cmd.createChatRoom.value,
         info={
@@ -49,7 +55,9 @@ def test_chatroom_create_room_via_sdk_without_permission(device_a, assert_api):
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_create_and_fetch_from_server(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_create_and_fetch_from_server(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、创建、and、拉取、from、服务端；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -60,15 +68,16 @@ def test_chatroom_create_and_fetch_from_server(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="create", desc_prefix="create")
     try:
-        resp = device_a.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": room_id})
+        resp = client.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomInfoFromServer.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "roomId": room_id,
                     "owner": user_a,
@@ -193,7 +202,9 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
 @pytest.mark.api("ChatRoomManager.destroyChatRoom")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_destroy_room_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chatroom_destroy_room_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、销毁、room、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -204,14 +215,15 @@ def test_chatroom_destroy_room_success(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    client = topology_primary_or_device_a
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="destroy", desc_prefix="destroy")
-    resp = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
+    resp = client.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.destroyChatRoom.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -224,7 +236,9 @@ def test_chatroom_destroy_room_success(device_a, assert_api, user_a):
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_fetch_room_info_from_server_after_destroy(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_fetch_room_info_from_server_after_destroy(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、room、信息、from、服务端、after、销毁；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -235,18 +249,19 @@ def test_chatroom_fetch_room_info_from_server_after_destroy(device_a, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="destroy_fetch", desc_prefix="destroy_fetch")
-    resp_destroy = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
+    resp_destroy = client.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.destroyChatRoom.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_fetch = device_a.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": room_id})
+    resp_fetch = client.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": room_id})
     assert_api.assert_error(resp_fetch, code=700, description="do not find this group")
