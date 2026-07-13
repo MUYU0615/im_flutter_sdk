@@ -21,6 +21,10 @@ def _xfail_if_reaction_service_unavailable(resp: dict) -> None:
             pytest.xfail("当前 Android 环境 reaction 服务返回 303 Unknown server error，按服务能力限制处理")
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _send_text_and_wait_success(device_a, user_a: str, user_b: str, content: str) -> str:
     resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
     temp_id = ((resp.get("result") or {}).get("msgId"))
@@ -115,11 +119,13 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_reaction_list.invalid_msg_id.empty")
 @pytest.mark.api("ChatManager.fetchReactionList")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
+def test_chat_fetch_reaction_list_invalid_msg_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、msg、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -132,13 +138,13 @@ def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
     )
     # Flutter 端签名要求 chatType 必填；请求体键名为 msgIds。
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": 0}
-    resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionList.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"__invalid_msg_id__": []},
         },
         ignore_keys={"sequence"},
@@ -146,11 +152,13 @@ def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_reaction_list.empty_msg_ids.error")
 @pytest.mark.api("ChatManager.fetchReactionList")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
+def test_chat_fetch_reaction_list_empty_msg_ids(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、空值参数、msg、ids；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -162,13 +170,13 @@ def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     info = {"msgIds": [], "chatType": 0}
-    resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionList.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"code": 110, "description": "'messageIdList' can not be null"},
         },
         ignore_keys={"sequence"},
@@ -176,11 +184,13 @@ def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_reaction_list.invalid_chat_type.error")
 @pytest.mark.api("ChatManager.fetchReactionList")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
+def test_chat_fetch_reaction_list_invalid_chat_type(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、chat、type；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -192,13 +202,13 @@ def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": -1}
-    resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionList.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"code": 110, "description": "'chatType' is invalid"},
         },
         ignore_keys={"sequence"},
@@ -206,11 +216,13 @@ def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chat.fetch_reaction_detail.invalid_msg_id.empty")
 @pytest.mark.api("ChatManager.fetchReactionDetail")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
+def test_chat_fetch_reaction_detail_invalid(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -223,13 +235,13 @@ def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
     )
     # 原生 wrapper 将 pageSize 按必填读取（Android: getInt），缺失会直接抛参错。
     info = {"msgId": "__invalid_msg_id__", "reaction": "👍", "pageSize": 20}
-    resp = device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionDetail.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"cursor": "", "list": []},
         },
         ignore_keys={"sequence"},
@@ -418,7 +430,9 @@ def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api
 
 
 @pytest.mark.real_e2e
-def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_remove_reaction_invalid_msg_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、无效参数、msg、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -429,14 +443,14 @@ def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "ok", "msgId": "__invalid_msg_id__"})
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "ok", "msgId": "__invalid_msg_id__"})
     _xfail_if_reaction_service_unavailable(resp)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.removeReaction.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -444,7 +458,9 @@ def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_add_reaction_missing_msg_id_returns_validation_error(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、missing、msg、id、returns、validation；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -455,13 +471,13 @@ def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, ass
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "ok"})
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "ok"})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"code": 110, "description": "'msgId' can not be null"},
         },
         ignore_keys={"sequence"},
@@ -469,7 +485,9 @@ def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, ass
 
 
 @pytest.mark.real_e2e
-def test_chat_remove_reaction_empty_reaction_returns_validation_error(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_remove_reaction_empty_reaction_returns_validation_error(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、空值参数、Reaction、returns、validation、error；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -480,13 +498,13 @@ def test_chat_remove_reaction_empty_reaction_returns_validation_error(device_a, 
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "", "msgId": "__invalid_msg_id__"})
+    resp = topology_primary_or_device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "", "msgId": "__invalid_msg_id__"})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.removeReaction.value,
-            "device": "deviceA",
+            "device": _expected_device(topology_primary_or_device_a),
             "result": {"code": 110, "description": "'reaction' can not be null"},
         },
         ignore_keys={"sequence"},
