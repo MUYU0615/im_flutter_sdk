@@ -26,13 +26,14 @@ def _expected_device(client) -> str:
 
 
 def _group_state(device_a, assert_api, group_id: str):
+    expected_device = _expected_device(device_a)
     resp = device_a.call("GroupManager", Cmd.getGroupSpecificationFromServer.value, info={"groupId": group_id, "fetchMembers": True})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.getGroupSpecificationFromServer.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -145,7 +146,9 @@ def test_group_block_unblock_members_nonexistent_group(topology_primary_or_devic
 
 
 @pytest.mark.real_e2e
-def test_group_block_members_non_member(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_block_members_non_member(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、封禁、成员、non、成员；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -156,14 +159,17 @@ def test_group_block_members_non_member(device_a, assert_api, user_a, user_b):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    user_a = primary.user_id
+    user_b = topology.remote_client(0).user_id
     group_id = ""
     try:
-        group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=new_group_name("mod_block_nm"), invite_members=[])
-        resp = device_a.call("GroupManager", Cmd.blockMembers.value, info={"groupId": group_id, "members": [user_b]})
+        group_id, _ = create_group(primary, assert_api, owner=user_a, group_name=new_group_name("mod_block_nm"), invite_members=[])
+        resp = primary.call("GroupManager", Cmd.blockMembers.value, info={"groupId": group_id, "members": [user_b]})
         assert_api.assert_error(resp, code=603, description="are not members of this group")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
