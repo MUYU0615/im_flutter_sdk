@@ -18,6 +18,10 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.case_id("group.create_group.invite_member.success")
 @pytest.mark.api("GroupManager.createGroup")
 def test_group_create_group(device_a, device_b, assert_api, user_a, user_b):
@@ -153,7 +157,9 @@ def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, use
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.destroyGroup")
 @pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
-def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_get_group_from_server_after_destroy(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端、after、销毁；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -164,11 +170,12 @@ def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    client = topology_primary_or_device_a
     group_name = new_group_name("server_after_destroy")
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=group_name,
@@ -177,9 +184,9 @@ def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_ap
         destroyed_group_id = group_id
         # B 不在该群中，销毁时不应强制等待 B 端 onGroupDestroyed 回调。
         group_id = ""
-        destroy_group(device_a, assert_api, destroyed_group_id)
+        destroy_group(client, assert_api, destroyed_group_id)
 
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": destroyed_group_id, "fetchMembers": True},
@@ -187,4 +194,4 @@ def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_ap
         assert_api.assert_error(resp, code=600, description="do not find this group")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id, device_b=device_b)
+            destroy_group(client, assert_api, group_id)
