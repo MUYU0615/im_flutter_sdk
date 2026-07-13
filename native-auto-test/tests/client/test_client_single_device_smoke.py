@@ -13,6 +13,7 @@ pytestmark = [pytest.mark.client, pytest.mark.session_lifecycle]
 @pytest.mark.case_id("client.login.current_user.success")
 @pytest.mark.api("Client.login")
 @pytest.mark.api("Client.getCurrentUser")
+@pytest.mark.no_global_login
 def test_single_device_login_and_get_current_user(device_a, user_a, assert_api):
     """
     1. 在 session lifecycle 单设备 smoke 中，先调用 Client.getCurrentUser 判断 deviceA 是否已登录；

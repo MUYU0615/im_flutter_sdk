@@ -86,6 +86,7 @@ def test_client_change_app_id(device_a, assert_api):
 
 
 @pytest.mark.session_lifecycle
+@pytest.mark.no_global_login
 def test_login_then_receive_offline_sync_event(device_a, assert_api, user_a):
     """
     1. 在 session lifecycle 专项中让已登录的 deviceA 先执行 Client.logout，制造重新登录场景；

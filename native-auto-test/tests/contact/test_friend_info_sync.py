@@ -50,6 +50,7 @@ def _restore_login(device, user_id: str, *, password: str = "1") -> None:
 
 
 @pytest.mark.session_lifecycle
+@pytest.mark.no_global_login
 def test_friend_info_auto_sync_after_login(device_a, device_b, assert_api, user_a, user_b):
     """
     1. 在 session lifecycle 专项中让 deviceA 和 deviceB 先执行 Client.logout，制造双端重新登录场景；
