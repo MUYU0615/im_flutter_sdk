@@ -25,13 +25,19 @@ def _assert_success_envelope(assert_api, resp: dict, *, cmd: str, device: str) -
     )
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.update_and_fetch_announcement.success")
 @pytest.mark.api("ChatRoomManager.updateChatRoomAnnouncement")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAnnouncement")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, user_a):
+def test_chatroom_update_and_fetch_announcement_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、更新、and、拉取、announcement、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement、ChatRoomManager.fetchChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -45,7 +51,8 @@ def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, us
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="announcement", desc_prefix="announcement")
     announcement = f"notice-{uuid.uuid4().hex[:8]}"
     try:
-        update_resp = device_a.call(
+        client = topology_primary_or_device_a
+        update_resp = client.call(
             "ChatRoomManager",
             Cmd.updateChatRoomAnnouncement.value,
             info={"roomId": room_id, "announcement": announcement},
@@ -54,10 +61,10 @@ def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, us
             assert_api,
             update_resp,
             cmd=Cmd.updateChatRoomAnnouncement.value,
-            device="deviceA",
+            device=_expected_device(client),
         )
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAnnouncement.value,
             info={"roomId": room_id},
@@ -67,7 +74,7 @@ def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, us
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAnnouncement.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": announcement,
             },
             ignore_keys={"sequence"},
@@ -379,13 +386,15 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.change_subject_and_description.success")
 @pytest.mark.api("ChatRoomManager.changeChatRoomSubject")
 @pytest.mark.api("ChatRoomManager.changeChatRoomDescription")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_change_subject_and_description_success(device_a, assert_api, user_a):
+def test_chatroom_change_subject_and_description_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、subject、and、description、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject、ChatRoomManager.changeChatRoomDescription、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -400,14 +409,17 @@ def test_chatroom_change_subject_and_description_success(device_a, assert_api, u
     new_subject = f"room-subject-{uuid.uuid4().hex[:8]}"
     new_description = f"room-description-{uuid.uuid4().hex[:8]}"
     try:
-        subject_resp = device_a.call(
+        client = topology_primary_or_device_a
+        subject_resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomSubject.value,
             info={"roomId": room_id, "subject": new_subject},
         )
-        _assert_success_envelope(assert_api, subject_resp, cmd=Cmd.changeChatRoomSubject.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, subject_resp, cmd=Cmd.changeChatRoomSubject.value, device=_expected_device(client)
+        )
 
-        description_resp = device_a.call(
+        description_resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomDescription.value,
             info={"roomId": room_id, "description": new_description},
@@ -416,10 +428,10 @@ def test_chatroom_change_subject_and_description_success(device_a, assert_api, u
             assert_api,
             description_resp,
             cmd=Cmd.changeChatRoomDescription.value,
-            device="deviceA",
+            device=_expected_device(client),
         )
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id},
@@ -429,7 +441,7 @@ def test_chatroom_change_subject_and_description_success(device_a, assert_api, u
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomInfoFromServer.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     "roomId": room_id,
                     "name": new_subject,
@@ -572,13 +584,15 @@ def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, 
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.mute_and_unmute_all_members.success")
 @pytest.mark.api("ChatRoomManager.muteAllChatRoomMembers")
 @pytest.mark.api("ChatRoomManager.unMuteAllChatRoomMembers")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user_a):
+def test_chatroom_mute_and_unmute_all_members_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、禁言、and、unmute、all、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -591,14 +605,15 @@ def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute_all", desc_prefix="mute_all")
     try:
-        mute_resp = device_a.call(
+        client = topology_primary_or_device_a
+        mute_resp = client.call(
             "ChatRoomManager",
             Cmd.muteAllChatRoomMembers.value,
             info={"roomId": room_id},
         )
-        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteAllChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteAllChatRoomMembers.value, device=_expected_device(client))
 
-        fetch_after_mute = device_a.call(
+        fetch_after_mute = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id},
@@ -607,14 +622,16 @@ def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user
             f"全员禁言后 isAllMemberMuted 未变为 true: {fetch_after_mute}"
         )
 
-        unmute_resp = device_a.call(
+        unmute_resp = client.call(
             "ChatRoomManager",
             Cmd.unMuteAllChatRoomMembers.value,
             info={"roomId": room_id},
         )
-        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteAllChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, unmute_resp, cmd=Cmd.unMuteAllChatRoomMembers.value, device=_expected_device(client)
+        )
 
-        fetch_after_unmute = device_a.call(
+        fetch_after_unmute = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id},
@@ -627,12 +644,14 @@ def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.set_and_fetch_attributes.success")
 @pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a):
+def test_chatroom_set_and_fetch_attributes_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、set、and、拉取、attributes、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -647,7 +666,8 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
     attr_key = f"room_attr_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -657,12 +677,12 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
         failures = set_resp.get("result")
         assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {set_resp}"
         assert attr_key not in failures, f"设置聊天室属性失败: key={attr_key}, failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key]},
@@ -672,7 +692,7 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     attr_key: attr_value,
                 },
@@ -684,11 +704,13 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.set_attributes_non_forced.success")
 @pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a):
+def test_chatroom_set_attributes_non_forced_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、set、attributes、non、forced、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -703,7 +725,8 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
     attr_key = f"room_attr_nf_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -713,12 +736,12 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
                 "forced": False,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
         failures = set_resp.get("result")
         assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {set_resp}"
         assert attr_key not in failures, f"非强制设置聊天室属性失败: key={attr_key}, failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key]},
@@ -728,7 +751,7 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     attr_key: attr_value,
                 },
@@ -740,11 +763,13 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.fetch_all_attributes.success")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
+def test_chatroom_fetch_all_attributes_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、all、attributes、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -763,7 +788,8 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
         attr_key_2: f"value-2-{uuid.uuid4().hex[:8]}",
     }
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -773,12 +799,12 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
         failures = set_resp.get("result")
         assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {set_resp}"
         assert not set(attributes).intersection(failures), f"设置聊天室属性失败: failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id},
@@ -788,7 +814,7 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": attributes,
             },
             ignore_keys={"sequence"},
@@ -798,11 +824,13 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.fetch_attributes_by_partial_keys.success")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api, user_a):
+def test_chatroom_fetch_attributes_by_partial_keys_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、attributes、by、partial、keys、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -821,7 +849,8 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
         attr_key_2: f"value-2-{uuid.uuid4().hex[:8]}",
     }
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -831,12 +860,12 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
         failures = set_resp.get("result")
         assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {set_resp}"
         assert not set(attributes).intersection(failures), f"设置聊天室属性失败: failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key_1]},
@@ -846,7 +875,7 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     attr_key_1: attributes[attr_key_1],
                 },
@@ -860,12 +889,14 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.update_attribute_overwrites_previous_value.success")
 @pytest.mark.api("ChatRoomManager.setChatRoomAttributes")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_api, user_a):
+def test_chatroom_update_attribute_overwrites_previous_value(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、更新、attribute、overwrites、previous、value；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -881,7 +912,8 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
     old_value = f"old-{uuid.uuid4().hex[:8]}"
     new_value = f"new-{uuid.uuid4().hex[:8]}"
     try:
-        first_set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        first_set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -891,9 +923,11 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, first_set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, first_set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client)
+        )
 
-        second_set_resp = device_a.call(
+        second_set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -903,12 +937,14 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, second_set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, second_set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client)
+        )
         failures = second_set_resp.get("result")
         assert isinstance(failures, dict), f"setChatRoomAttributes result 应为失败 key map: {second_set_resp}"
         assert attr_key not in failures, f"覆盖更新聊天室属性失败: key={attr_key}, failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key]},
@@ -918,7 +954,7 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {
                     attr_key: new_value,
                 },
@@ -991,12 +1027,14 @@ def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, u
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.remove_attributes.success")
 @pytest.mark.api("ChatRoomManager.removeChatRoomAttributes")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
+def test_chatroom_remove_attributes_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1011,7 +1049,8 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
     attr_key = f"room_attr_remove_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -1021,19 +1060,21 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
 
-        remove_resp = device_a.call(
+        remove_resp = client.call(
             "ChatRoomManager",
             Cmd.removeChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key], "forced": True},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device=_expected_device(client)
+        )
         failures = remove_resp.get("result")
         assert isinstance(failures, dict), f"removeChatRoomAttributes result 应为失败 key map: {remove_resp}"
         assert attr_key not in failures, f"删除聊天室属性失败: key={attr_key}, failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key]},
@@ -1043,7 +1084,7 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {},
             },
             ignore_keys={"sequence"},
@@ -1053,12 +1094,14 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("chatroom.remove_attributes_non_forced.success")
 @pytest.mark.api("ChatRoomManager.removeChatRoomAttributes")
 @pytest.mark.api("ChatRoomManager.fetchChatRoomAttributes")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, user_a):
+def test_chatroom_remove_attributes_non_forced_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、non、forced、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1073,7 +1116,8 @@ def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, use
     attr_key = f"room_attr_remove_nf_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
     try:
-        set_resp = device_a.call(
+        client = topology_primary_or_device_a
+        set_resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={
@@ -1083,19 +1127,21 @@ def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, use
                 "forced": True,
             },
         )
-        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(assert_api, set_resp, cmd=Cmd.setChatRoomAttributes.value, device=_expected_device(client))
 
-        remove_resp = device_a.call(
+        remove_resp = client.call(
             "ChatRoomManager",
             Cmd.removeChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key], "forced": False},
         )
-        _assert_success_envelope(assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device="deviceA")
+        _assert_success_envelope(
+            assert_api, remove_resp, cmd=Cmd.removeChatRoomAttributes.value, device=_expected_device(client)
+        )
         failures = remove_resp.get("result")
         assert isinstance(failures, dict), f"removeChatRoomAttributes result 应为失败 key map: {remove_resp}"
         assert attr_key not in failures, f"非强制删除聊天室属性失败: key={attr_key}, failures={failures}"
 
-        fetch_resp = device_a.call(
+        fetch_resp = client.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [attr_key]},
@@ -1105,7 +1151,7 @@ def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, use
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomAttributes.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": {},
             },
             ignore_keys={"sequence"},
