@@ -755,7 +755,9 @@ def test_conversation_invalid_message_id_boundaries(topology_primary_or_device_a
 @pytest.mark.api("ConversationManager.clearAllMessages")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_conversation_local_insert_append_update_and_delete(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_conversation_local_insert_append_update_and_delete(topology_primary_or_device_a, assert_api, user_a, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为会话、本地、insert、append、更新、and、删除；
     2. 通过 WebSocket 控制测试 App 调用 ConversationManager.insertMessage、ConversationManager.appendMessage、ConversationManager.updateConversationMessage、ConversationManager.loadMsgWithId，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -767,6 +769,8 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
     conv_a = _conversation(user_b)
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
     base_time = int(time.time() * 1000)
     insert_id = f"local-insert-{uuid.uuid4().hex[:8]}"
     append_id = f"local-append-{uuid.uuid4().hex[:8]}"
@@ -801,20 +805,20 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
         (Cmd.insertMessage.value, insert_msg),
         (Cmd.appendMessage.value, append_msg),
     ]:
-        resp = device_a.call("ConversationManager", cmd, info={**conv_a, "msg": message})
+        resp = client.call("ConversationManager", cmd, info={**conv_a, "msg": message})
         assert_api.assert_response_matches(
             resp,
             expected={
                 "manager": "ConversationManager",
                 "cmd": cmd,
-                "device": "deviceA",
+                "device": expected_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
         )
 
     updated_msg = {**append_msg, "body": {"type": 0, "content": update_content}}
-    resp_update = device_a.call(
+    resp_update = client.call(
         "ConversationManager",
         Cmd.updateConversationMessage.value,
         info={**conv_a, "msg": updated_msg},
@@ -824,19 +828,19 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.updateConversationMessage.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_loaded = device_a.call("ConversationManager", Cmd.loadMsgWithId.value, info={**conv_a, "msgId": append_id})
+    resp_loaded = client.call("ConversationManager", Cmd.loadMsgWithId.value, info={**conv_a, "msgId": append_id})
     assert_api.assert_response_matches(
         resp_loaded,
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.loadMsgWithId.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {
                 "msgId": append_id,
                 "from": user_a,
@@ -871,19 +875,19 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
         },
     )
 
-    resp_remove = device_a.call("ConversationManager", Cmd.removeMessage.value, info={**conv_a, "msgId": insert_id})
+    resp_remove = client.call("ConversationManager", Cmd.removeMessage.value, info={**conv_a, "msgId": insert_id})
     assert_api.assert_response_matches(
         resp_remove,
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.removeMessage.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_delete_by_time = device_a.call(
+    resp_delete_by_time = client.call(
         "ConversationManager",
         Cmd.deleteMessagesWithTs.value,
         info={**conv_a, "startTs": base_time, "endTs": base_time + 2},
@@ -893,19 +897,19 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.deleteMessagesWithTs.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_clear = device_a.call("ConversationManager", Cmd.clearAllMessages.value, info=conv_a)
+    resp_clear = client.call("ConversationManager", Cmd.clearAllMessages.value, info=conv_a)
     assert_api.assert_response_matches(
         resp_clear,
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.clearAllMessages.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
