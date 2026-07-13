@@ -109,7 +109,9 @@ def test_chatroom_create_and_fetch_from_server(topology_primary_or_device_a, ass
 @pytest.mark.api("ChatRoomManager.fetchChatRoomInfoFromServer")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_fetch_room_info_with_members_from_server(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、room、信息、with、成员、from、服务端；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -120,15 +122,21 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="fetch_members", desc_prefix="fetch_members")
     try:
-        join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
+        join_resp = remote.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             join_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "roomId": room_id,
                     "memberCount": ne(None),
@@ -153,7 +161,7 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
             },
         )
 
-        resp = device_a.call(
+        resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomInfoFromServer.value,
             info={"roomId": room_id, "fetchMembers": True},
@@ -163,7 +171,7 @@ def test_chatroom_fetch_room_info_with_members_from_server(device_a, device_b, a
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomInfoFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": {
                     "roomId": room_id,
                     "owner": user_a,
