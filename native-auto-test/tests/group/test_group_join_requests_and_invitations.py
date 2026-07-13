@@ -515,7 +515,9 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
 
 
 @pytest.mark.real_e2e
-def test_group_request_to_join_public_group_nonexistent_group(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_request_to_join_public_group_nonexistent_group(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、request、to、加入、public、群组、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -526,7 +528,8 @@ def test_group_request_to_join_public_group_nonexistent_group(device_b, assert_a
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_b.call(
+    client = topology.remote_client(0)
+    resp = client.call(
         "GroupManager",
         Cmd.requestToJoinPublicGroup.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "reason": "auto-reason"},
@@ -535,7 +538,9 @@ def test_group_request_to_join_public_group_nonexistent_group(device_b, assert_a
 
 
 @pytest.mark.real_e2e
-def test_group_accept_join_application_nonexistent_group(device_a, assert_api, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_accept_join_application_nonexistent_group(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、accept、加入、application、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -546,7 +551,9 @@ def test_group_accept_join_application_nonexistent_group(device_a, assert_api, u
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    primary = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
+    resp = primary.call(
         "GroupManager",
         Cmd.acceptJoinApplication.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "userId": user_b},
@@ -555,7 +562,9 @@ def test_group_accept_join_application_nonexistent_group(device_a, assert_api, u
 
 
 @pytest.mark.real_e2e
-def test_group_decline_join_application_nonexistent_group(device_a, assert_api, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_decline_join_application_nonexistent_group(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、decline、加入、application、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.declineJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -566,7 +575,9 @@ def test_group_decline_join_application_nonexistent_group(device_a, assert_api, 
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.declineJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    primary = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
+    resp = primary.call(
         "GroupManager",
         Cmd.declineJoinApplication.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "userId": user_b, "reason": "auto-reject"},
@@ -575,7 +586,9 @@ def test_group_decline_join_application_nonexistent_group(device_a, assert_api, 
 
 
 @pytest.mark.real_e2e
-def test_group_accept_join_application_nonexistent_user(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_accept_join_application_nonexistent_user(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、accept、加入、application、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -586,17 +599,19 @@ def test_group_accept_join_application_nonexistent_user(device_a, assert_api, us
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    primary = topology.primary_client(0)
+    user_a = primary.user_id
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("accept_nonexist_user"),
             invite_members=[],
             style=2,
         )
-        resp = device_a.call(
+        resp = primary.call(
             "GroupManager",
             Cmd.acceptJoinApplication.value,
             info={"groupId": group_id, "userId": _NONEXISTENT_USER},
@@ -604,11 +619,13 @@ def test_group_accept_join_application_nonexistent_user(device_a, assert_api, us
         assert_api.assert_error(resp, code=600, description="doesn't exist")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_accept_invitation_from_group_without_pending_invite(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_accept_invitation_from_group_without_pending_invite(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、accept、invitation、from、群组、without、pending、invite；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptInvitationFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -619,7 +636,8 @@ def test_group_accept_invitation_from_group_without_pending_invite(device_b, ass
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.acceptInvitationFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_b.call(
+    client = topology.remote_client(0)
+    resp = client.call(
         "GroupManager",
         Cmd.acceptInvitationFromGroup.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "inviter": "owner_x"},
@@ -628,7 +646,9 @@ def test_group_accept_invitation_from_group_without_pending_invite(device_b, ass
 
 
 @pytest.mark.real_e2e
-def test_group_decline_invitation_from_group_without_pending_invite(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_decline_invitation_from_group_without_pending_invite(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、decline、invitation、from、群组、without、pending、invite；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.declineInvitationFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -639,7 +659,8 @@ def test_group_decline_invitation_from_group_without_pending_invite(device_b, as
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.declineInvitationFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_b.call(
+    client = topology.remote_client(0)
+    resp = client.call(
         "GroupManager",
         Cmd.declineInvitationFromGroup.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "inviter": "owner_x", "reason": "auto-reject"},
