@@ -25,6 +25,12 @@ def _expected_device(client) -> str:
     return getattr(client, "name", "deviceA")
 
 
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
 def _send_text_and_wait_success(device_a, user_a: str, user_b: str, content: str) -> str:
     resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
     temp_id = ((resp.get("result") or {}).get("msgId"))
@@ -60,7 +66,9 @@ def _send_text_and_wait_received(device_a, device_b, user_a: str, user_b: str, c
 
 
 @pytest.mark.real_e2e
-def test_chat_reaction_change_event_received_by_sender(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chat_reaction_change_event_received_by_sender(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、Reaction、change、event、received、by、sender；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -71,6 +79,7 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, _, remote_device = _topology_pair(topology)
     reaction = "👍"
     real_id = _send_text_and_wait_received(
         device_a,
@@ -87,7 +96,7 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceB",
+            "device": remote_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -249,7 +258,9 @@ def test_chat_fetch_reaction_detail_invalid(topology_primary_or_device_a, assert
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_reaction_detail_invalid_page_size(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数、page、size；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -260,6 +271,7 @@ def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -275,7 +287,7 @@ def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionDetail.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"code": 110, "description": "'pageSize' must be greater than 0"},
         },
         ignore_keys={"sequence"},
@@ -283,7 +295,9 @@ def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_reaction_detail_empty_reaction(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、空值参数、Reaction；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -294,6 +308,7 @@ def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -309,7 +324,7 @@ def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_ap
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionDetail.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"code": 110, "description": "'reaction' can not be null"},
         },
         ignore_keys={"sequence"},
@@ -317,7 +332,9 @@ def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_ap
 
 
 @pytest.mark.real_e2e
-def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_fetch_reaction_detail_oversize_page_size(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、oversize、page、size；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -328,6 +345,7 @@ def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, asser
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -343,7 +361,7 @@ def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, asser
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchReactionDetail.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"code": 110, "description": "Limit exceeds the maximum quantity limit"},
         },
         ignore_keys={"sequence"},
@@ -351,7 +369,9 @@ def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, asser
 
 
 @pytest.mark.real_e2e
-def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_add_reaction_duplicate_reaction(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、duplicate、Reaction；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -362,6 +382,7 @@ def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, us
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -378,7 +399,7 @@ def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -388,7 +409,7 @@ def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, us
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": {"code": 1301, "description": "the user is already operation this message"},
         },
         ignore_keys={"sequence"},
@@ -396,7 +417,9 @@ def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, us
 
 
 @pytest.mark.real_e2e
-def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_remove_reaction_not_exists_reaction(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、移除、Reaction、not、exists、Reaction；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -407,6 +430,7 @@ def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -422,7 +446,7 @@ def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.removeReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -512,7 +536,9 @@ def test_chat_remove_reaction_empty_reaction_returns_validation_error(topology_p
 
 
 @pytest.mark.real_e2e
-def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_add_reaction_too_long_reaction(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、too、long、Reaction；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -523,6 +549,7 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -538,7 +565,7 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -551,7 +578,7 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -559,7 +586,9 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
 
 
 @pytest.mark.real_e2e
-def test_chat_add_reaction_special_char_reaction(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chat_add_reaction_special_char_reaction(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、special、char、Reaction；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -570,6 +599,7 @@ def test_chat_add_reaction_special_char_reaction(device_a, device_b, assert_api,
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, primary_device, _ = _topology_pair(topology)
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -585,7 +615,7 @@ def test_chat_add_reaction_special_char_reaction(device_a, device_b, assert_api,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.addReaction.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": None,
         },
         ignore_keys={"sequence"},
