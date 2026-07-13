@@ -764,9 +764,9 @@ def test_contact_get_block_list_from_server_returns_list(topology_primary_or_dev
 
 
 @pytest.mark.real_e2e
-def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
-    device_a, device_b, assert_api, user_a, user_b
-):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、all、拉取、page、拉取、ids、获取；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getAllContactsFromServer、ContactManager.fetchAllContactIds、ContactManager.fetchAllContacts，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -777,11 +777,16 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getAllContactsFromServer、ContactManager.fetchAllContactIds、ContactManager.fetchAllContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="fetch_contacts_api")
+    flow.establish_friends(primary, remote, user_a, user_b, reason="fetch_contacts_api")
     remark_for_fetch = "fetch-remark-校验"
 
-    resp_set_remark = device_a.call(
+    resp_set_remark = primary.call(
         "ContactManager",
         Cmd.setContactRemark.value,
         info={"userId": user_b, "remark": remark_for_fetch},
@@ -791,13 +796,13 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.setContactRemark.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": None,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_sync = device_a.call(
+    resp_sync = primary.call(
         "ContactManager",
         Cmd.getAllContactsFromServer.value,
         info={},
@@ -807,7 +812,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -815,7 +820,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     assert user_b in contacts, f"服务端好友列表未包含目标好友: {contacts}"
 
     # fetchAllContactIds：当前原生通道未实现 direct cmd，冻结真实 MissingPlugin 返回；Dart 方法复用旧 native cmd。
-    resp_fetch_ids = device_a.call(
+    resp_fetch_ids = primary.call(
         "ContactManager",
         Cmd.fetchAllContactIds.value,
         info={},
@@ -823,7 +828,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     assert_api.assert_error(resp_fetch_ids, code=-1, description="MissingPluginException")
 
     # fetchAllContacts：服务端一次性好友（含 userId + remark）
-    resp_fetch_all = device_a.call(
+    resp_fetch_all = primary.call(
         "ContactManager",
         Cmd.fetchAllContacts.value,
         info={},
@@ -833,7 +838,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.fetchAllContacts.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -846,48 +851,48 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     ), f"fetchAllContacts 未包含目标好友及备注: {fetched_contacts}"
 
     # fetchContacts：分页（桥接可能返回 list 或 EMCursorResult 字典）
-    resp_page = device_a.call(
+    resp_page = primary.call(
         "ContactManager",
         Cmd.fetchContacts.value,
         info={"cursor": "", "pageSize": 20},
     )
     page_body = resp_page.get("result")
     if isinstance(page_body, list):
-            assert_api.assert_response_matches(
-                resp_page,
-                expected={
-                    "manager": "ContactManager",
-                    "cmd": Cmd.fetchContacts.value,
-                    "device": "deviceA",
-                },
-                ignore_keys={"sequence", "result"},
-            )
-            assert any(
-                isinstance(item, dict)
-                and item.get("userId") == user_b
-                and item.get("remark") == remark_for_fetch
-                for item in page_body
-            ), f"fetchContacts list 未包含目标好友及备注: {page_body}"
+        assert_api.assert_response_matches(
+            resp_page,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.fetchContacts.value,
+                "device": expected_device,
+            },
+            ignore_keys={"sequence", "result"},
+        )
+        assert any(
+            isinstance(item, dict)
+            and item.get("userId") == user_b
+            and item.get("remark") == remark_for_fetch
+            for item in page_body
+        ), f"fetchContacts list 未包含目标好友及备注: {page_body}"
     else:
-            assert_api.assert_response_matches(
-                resp_page,
-                expected={
-                    "manager": "ContactManager",
-                    "cmd": Cmd.fetchContacts.value,
-                    "device": "deviceA",
-                },
-                ignore_keys={"sequence", "result"},
-            )
-            page_list = page_body.get("list") or []
-            assert any(
-                isinstance(item, dict)
-                and item.get("userId") == user_b
-                and item.get("remark") == remark_for_fetch
-                for item in page_list
-            ), f"fetchContacts cursor list 未包含目标好友及备注: {page_body}"
+        assert_api.assert_response_matches(
+            resp_page,
+            expected={
+                "manager": "ContactManager",
+                "cmd": Cmd.fetchContacts.value,
+                "device": expected_device,
+            },
+            ignore_keys={"sequence", "result"},
+        )
+        page_list = page_body.get("list") or []
+        assert any(
+            isinstance(item, dict)
+            and item.get("userId") == user_b
+            and item.get("remark") == remark_for_fetch
+            for item in page_list
+        ), f"fetchContacts cursor list 未包含目标好友及备注: {page_body}"
 
     # getContact：本地单个好友
-    resp_get_one = device_a.call(
+    resp_get_one = primary.call(
         "ContactManager",
         Cmd.getContact.value,
         info={"userId": user_b},
@@ -897,14 +902,14 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getContact.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {"userId": user_b, "remark": remark_for_fetch},
         },
         ignore_keys={"sequence"},
     )
 
     # getAllContacts：本地好友对象列表
-    resp_all_local = device_a.call(
+    resp_all_local = primary.call(
         "ContactManager",
         Cmd.getAllContacts.value,
         info={},
@@ -914,7 +919,7 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContacts.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -927,14 +932,14 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     ), f"getAllContacts 未包含目标好友及备注: {local_contacts}"
 
     # getAllContactIds：当前原生通道未实现 direct cmd，冻结真实 MissingPlugin 返回；本地 ID 读取由 getAllContactsFromDB 覆盖。
-    resp_local_ids = device_a.call(
+    resp_local_ids = primary.call(
         "ContactManager",
         Cmd.getAllContactIds.value,
         info={},
     )
     assert_api.assert_error(resp_local_ids, code=-1, description="MissingPluginException")
 
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 # ---------- fetchContacts（异常：文档 pageSize ∈ [1,50]）----------
