@@ -16,13 +16,19 @@ from src.tools.config import get_sdk_app_key
 pytestmark = [pytest.mark.client]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
 @pytest.mark.case_id("client.connection_state_queries.success")
 @pytest.mark.api("Client.isConnected")
 @pytest.mark.api("Client.isLoggedInBefore")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_connection_state_queries(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_connection_state_queries(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、connection、state、queries；
     2. 通过 WebSocket 控制测试 App 调用 Client.isConnected、Client.isLoggedInBefore，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -33,25 +39,27 @@ def test_client_connection_state_queries(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.isConnected、Client.isLoggedInBefore，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    connected_resp = device_a.call("Client", Cmd.isConnected.value, info={})
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
+    connected_resp = client.call("Client", Cmd.isConnected.value, info={})
     assert_api.assert_response_matches(
         connected_resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.isConnected.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    login_before_resp = device_a.call("Client", Cmd.isLoggedInBefore.value, info={})
+    login_before_resp = client.call("Client", Cmd.isLoggedInBefore.value, info={})
     assert_api.assert_response_matches(
         login_before_resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.isLoggedInBefore.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -111,7 +119,9 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
 @pytest.mark.api("Client.getCurrentDeviceId")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_current_token_and_device_id(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_current_token_and_device_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、current、token、and、device、id；
     2. 通过 WebSocket 控制测试 App 调用 Client.getToken、Client.getCurrentDeviceId，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -122,26 +132,28 @@ def test_client_current_token_and_device_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.getToken、Client.getCurrentDeviceId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    token_resp = device_a.call("Client", Cmd.getToken.value, info={})
+    client = topology_primary_or_device_a
+    expected_device = _expected_device(client)
+    token_resp = client.call("Client", Cmd.getToken.value, info={})
     assert_api.assert_response_matches(
         token_resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.getToken.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
     assert isinstance(token_resp.get("result"), str)
     assert token_resp["result"], "getToken 应返回非空 token 字符串"
 
-    device_id_resp = device_a.call("Client", Cmd.getCurrentDeviceId.value, info={})
+    device_id_resp = client.call("Client", Cmd.getCurrentDeviceId.value, info={})
     assert_api.assert_response_matches(
         device_id_resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.getCurrentDeviceId.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {"resource": "", "deviceName": ""},
         },
         ignore_keys={"sequence", "deviceUUID"},
@@ -157,7 +169,9 @@ def test_client_current_token_and_device_id(device_a, assert_api):
 @pytest.mark.api("Client.compressLogs")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_compress_logs_returns_path(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_compress_logs_returns_path(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、compress、logs、returns、path；
     2. 通过 WebSocket 控制测试 App 调用 Client.compressLogs，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -168,13 +182,14 @@ def test_client_compress_logs_returns_path(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.compressLogs，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_a.call("Client", Cmd.compressLogs.value, info={})
+    client = topology_primary_or_device_a
+    resp = client.call("Client", Cmd.compressLogs.value, info={})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "Client",
             "cmd": Cmd.compressLogs.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
         },
         ignore_keys={"sequence", "result"},
     )
@@ -187,7 +202,9 @@ def test_client_compress_logs_returns_path(device_a, assert_api):
 @pytest.mark.api("Client.createAccount")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_create_account_empty_user_boundary(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_client_create_account_empty_user_boundary(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端异常/边界场景所需的测试数据，场景为client、创建、account、空值参数、用户、boundary；
     2. 通过 WebSocket 控制测试 App 调用 Client.createAccount，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -198,7 +215,7 @@ def test_client_create_account_empty_user_boundary(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.createAccount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "Client",
         Cmd.createAccount.value,
         info={"userId": "", "password": ""},
@@ -259,7 +276,9 @@ def test_client_create_account_empty_user_boundary(device_a, assert_api):
 @pytest.mark.api("Client.updateRegradeMessagesSetting")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_update_runtime_setting_success(topology_primary_or_device_a, assert_api, cmd, info):
     """
     1. 在已登录的 Android 共享 session 中准备客户端状态变更场景所需的测试数据，场景为client、更新、runtime、setting、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 Client.updateUsingHttpsOnlySetting、Client.updateLoginExtensionInfo、Client.updateDeleteMessagesWhenLeaveGroupSetting、Client.updateDeleteMessageWhenLeaveRoomSetting，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -270,13 +289,14 @@ def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
         '2. 通过 WebSocket 控制测试 App 调用 Client.updateUsingHttpsOnlySetting、Client.updateLoginExtensionInfo、Client.updateDeleteMessagesWhenLeaveGroupSetting、Client.updateDeleteMessageWhenLeaveRoomSetting，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    resp = device_a.call("Client", cmd, info=info)
+    client = topology_primary_or_device_a
+    resp = client.call("Client", cmd, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "Client",
             "cmd": cmd,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -339,7 +359,9 @@ def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
 @pytest.mark.api("Client.loginWithAgoraToken")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_client_session_sensitive_api_boundaries(device_a, assert_api, cmd, info, expected_result):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_client_session_sensitive_api_boundaries(topology_primary_or_device_a, assert_api, cmd, info, expected_result):
     """
     1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、session、sensitive、api、boundaries；
     2. 通过 WebSocket 控制测试 App 调用 Client.renewToken、Client.changeAppKey、Client.getLoggedInDevicesFromServer、Client.kickDevice，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -350,13 +372,14 @@ def test_client_session_sensitive_api_boundaries(device_a, assert_api, cmd, info
         '2. 通过 WebSocket 控制测试 App 调用 Client.renewToken、Client.changeAppKey、Client.getLoggedInDevicesFromServer、Client.kickDevice，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_a.call("Client", cmd, info=info)
+    client = topology_primary_or_device_a
+    resp = client.call("Client", cmd, info=info)
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "Client",
             "cmd": cmd,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": expected_result,
         },
         ignore_keys={"sequence"},
