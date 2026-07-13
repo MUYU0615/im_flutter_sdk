@@ -509,7 +509,7 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
     ],
 )
 def test_group_create_group_invite_members_abnormal_inputs(
-    device_a, assert_api, user_a, user_b, case_name, invite_members, expect_error
+    topology, assert_api, case_name, invite_members, expect_error
 ):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、invite、成员、abnormal、inputs；
@@ -522,6 +522,10 @@ def test_group_create_group_invite_members_abnormal_inputs(
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
     discovering = os.getenv("CASES_DISCOVER", "0") in ("1", "true", "True")
+    primary = topology.primary_client(0)
+    user_a = primary.user_id
+    user_b = topology.remote_client(0).user_id
+    expected_device = _expected_device(primary)
     resolved_invite_members = [user_b if x == "{{user_b}}" else x for x in invite_members]
     info = {
         "groupName": f"cg_abnormal_{case_name}",
@@ -536,7 +540,7 @@ def test_group_create_group_invite_members_abnormal_inputs(
         },
     }
 
-    resp = device_a.call("GroupManager", Cmd.createGroup.value, info=info)
+    resp = primary.call("GroupManager", Cmd.createGroup.value, info=info)
     result = resp.get("result") if isinstance(resp.get("result"), dict) else {}
     is_error = isinstance(result, dict) and "code" in result and "description" in result
 
@@ -555,7 +559,7 @@ def test_group_create_group_invite_members_abnormal_inputs(
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": {
                 "owner": user_a,
                 "ext": "auto-ext",
@@ -583,13 +587,13 @@ def test_group_create_group_invite_members_abnormal_inputs(
 
     gid = result.get("groupId")
     assert isinstance(gid, str) and gid, f"{case_name}: createGroup 返回中未获取到 groupId: {resp}"
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = primary.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
