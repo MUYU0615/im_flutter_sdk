@@ -16,6 +16,10 @@ from src import Cmd
 pytestmark = [pytest.mark.client]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.no_global_login
 def test_client_login_invalid_password(api, assert_api):
     """错误密码：预期返回错误响应；若服务端仅返回 result=None 也视为合法响应。"""
@@ -36,7 +40,9 @@ def test_client_login_invalid_password(api, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_client_get_current_user(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_client_get_current_user(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备客户端查询/拉取场景所需的测试数据，场景为client、获取、current、用户；
     2. 通过 WebSocket 控制测试 App 调用 Client.getCurrentUser，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -47,7 +53,16 @@ def test_client_get_current_user(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 Client.getCurrentUser，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call("Client", Cmd.getCurrentUser.value, info={})
+    resp = topology_primary_or_device_a.call("Client", Cmd.getCurrentUser.value, info={})
+    assert_api.assert_response_matches(
+        resp,
+        expected={
+            "manager": "Client",
+            "cmd": Cmd.getCurrentUser.value,
+            "device": _expected_device(topology_primary_or_device_a),
+        },
+        ignore_keys={"sequence", "result"},
+    )
     assert_api.assert_success(resp)
     result = assert_api.get_result(resp)
     assert result is not None or "result" in resp
