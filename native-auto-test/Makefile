@@ -12,9 +12,9 @@ SCRIPT_DIR ?= scripts
         skills-validate test test-allure test-html test-chat-strict test-chat-discover \
         e2e-prepare e2e-run e2e-api-coverage e2e-full-run \
         web-e2e web-wrapper-mapping web-coverage-report \
-        android-real-e2e android-real-sanity ios-real-e2e web-real-e2e web-real-matrix web-real-report \
+        android-real-e2e android-real-sanity android-complete-suite-audit ios-real-e2e web-real-e2e web-real-matrix web-real-report \
         web-real-no-real-api-audit web-real-docs web-real-full-baseline \
-        android-api-coverage clean
+        android-api-coverage android-wrapper-274-plan clean
 
 help:
 	@echo "Available targets:"
@@ -39,6 +39,7 @@ help:
 	@echo "  web-coverage-report Generate Web API coverage markdown report"
 	@echo "  android-real-e2e   Low-level Android runner entry for targeted debugging"
 	@echo "  android-real-sanity Fixed Android real E2E sanity pack"
+	@echo "  android-complete-suite-audit Audit Android complete real E2E collection scope"
 	@echo "  ios-real-e2e       Run iOS real SDK/service E2E cases"
 	@echo "  web-real-e2e       Run real Web SDK/service E2E through local relay + headless Web clients"
 	@echo "  web-real-matrix    Generate real Web E2E API matrix"
@@ -47,6 +48,7 @@ help:
 	@echo "  web-real-docs      Generate real Web matrix/report/audit docs together"
 	@echo "  web-real-full-baseline Run full real Web E2E baseline suite (tests/web_real)"
 	@echo "  android-api-coverage Generate Android native API coverage and wrapper alignment reports"
+	@echo "  android-wrapper-274-plan Generate Android wrapper 274 E2E completion plan"
 
 # --- WebSocket calls ---
 ws-call:
@@ -164,8 +166,15 @@ android-real-sanity:
 	$(PY) -m src.tools.android_sanity_runner \
 	  $(ARGS)
 
+android-complete-suite-audit:
+	$(PY) -m src.tools.android_complete_suite_audit $(ARGS)
+
 android-api-coverage:
 	$(PY) src/tools/android_423_api_coverage_report.py $(ARGS)
+	$(PY) -m src.tools.android_wrapper_274_completion_plan
+
+android-wrapper-274-plan:
+	$(PY) -m src.tools.android_wrapper_274_completion_plan $(ARGS)
 
 ios-real-e2e:
 	$(PY) -m pytest tests --target-platform ios -m real_e2e $(ARGS)

@@ -30,6 +30,7 @@ markers = [
     "chat: ChatManager API tests",
     "chatroom: ChatRoomManager API tests",
     "multi_device: tests requiring multiple devices/topics",
+    "session_lifecycle: session/login/logout transition cases that must not run inside shared real_e2e session suites",
 ]
 
 [tool.setuptools.packages.find]

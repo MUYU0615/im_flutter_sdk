@@ -1,5 +1,6 @@
 """ChatRoom 回调事件用例。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
@@ -46,7 +47,18 @@ def _join_chatroom_as_b_and_wait_ready(device_b, assert_api, room_id: str) -> No
     )
 
 
+@pytest.mark.real_e2e
 def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、admin、added、and、removed、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、admin、added、and、removed、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_admin", desc_prefix="cb_admin")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -84,7 +96,18 @@ def test_chatroom_admin_added_and_removed_callbacks(device_a, device_b, assert_a
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、owner、changed、callback；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomOwner，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、owner、changed、callback；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomOwner，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_owner", desc_prefix="cb_owner")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -108,7 +131,18 @@ def test_chatroom_owner_changed_callback(device_a, device_b, assert_api, user_a,
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、all、成员、禁言、state、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、all、成员、禁言、state、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_mute_all", desc_prefix="cb_mute_all")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -135,7 +169,18 @@ def test_chatroom_all_member_mute_state_callbacks(device_a, device_b, assert_api
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、attributes、updated、and、removed、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.removeChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、attributes、updated、and、removed、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.removeChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_attrs", desc_prefix="cb_attrs")
     attr_key = f"cb_attr_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
@@ -188,8 +233,19 @@ def test_chatroom_attributes_updated_and_removed_callbacks(device_a, device_b, a
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.xfail(reason="当前实测 updateChatRoomAnnouncement 成功但未派发公告变更回调，待 SDK/服务端确认。")
 def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、announcement、changed、callback；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、announcement、changed、callback；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_announcement", desc_prefix="cb_announcement")
     announcement = f"notice-{uuid.uuid4().hex[:8]}"
     try:
@@ -213,8 +269,18 @@ def test_chatroom_announcement_changed_callback(device_a, device_b, assert_api, 
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_specification_changed_callback(device_a, device_b, assert_api, user_a):
-    """changeChatRoomSubject 触发聊天室规格变更回调，校验 room 对象中的 roomId/name。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、specification、changed、callback；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、specification、changed、callback；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_spec", desc_prefix="cb_spec")
     subject = f"spec-{uuid.uuid4().hex[:8]}"
     try:
@@ -240,7 +306,18 @@ def test_chatroom_specification_changed_callback(device_a, device_b, assert_api,
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、allow、列表、added、and、removed、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、allow、列表、added、and、removed、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_allow", desc_prefix="cb_allow")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -283,7 +360,18 @@ def test_chatroom_allow_list_added_and_removed_callbacks(device_a, device_b, ass
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、禁言、列表、added、and、removed、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、禁言、列表、added、and、removed、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteChatRoomMembers、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="cb_mute", desc_prefix="cb_mute")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -326,8 +414,18 @@ def test_chatroom_mute_list_added_and_removed_callbacks(device_a, device_b, asse
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a, user_b):
-    """leaveChatRoom 触发成员主动退出回调，校验 roomId/participant。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、成员、exited、callback；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、成员、exited、callback；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="cb_exit", desc_prefix="cb_exit")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -339,7 +437,7 @@ def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a,
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.leaveChatRoom.value,
                 "device": "deviceB",
-                "result": None,
+                "result": True,
             },
             ignore_keys={"sequence"},
         )
@@ -356,7 +454,18 @@ def test_chatroom_member_exited_callback(device_a, device_b, assert_api, user_a,
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_removed_and_destroyed_callbacks(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、removed、and、destroyed、callbacks；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomMembers、ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、removed、and、destroyed、callbacks；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomMembers、ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="cb_remove", desc_prefix="cb_remove")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)

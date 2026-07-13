@@ -26,6 +26,12 @@ test -> WebSocket server -> im_flutter_test(client1)
 
 Agent 执行规范统一维护在项目 skill：`.agents/skills/native-auto-test-framework/SKILL.md`。
 
+用例编写、文件命名、中文步骤、事件等待、执行方式和报告查看规范见：
+
+```text
+docs/case_authoring_guide.md
+```
+
 ## 配置
 
 复制本地配置：
@@ -482,6 +488,8 @@ make contact-unblock DEVICE=device_a USER_ID=uB
 ```
 
 ## 用例要求
+
+完整规范见 `docs/case_authoring_guide.md`。本节只保留关键约束摘要。
 
 - 默认全量应是真实 SDK E2E，不是 wrapper mapping、fixture 或 unit。
 - 平台必须显式写真实名称，不要用 `mobile` 替代 Android/iOS/Web/HMOS/Windows。

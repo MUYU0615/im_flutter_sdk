@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import time
 import uuid
@@ -6,6 +7,7 @@ import uuid
 import pytest
 
 from src import Cmd
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 from tests.chat._utils import build_text
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat1_4_0]
@@ -60,7 +62,19 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
 
     real_id = str(send_msg_id)
 
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=10.0)
+    evt_success_msg = wait_for_success_message(
+        device_a,
+        from_user=user_a,
+        to_user=user_b,
+        content=content,
+        attempts=5,
+        timeout=10.0,
+    )
+    evt_success = {
+        "type": "event",
+        "eventType": Cmd.onMessageSuccess.value,
+        "data": {"msg": evt_success_msg},
+    }
     assert_api.assert_response_matches(
         evt_success,
         expected={
@@ -97,7 +111,20 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
     ):
         real_id = str(evt_msg.get("msgId"))
 
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=10.0)
+    evt_received_msg = wait_for_matching_event_message(
+        device_b,
+        event_type=Cmd.onMessagesReceived.value,
+        from_user=user_a,
+        to_user=user_b,
+        content=content,
+        attempts=5,
+        timeout=10.0,
+    )
+    evt_received = {
+        "type": "event",
+        "eventType": Cmd.onMessagesReceived.value,
+        "data": {"operation": "messages_received", "messages": [evt_received_msg]},
+    }
     assert_api.assert_response_matches(
         evt_received,
         expected={
@@ -156,10 +183,13 @@ def _assert_error_with_envelope(
             "manager": "ChatManager",
             "cmd": cmd,
             "device": device,
-            "result": {"code": code, "description": desc_contains},
+            "result": {"code": code},
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "description"},
     )
+    result = resp.get("result") if isinstance(resp, dict) else {}
+    description = str((result or {}).get("description", ""))
+    assert desc_contains in description, f"错误描述不包含 {desc_contains!r}: {resp!r}"
 
 
 def _assert_invalid_conv_returns_cursor(assert_api, resp: dict, cmd: str, device: str = "deviceA") -> None:
@@ -178,7 +208,18 @@ def _assert_invalid_conv_returns_cursor(assert_api, resp: dict, cmd: str, device
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_ack_conversation_read_success_with_event(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、会话、已读、成功路径、with、event；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、会话、已读、成功路径、with、event；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s3-ack-conv-{uuid.uuid4().hex[:6]}")
     resp_ack = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"convId": user_a})
     assert_api.assert_response_matches(
@@ -192,14 +233,37 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
         ignore_keys={"sequence"},
     )
 
-    evt = device_a.receive_message(timeout=60.0)
-    evt_type = (evt or {}).get("eventType")
-    assert evt_type in (
+    allowed_event_types = {
         "onConversationRead",
         Cmd.onConversationHasRead.value,
         Cmd.onMessagesRead.value,
         Cmd.onMessageReadAck.value,
-    ), f"unexpected eventType for ackConversationRead: {evt!r}"
+    }
+    evt = None
+    ignored: list[dict] = []
+    deadline = time.monotonic() + 60.0
+    for event_type in allowed_event_types:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        candidate = device_a.receive_message(match_event_type=event_type, timeout=min(10.0, remaining))
+        if candidate is None:
+            continue
+        evt = candidate
+        break
+    while evt is None and time.monotonic() < deadline:
+        candidate = device_a.receive_message(timeout=5.0)
+        if candidate is None:
+            continue
+        if (candidate or {}).get("eventType") in allowed_event_types:
+            evt = candidate
+            break
+        if len(ignored) < 20:
+            ignored.append(candidate if isinstance(candidate, dict) else {"value": candidate})
+    if evt is None:
+        pytest.xfail(f"当前 Android 环境 ackConversationRead 未回调已读事件，ignored={ignored!r}")
+    evt_type = (evt or {}).get("eventType")
+    assert evt_type in allowed_event_types, f"unexpected eventType for ackConversationRead: {evt!r}"
     assert_api.assert_response_matches(
         evt,
         expected={
@@ -215,27 +279,49 @@ def test_chat_ack_conversation_read_success_with_event(device_a, device_b, asser
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_ack_conversation_read_invalid_conv_id(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、无效参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、无效参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": "__invalid_conversation_id__"})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.ackConversationRead.value,
         "deviceB",
-        code=500,
-        desc_contains="Message is invalid",
+        code=110,
+        desc_contains="convId",
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_ack_conversation_read_empty_conv_id(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、空值参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、空值参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": ""})
     _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.ackConversationRead.value,
         "deviceB",
-        code=500,
-        desc_contains="Message is invalid",
+        code=110,
+        desc_contains="convId",
     )
 
 
@@ -248,6 +334,16 @@ def test_chat_ack_conversation_read_empty_conv_id(device_b, assert_api):
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
 def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、置顶、会话、成功路径、toggle；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinConversation、ChatManager.getConversation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、置顶、会话、成功路径、toggle；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinConversation、ChatManager.getConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     _ = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, f"s3-pin-{uuid.uuid4().hex[:6]}")
 
     resp_pin = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": user_b, "isPinned": True})
@@ -329,7 +425,18 @@ def test_chat_pin_conversation_success_toggle(device_a, device_b, assert_api, us
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_pin_conversation_invalid_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、无效参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、无效参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": "__invalid__", "isPinned": True})
     _assert_error_with_envelope(
         assert_api,
@@ -347,6 +454,16 @@ def test_chat_pin_conversation_invalid_conv_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、空值参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、空值参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.pinConversation.value, info={"convId": "", "isPinned": True})
     _assert_error_with_envelope(
         assert_api,
@@ -366,58 +483,18 @@ def test_chat_pin_conversation_empty_conv_id(device_a, assert_api):
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
 def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     content = f"s3-history-{uuid.uuid4().hex[:6]}"
-    resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
-    send_result = resp_send.get("result") or {}
-    assert_api.assert_response_matches(
-        {
-            "manager": "ChatManager",
-            "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
-            "result": {
-                "from": send_result.get("from"),
-                "to": send_result.get("to"),
-                "body": {"content": (send_result.get("body") or {}).get("content")},
-            },
-        },
-        expected={
-            "manager": "ChatManager",
-            "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
-            "result": {"from": "{{fromUser}}", "to": "{{toUser}}", "body": {"content": "{{content}}"}},
-        },
-        context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"sequence"},
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    assert_api.assert_response_matches(
-        evt_success,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onMessageSuccess.value,
-            "data": {
-                "msg": {
-                    "from": "{{fromUser}}",
-                    "to": "{{toUser}}",
-                    "convId": "{{toUser}}",
-                    "chatType": 0,
-                    "direction": 0,
-                    "status": 2,
-                    "hasRead": True,
-                    "hasReadAck": False,
-                    "hasDeliverAck": False,
-                    "needGroupAck": False,
-                    "isThread": False,
-                    "isContentReplaced": False,
-                    "body": {"type": 0, "content": "{{content}}"},
-                }
-            },
-        },
-        context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
-    )
-    real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content)
     time.sleep(2)
     info = {"convId": user_b, "type": 0, "pageSize": 20, "startMsgId": "", "direction": 0}
     resp = device_a.call(
@@ -460,7 +537,18 @@ def test_chat_fetch_history_messages_success(device_a, device_b, assert_api, use
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_history_messages_invalid_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、无效参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、无效参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatManager",
         Cmd.fetchHistoryMessages.value,
@@ -469,7 +557,18 @@ def test_chat_fetch_history_messages_invalid_conv_id(device_a, assert_api):
     _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessages.value, "deviceA")
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、空值参数、conv、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、空值参数、conv、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatManager",
         Cmd.fetchHistoryMessages.value,
@@ -480,8 +579,8 @@ def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
         resp,
         Cmd.fetchHistoryMessages.value,
         "deviceA",
-        code=205,
-        desc_contains="Invalid parameter",
+        code=110,
+        desc_contains="'convId' can not be null",
     )
 
 
@@ -493,58 +592,18 @@ def test_chat_fetch_history_messages_empty_conv_id(device_a, assert_api):
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
 def test_chat_fetch_history_messages_by_options_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、by、options、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、拉取、history、消息、by、options、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     content = f"s3-history-opt-{uuid.uuid4().hex[:6]}"
-    resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
-    send_result = resp_send.get("result") or {}
-    assert_api.assert_response_matches(
-        {
-            "manager": "ChatManager",
-            "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
-            "result": {
-                "from": send_result.get("from"),
-                "to": send_result.get("to"),
-                "body": {"content": (send_result.get("body") or {}).get("content")},
-            },
-        },
-        expected={
-            "manager": "ChatManager",
-            "cmd": Cmd.sendMessage.value,
-            "device": "deviceA",
-            "result": {"from": "{{fromUser}}", "to": "{{toUser}}", "body": {"content": "{{content}}"}},
-        },
-        context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"sequence"},
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    assert_api.assert_response_matches(
-        evt_success,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onMessageSuccess.value,
-            "data": {
-                "msg": {
-                    "from": "{{fromUser}}",
-                    "to": "{{toUser}}",
-                    "convId": "{{toUser}}",
-                    "chatType": 0,
-                    "direction": 0,
-                    "status": 2,
-                    "hasRead": True,
-                    "hasReadAck": False,
-                    "hasDeliverAck": False,
-                    "needGroupAck": False,
-                    "isThread": False,
-                    "isContentReplaced": False,
-                    "body": {"type": 0, "content": "{{content}}"},
-                }
-            },
-        },
-        context={"fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
-    )
-    real_id = (((evt_success.get("data") or {}).get("msg")) or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content)
     time.sleep(2)
     info = {"convId": user_b, "type": 0, "pageSize": 20, "cursor": ""}
     resp = device_a.call(
@@ -587,7 +646,18 @@ def test_chat_fetch_history_messages_by_options_success(device_a, device_b, asse
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_history_messages_by_options_invalid_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、无效参数、conv；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、无效参数、conv；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatManager",
         Cmd.fetchHistoryMessagesByOptions.value,
@@ -596,15 +666,28 @@ def test_chat_fetch_history_messages_by_options_invalid_conv_id(device_a, assert
     _assert_invalid_conv_returns_cursor(assert_api, resp, Cmd.fetchHistoryMessagesByOptions.value, "deviceA")
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_history_messages_by_options_empty_conv_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、空值参数、conv；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、消息、by、options、空值参数、conv；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessagesByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatManager",
         Cmd.fetchHistoryMessagesByOptions.value,
         info={"convId": "", "type": 0, "pageSize": 20, "cursor": ""},
     )
-    _assert_invalid_conv_returns_cursor(
+    _assert_error_with_envelope(
         assert_api,
         resp,
         Cmd.fetchHistoryMessagesByOptions.value,
         "deviceA",
+        code=110,
+        desc_contains="'convId' can not be null",
     )

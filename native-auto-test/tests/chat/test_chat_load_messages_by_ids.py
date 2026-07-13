@@ -1,11 +1,12 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
 import pytest
 
 from src import Cmd
-from tests.chat._utils import build_text
+from tests.chat._message_helpers import send_text_and_wait
 
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.agorachat1_4_0]
@@ -21,13 +22,13 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
 
 
 def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user_b: str, content: str) -> str:
-    try:
-        device_a.drain_events()
-        device_b.drain_events()
-    except Exception:
-        pass
-
-    resp_send = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
+    resp_send, success_msg, _received_msg = send_text_and_wait(
+        device_a,
+        device_b,
+        user_a=user_a,
+        user_b=user_b,
+        content=content,
+    )
     send_result = resp_send.get("result") or {}
     send_msg_id = send_result.get("msgId")
     assert isinstance(send_msg_id, str) and send_msg_id, f"sendMessage 未返回有效 msgId: {resp_send}"
@@ -59,10 +60,12 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
         ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "targetLanguages", "translations", "isListened"},
     )
 
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    assert evt_success, "发送端未收到 onMessageSuccess 回调"
     assert_api.assert_response_matches(
-        evt_success,
+        {
+            "type": "event",
+            "eventType": Cmd.onMessageSuccess.value,
+            "data": {"msg": success_msg},
+        },
         expected={
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
@@ -95,57 +98,7 @@ def _send_text_and_get_real_id(device_a, device_b, assert_api, user_a: str, user
             "data.msg.msgId",
         } | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )
-    evt_success_msg = ((evt_success.get("data") or {}).get("msg")) or {}
-    evt_success_body = evt_success_msg.get("body") or {}
-    if (
-        evt_success_msg.get("from") == user_a
-        and evt_success_msg.get("to") == user_b
-        and evt_success_body.get("content") == content
-        and evt_success_msg.get("msgId")
-    ):
-        real_id = str(evt_success_msg.get("msgId"))
-
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-    assert evt_received, "接收端未收到 onMessagesReceived 回调"
-    assert_api.assert_response_matches(
-        evt_received,
-        expected={
-            "type": "event",
-            "eventType": Cmd.onMessagesReceived.value,
-            "data": {
-                "operation": "messages_received",
-                "messages": [
-                    {
-                        "from": user_a,
-                        "to": user_b,
-                        "convId": user_a,
-                        "chatType": 0,
-                        "direction": 1,
-                        "status": 2,
-                        "hasRead": False,
-                        "hasReadAck": False,
-                        "hasDeliverAck": False,
-                        "needGroupAck": False,
-                        "isThread": False,
-                        "isContentReplaced": False,
-                        "body": {"type": 0, "content": content},
-                    }
-                ]
-            },
-        },
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "receiverList", "msgId"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
-    )
-    data = evt_received.get("data") or {}
-    for msg in (data.get("messages") or []):
-        body = (msg or {}).get("body") or {}
-        if (
-            (msg or {}).get("from") == user_a
-            and (msg or {}).get("to") == user_b
-            and body.get("content") == content
-            and (msg or {}).get("msgId")
-        ):
-            real_id = str(msg.get("msgId"))
-            break
+    real_id = str(success_msg.get("msgId") or real_id)
 
     return real_id
 
@@ -192,6 +145,16 @@ def _assert_loaded_messages_contains_ids(resp: dict, expected_ids: list[str], us
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
 def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、load、消息、with、ids、single、and、multi；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、load、消息、with、ids、single、and、multi；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     content_1 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-1"
     content_2 = f"s4-load-by-ids-{uuid.uuid4().hex[:8]}-2"
     msg_id_1 = _send_text_and_get_real_id(device_a, device_b, assert_api, user_a, user_b, content_1)
@@ -244,6 +207,16 @@ def test_chat_load_messages_with_ids_single_and_multi_success(device_a, device_b
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_load_messages_with_ids_empty_ids(device_a, assert_api, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、load、消息、with、ids、空值参数、ids；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、load、消息、with、ids、空值参数、ids；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.loadMessagesWithIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatManager",
         Cmd.loadMessagesWithIds.value,

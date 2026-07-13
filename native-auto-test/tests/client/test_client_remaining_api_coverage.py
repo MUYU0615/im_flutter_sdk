@@ -5,6 +5,7 @@ Client 剩余 API 覆盖用例。
 所有预期返回值先通过 discovery 从真实模拟器响应确认，再在严格模式下冻结。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -22,7 +23,16 @@ pytestmark = [pytest.mark.client]
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_connection_state_queries(device_a, assert_api):
-    """isConnected / isLoggedInBefore：已登录 session 下查询连接态和历史登录态，均应返回 true。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、connection、state、queries；
+    2. 通过 WebSocket 控制测试 App 调用 Client.isConnected、Client.isLoggedInBefore，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、connection、state、queries；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.isConnected、Client.isLoggedInBefore，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     connected_resp = device_a.call("Client", Cmd.isConnected.value, info={})
     assert_api.assert_response_matches(
         connected_resp,
@@ -54,7 +64,16 @@ def test_client_connection_state_queries(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_init_repeated_call_idempotent(device_a, assert_api):
-    """init：SDK 已初始化后重复调用，冻结当前端返回 bool，且不改变当前登录态。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、init、repeated、call、idempotent；
+    2. 通过 WebSocket 控制测试 App 调用 Client.init，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、init、repeated、call、idempotent；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.init，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     app_key = get_sdk_app_key()
     assert app_key, "config.yaml sdk_options.app_key 不能为空"
     resp = device_a.call(
@@ -93,7 +112,16 @@ def test_client_init_repeated_call_idempotent(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_current_token_and_device_id(device_a, assert_api):
-    """getToken / getCurrentDeviceId：已登录 session 下获取 token 和当前设备信息，校验关键字段非空。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、current、token、and、device、id；
+    2. 通过 WebSocket 控制测试 App 调用 Client.getToken、Client.getCurrentDeviceId，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、current、token、and、device、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.getToken、Client.getCurrentDeviceId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     token_resp = device_a.call("Client", Cmd.getToken.value, info={})
     assert_api.assert_response_matches(
         token_resp,
@@ -130,7 +158,16 @@ def test_client_current_token_and_device_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_compress_logs_returns_path(device_a, assert_api):
-    """compressLogs：压缩本地日志，校验返回压缩文件路径字符串。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、compress、logs、returns、path；
+    2. 通过 WebSocket 控制测试 App 调用 Client.compressLogs，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、compress、logs、returns、path；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.compressLogs，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call("Client", Cmd.compressLogs.value, info={})
     assert_api.assert_response_matches(
         resp,
@@ -151,7 +188,16 @@ def test_client_compress_logs_returns_path(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_create_account_empty_user_boundary(device_a, assert_api):
-    """createAccount：空 userId/password 边界，冻结真实模拟器参数校验错误，不创建新账号。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端异常/边界场景所需的测试数据，场景为client、创建、account、空值参数、用户、boundary；
+    2. 通过 WebSocket 控制测试 App 调用 Client.createAccount，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端异常/边界场景所需的测试数据，场景为client、创建、account、空值参数、用户、boundary；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.createAccount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "Client",
         Cmd.createAccount.value,
@@ -214,7 +260,16 @@ def test_client_create_account_empty_user_boundary(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
-    """update*Setting：逐项更新运行时配置，冻结真实模拟器返回 result=null 的成功语义。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端状态变更场景所需的测试数据，场景为client、更新、runtime、setting、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 Client.updateUsingHttpsOnlySetting、Client.updateLoginExtensionInfo、Client.updateDeleteMessagesWhenLeaveGroupSetting、Client.updateDeleteMessageWhenLeaveRoomSetting，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端状态变更场景所需的测试数据，场景为client、更新、runtime、setting、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.updateUsingHttpsOnlySetting、Client.updateLoginExtensionInfo、Client.updateDeleteMessagesWhenLeaveGroupSetting、Client.updateDeleteMessageWhenLeaveRoomSetting，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call("Client", cmd, info=info)
     assert_api.assert_response_matches(
         resp,
@@ -285,7 +340,16 @@ def test_client_update_runtime_setting_success(device_a, assert_api, cmd, info):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_client_session_sensitive_api_boundaries(device_a, assert_api, cmd, info, expected_result):
-    """renew/changeAppKey/device-kick 类方法：使用不会破坏当前 session 的边界入参冻结真实错误返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、session、sensitive、api、boundaries；
+    2. 通过 WebSocket 控制测试 App 调用 Client.renewToken、Client.changeAppKey、Client.getLoggedInDevicesFromServer、Client.kickDevice，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、session、sensitive、api、boundaries；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.renewToken、Client.changeAppKey、Client.getLoggedInDevicesFromServer、Client.kickDevice，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call("Client", cmd, info=info)
     assert_api.assert_response_matches(
         resp,

@@ -13,3 +13,5 @@ def test_makefile_has_unified_e2e_targets():
     assert "e2e-api-coverage:" in text
     assert "e2e-full-run:" in text
     assert "android-real-sanity:" in text
+    assert "android-complete-suite-audit:" in text
+    assert "android-wrapper-274-plan:" in text

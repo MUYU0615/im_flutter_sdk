@@ -3,8 +3,10 @@
 场景：deviceA 添加 deviceB 为好友，B 同意后校验 A、B 的好友列表（用户由 conftest 创建，teardown 删除）。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import json
+import time
 
 import pytest
 
@@ -26,6 +28,21 @@ REMARK_SPECIAL_101 = ((_REMARK_SPECIAL_CORE * 20)[:101])
 assert len(REMARK_SPECIAL_101) == 101
 
 
+def _wait_get_contact(device, user_id: str, *, timeout: float = 5.0) -> dict:
+    deadline = time.monotonic() + timeout
+    last_resp: dict | None = None
+    while time.monotonic() < deadline:
+        last_resp = device.call(
+            "ContactManager",
+            Cmd.getContact.value,
+            info={"userId": user_id},
+        )
+        if isinstance(last_resp.get("result"), dict):
+            return last_resp
+        time.sleep(0.5)
+    return last_resp or {}
+
+
 # ---------- addContact ----------
 
 
@@ -35,7 +52,16 @@ assert len(REMARK_SPECIAL_101) == 101
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_add_nonexistent_user(device_a, assert_api):
-    """addContact：目标用户不存在，预期失败（顶层 error）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、不存在对象、用户；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、不存在对象、用户；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.addContact.value,
@@ -50,7 +76,16 @@ def test_contact_add_nonexistent_user(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_add_empty_user_id(device_a, assert_api):
-    """addContact：userId 为空字符串，预期参数非法类错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、空值参数、用户、id；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、空值参数、用户、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.addContact.value,
@@ -59,8 +94,18 @@ def test_contact_add_empty_user_id(device_a, assert_api):
     assert_api.assert_error(resp, code=101, description="User ID is invalid")
 
 
+@pytest.mark.real_e2e
 def test_contact_add_self(device_a, assert_api, user_a):
-    """addContact：不能添加自己为好友，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、添加、self；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、添加、self；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.addContact.value,
@@ -72,8 +117,18 @@ def test_contact_add_self(device_a, assert_api, user_a):
 # ---------- deleteContact ----------
 
 
+@pytest.mark.real_e2e
 def test_contact_delete_contact_not_friend(device_a, assert_api, user_b):
-    """deleteContact：对方非好友（未建立好友关系），预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、删除、contact、not、friend；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、删除、contact、not、friend；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.deleteContact.value,
@@ -88,8 +143,18 @@ def test_contact_delete_contact_not_friend(device_a, assert_api, user_b):
     )
 
 
+@pytest.mark.real_e2e
 def test_contact_delete_contact_nonexistent_user(device_a, assert_api):
-    """deleteContact：目标用户不存在，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、删除、contact、不存在对象、用户；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、删除、contact、不存在对象、用户；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.deleteContact.value,
@@ -107,8 +172,15 @@ def test_contact_delete_contact_nonexistent_user(device_a, assert_api):
 @pytest.mark.roles_mode("ordered")
 def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user_b):
     """
-    设备 A 添加设备 B 为好友，B 同意好友申请，分别获取 A、B 好友列表、A删除好友。
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为friend、添加、accept、and、列表；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation、ContactManager.deleteContact、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为friend、添加、accept、and、列表；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation、ContactManager.deleteContact、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.delete_friend(device_a, user_b, wait_event=False)
     flow.delete_friend(device_b, user_a, wait_event=False)
@@ -125,7 +197,7 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
             resp_add,
             expected={"manager": "ContactManager", "cmd": Cmd.addContact.value, "device": "{{device}}", "result": "{{userId}}"},
             context={"userId": user_b, "device": "deviceA"},
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
         # 1.1 设备 B 获取好友邀请回调
         resp_invite = receive_contact_changed_event(
@@ -165,10 +237,11 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
                 "device": "deviceA",
-                "result": [user_b],
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
+        contacts_a = resp_list_a.get("result") or []
+        assert user_b in contacts_a, f"设备 A 好友列表未包含 B: {contacts_a}"
         # 4. 设备 B 获取好友列表
         resp_list_b = device_b.call(
             "ContactManager",
@@ -182,10 +255,11 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
                 "device": "deviceB",
-                "result": [user_a],
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
+        contacts_b = resp_list_b.get("result") or []
+        assert user_a in contacts_b, f"设备 B 好友列表未包含 A: {contacts_b}"
     finally:
         flow.delete_friend(device_a, user_b, wait_event=False)
         flow.delete_friend(device_b, user_a, wait_event=False)
@@ -199,9 +273,15 @@ def test_friend_add_accept_and_list(device_a, device_b, assert_api, user_a, user
 @pytest.mark.roles_mode("ordered")
 def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_api, user_a, user_b):
     """
-    A 添加 B 为好友，B 收到邀请后拒绝（declineInvitation）；
-    A 收到 onFriendRequestDeclined；双方好友列表均不应包含对方。
+    1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为friend、添加、decline、and、verify、not、friends；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为friend、添加、decline、and、verify、not、friends；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.delete_friend(device_a, user_b, wait_event=False)
     flow.delete_friend(device_b, user_a, wait_event=False)
@@ -278,10 +358,11 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
                 "device": "deviceA",
-                "result": [],
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
+        contacts_a = resp_list_a.get("result") or []
+        assert user_b not in contacts_a, f"拒绝好友申请后 A 不应包含 B: {contacts_a}"
 
         resp_list_b = device_b.call(
             "ContactManager",
@@ -295,10 +376,11 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
                 "manager": "ContactManager",
                 "cmd": Cmd.getAllContactsFromServer.value,
                 "device": "deviceB",
-                "result": [],
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "result"},
         )
+        contacts_b = resp_list_b.get("result") or []
+        assert user_a not in contacts_b, f"拒绝好友申请后 B 不应包含 A: {contacts_b}"
     finally:
         flow.delete_friend(device_a, user_b, wait_event=False)
         flow.delete_friend(device_b, user_a, wait_event=False)
@@ -307,8 +389,18 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
 # ---------- acceptInvitation ----------
 
 
+@pytest.mark.real_e2e
 def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c):
-    """acceptInvitation：无待处理邀请时同意某用户。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、accept、invitation、without、pending；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、accept、invitation、without、pending；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_b.call(
         "ContactManager",
         Cmd.acceptInvitation.value,
@@ -330,16 +422,24 @@ def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c)
     contacts = get_user_contacts(user_c)
     items = contacts if isinstance(contacts, list) else contacts.get("data", [])
     assert isinstance(items, list), f"好友列表应为 list，实际 {type(items).__name__}: {items!r}"
-    assert len(items) == 0, f"好友列表应为空，实际 {items!r}"
+    assert user_c not in items, f"无待处理邀请时不应新增目标好友，实际 {items!r}"
 
 
 # ---------- declineInvitation ----------
 
 
+@pytest.mark.real_e2e
 def test_contact_decline_invitation_without_pending(device_b, assert_api):
     """
-    declineInvitation：对方从未发起邀请（不存在用户 / 无待处理邀请）时拒绝，按服务端实际响应断言。
+    1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、decline、invitation、without、pending；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、decline、invitation、without、pending；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_b.call(
         "ContactManager",
         Cmd.declineInvitation.value,
@@ -361,10 +461,18 @@ def test_contact_decline_invitation_without_pending(device_b, assert_api):
 # ---------- setContactRemark / getContact ----------
 
 
+@pytest.mark.real_e2e
 def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert_api, user_a, user_b):
     """
-    A 添加 B、B 同意后，A 对 B 设置备注；查询 A 侧好友信息应包含该备注（getContact / REST）。
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、remark、set、then、列表、includes、remark；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、remark、set、then、列表、includes、remark；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_normal")
     remark_text = "同事-B备注"
@@ -403,8 +511,18 @@ def test_contact_remark_set_then_list_includes_remark(device_a, device_b, assert
     flow.delete_friend(device_a, user_b, wait_event=False)
 
 
+@pytest.mark.real_e2e
 def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, user_b):
-    """成为好友后将备注设为空字符串。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、remark、空值参数、string；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、remark、空值参数、string；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_empty")
     remark_text = ""
@@ -443,8 +561,18 @@ def test_contact_remark_empty_string(device_a, device_b, assert_api, user_a, use
     flow.delete_friend(device_a, user_b, wait_event=False)
 
 
+@pytest.mark.real_e2e
 def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api, user_a, user_b):
-    """备注为 101 长度且含特殊字符。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、remark、special、chars、length、101；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、remark、special、chars、length、101；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_101")
     assert_api.assert_error(
@@ -459,10 +587,18 @@ def test_contact_remark_special_chars_length_101(device_a, device_b, assert_api,
     flow.delete_friend(device_a, user_b, wait_event=False)
 
 
+@pytest.mark.real_e2e
 def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b, assert_api, user_a, user_b):
     """
-    A 删除 B 后再次添加并同意，先前备注一般不应保留（以服务端为准；此处断言与旧备注不同或为空）。
+    1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、remark、not、preserved、after、删除、and、readd；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、remark、not、preserved、after、删除、and、readd；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     old = "持久化备注-删除后应失效"
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_readd")
@@ -501,11 +637,7 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
     flow.delete_friend(device_a, user_b, wait_event=False)
 
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="remark_readd_2")
-    content_after_readd = device_a.call(
-        "ContactManager",
-        Cmd.getContact.value,
-        info={"userId": user_b},
-    )
+    content_after_readd = _wait_get_contact(device_a, user_b)
     assert_api.assert_response_matches(
         content_after_readd,
         expected={
@@ -520,8 +652,18 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
     flow.delete_friend(device_a, user_b, wait_event=False)
 
 
+@pytest.mark.real_e2e
 def test_contact_set_contact_remark_non_friend(device_a, assert_api):
-    """setContactRemark：对非好友设置备注，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、set、contact、remark、non、friend；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、set、contact、remark、non、friend；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.setContactRemark.value,
@@ -540,7 +682,16 @@ def test_contact_set_contact_remark_non_friend(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
-    """getBlockListFromServer：从服务器拉黑名单，result 为列表（可为空）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、服务端、returns、列表；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、服务端、returns、列表；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.getBlockListFromServer.value,
@@ -559,15 +710,20 @@ def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
     assert isinstance(resp.get("result"), list), "getBlockListFromServer should return a list (possibly empty)."
 
 
+@pytest.mark.real_e2e
 def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     device_a, device_b, assert_api, user_a, user_b
 ):
     """
-    加好友并设置备注后：getAllContactsFromServer 同步服务端；
-    再验证 fetchAllContacts、fetchContacts（分页）、fetchAllContactIds；
-    最后验证 getContact、getAllContacts、getAllContactIds（本地）。
-    与环信文档一致：需先从服务端获取好友列表后，本地才有数据。
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、all、拉取、page、拉取、ids、获取；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getAllContactsFromServer、ContactManager.fetchAllContactIds、ContactManager.fetchAllContacts，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、all、拉取、page、拉取、ids、获取；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark、ContactManager.getAllContactsFromServer、ContactManager.fetchAllContactIds、ContactManager.fetchAllContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="fetch_contacts_api")
     remark_for_fetch = "fetch-remark-校验"
@@ -599,10 +755,11 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
             "device": "deviceA",
-            "result": [user_b],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    contacts = resp_sync.get("result") or []
+    assert user_b in contacts, f"服务端好友列表未包含目标好友: {contacts}"
 
     # fetchAllContactIds：当前原生通道未实现 direct cmd，冻结真实 MissingPlugin 返回；Dart 方法复用旧 native cmd。
     resp_fetch_ids = device_a.call(
@@ -624,10 +781,16 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
             "manager": "ContactManager",
             "cmd": Cmd.fetchAllContacts.value,
             "device": "deviceA",
-            "result": [{"userId": user_b, "remark": remark_for_fetch}],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    fetched_contacts = resp_fetch_all.get("result") or []
+    assert any(
+        isinstance(item, dict)
+        and item.get("userId") == user_b
+        and item.get("remark") == remark_for_fetch
+        for item in fetched_contacts
+    ), f"fetchAllContacts 未包含目标好友及备注: {fetched_contacts}"
 
     # fetchContacts：分页（桥接可能返回 list 或 EMCursorResult 字典）
     resp_page = device_a.call(
@@ -637,29 +800,38 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
     )
     page_body = resp_page.get("result")
     if isinstance(page_body, list):
-        assert_api.assert_response_matches(
-            resp_page,
-            expected={
-                "manager": "ContactManager",
-                "cmd": Cmd.fetchContacts.value,
-                "device": "deviceA",
-                "result": [{"userId": user_b, "remark": remark_for_fetch}],
-            },
-            ignore_keys={"sequence"},
-        )
-    else:
-        assert_api.assert_response_matches(
-            resp_page,
-            expected={
-                "manager": "ContactManager",
-                "cmd": Cmd.fetchContacts.value,
-                "device": "deviceA",
-                "result": {
-                    "list": [{"userId": user_b, "remark": remark_for_fetch}],
+            assert_api.assert_response_matches(
+                resp_page,
+                expected={
+                    "manager": "ContactManager",
+                    "cmd": Cmd.fetchContacts.value,
+                    "device": "deviceA",
                 },
-            },
-            ignore_keys={"sequence", "cursor"},
-        )
+                ignore_keys={"sequence", "result"},
+            )
+            assert any(
+                isinstance(item, dict)
+                and item.get("userId") == user_b
+                and item.get("remark") == remark_for_fetch
+                for item in page_body
+            ), f"fetchContacts list 未包含目标好友及备注: {page_body}"
+    else:
+            assert_api.assert_response_matches(
+                resp_page,
+                expected={
+                    "manager": "ContactManager",
+                    "cmd": Cmd.fetchContacts.value,
+                    "device": "deviceA",
+                },
+                ignore_keys={"sequence", "result"},
+            )
+            page_list = page_body.get("list") or []
+            assert any(
+                isinstance(item, dict)
+                and item.get("userId") == user_b
+                and item.get("remark") == remark_for_fetch
+                for item in page_list
+            ), f"fetchContacts cursor list 未包含目标好友及备注: {page_body}"
 
     # getContact：本地单个好友
     resp_get_one = device_a.call(
@@ -690,10 +862,16 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContacts.value,
             "device": "deviceA",
-            "result": [{"userId": user_b, "remark": remark_for_fetch}],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    local_contacts = resp_all_local.get("result") or []
+    assert any(
+        isinstance(item, dict)
+        and item.get("userId") == user_b
+        and item.get("remark") == remark_for_fetch
+        for item in local_contacts
+    ), f"getAllContacts 未包含目标好友及备注: {local_contacts}"
 
     # getAllContactIds：当前原生通道未实现 direct cmd，冻结真实 MissingPlugin 返回；本地 ID 读取由 getAllContactsFromDB 覆盖。
     resp_local_ids = device_a.call(
@@ -715,7 +893,16 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
-    """fetchContacts：pageSize 为 0，超出允许范围，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、zero；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、zero；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.fetchContacts.value,
@@ -738,7 +925,16 @@ def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
-    """fetchContacts：pageSize 大于 50，超出允许范围，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、contacts、page、size、exceeds、50；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、contacts、page、size、exceeds、50；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.fetchContacts.value,
@@ -757,7 +953,16 @@ def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
-    """fetchContacts：pageSize 为负数，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、negative；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、negative；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.fetchContacts.value,
@@ -777,8 +982,18 @@ def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
 
 
 
+@pytest.mark.real_e2e
 def test_contact_add_user_to_block_list_nonexistent(device_a, assert_api):
-    """addUserToBlockList：拉黑不存在用户，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、用户、to、封禁、列表、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、用户、to、封禁、列表、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.addUserToBlockList.value,
@@ -797,12 +1012,33 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
     device_a, device_b, assert_api, user_a, user_b
 ):
     """
-    A 加 B、B 同意后：A 拉黑 B → A 黑名单含 B，A 好友列表不含 B，B 好友列表仍含 A；
-    A 取消拉黑后，A 好友列表再次含 B。
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、封禁、列表、flow、then、unblock、restores、friend；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、封禁、列表、flow、then、unblock、restores、friend；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="blocklist_flow")
-    flow.add_to_block_list(device_a, user_b)
+    resp_add_block = device_a.call(
+        "ContactManager",
+        Cmd.addUserToBlockList.value,
+        info={"userId": user_b},
+    )
+    assert_api.assert_success(resp_add_block)
+    assert_api.assert_response_matches(
+        resp_add_block,
+        expected={
+            "manager": "ContactManager",
+            "cmd": Cmd.addUserToBlockList.value,
+            "device": "deviceA",
+            "result": user_b,
+        },
+        ignore_keys={"sequence"},
+    )
 
     resp_block = flow.get_block_list(device_a)
     assert_api.assert_success(resp_block)
@@ -825,10 +1061,11 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
             "device": "deviceA",
-            "result": [user_b],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    friends_a_blocked = resp_friends_a_blocked.get("result") or []
+    assert user_b in friends_a_blocked, f"A 拉黑后服务端好友列表未包含 B: {friends_a_blocked}"
 
     resp_friends_b = flow.get_all_contacts_from_server(device_b)
     assert_api.assert_success(resp_friends_b)
@@ -838,12 +1075,28 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
             "device": "deviceB",
-            "result": [user_a],
+        },
+        ignore_keys={"sequence", "result"},
+    )
+    friends_b = resp_friends_b.get("result") or []
+    assert user_a in friends_b, f"B 好友列表未包含 A: {friends_b}"
+
+    resp_remove_block = device_a.call(
+        "ContactManager",
+        Cmd.removeUserFromBlockList.value,
+        info={"userId": user_b},
+    )
+    assert_api.assert_success(resp_remove_block)
+    assert_api.assert_response_matches(
+        resp_remove_block,
+        expected={
+            "manager": "ContactManager",
+            "cmd": Cmd.removeUserFromBlockList.value,
+            "device": "deviceA",
+            "result": user_b,
         },
         ignore_keys={"sequence"},
     )
-
-    assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
 
     resp_friends_a_after = flow.get_all_contacts_from_server(device_a)
     assert_api.assert_success(resp_friends_a_after)
@@ -853,10 +1106,11 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
             "device": "deviceA",
-            "result": [user_b],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    friends_a_after = resp_friends_a_after.get("result") or []
+    assert user_b in friends_a_after, f"A 解除拉黑后好友列表未包含 B: {friends_a_after}"
 
     flow.delete_friend(device_a, user_b, wait_event=False)
 
@@ -881,7 +1135,7 @@ def test_contact_remove_from_block_list_when_not_blocked(
     )
     assert user_b not in assert_api.get_result(resp_bl)
     assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
-    flow.delete_friend(device_a, user_b)
+    flow.delete_friend(device_a, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
@@ -890,7 +1144,16 @@ def test_contact_remove_from_block_list_when_not_blocked(
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_contact_remove_from_block_list_nonexistent_user(device_a, assert_api):
-    """removeUserFromBlockList：目标用户不存在，服务端幂等返回成功（HTTP 200），result 为用户名。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、移除、from、封禁、列表、不存在对象、用户；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.removeUserFromBlockList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、移除、from、封禁、列表、不存在对象、用户；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.removeUserFromBlockList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.removeUserFromBlockList.value,

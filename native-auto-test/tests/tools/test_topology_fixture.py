@@ -1,6 +1,7 @@
 import pytest
 
 from src.tools.topology_fixture import Topology
+from tests.conftest import _LegacyTopologyDeviceAlias, _legacy_topology_client_name
 
 
 pytestmark = pytest.mark.no_global_login
@@ -56,6 +57,29 @@ def test_topology_returns_role_clients_without_starting_connection():
     assert topology.supports("primary_multi_device_sync") is True
     assert topology.supports("remote_multi_device_sync") is False
     assert topology.marker("send-text").startswith("run-1-send-text-")
+
+
+def test_legacy_device_aliases_prefer_primary_sender_and_remote_peer():
+    assert _legacy_topology_client_name(_context(), "deviceA") == "primary_a"
+    assert _legacy_topology_client_name(_context(), "deviceB") == "remote_c"
+    assert _legacy_topology_client_name(_context(), "primary") == "primary_a"
+    assert _legacy_topology_client_name(_context(), "secondary") == "remote_c"
+
+
+def test_legacy_topology_device_alias_normalizes_response_device_field():
+    class FakeClient:
+        name = "primary_a"
+
+        def call(self, *_args, **_kwargs):
+            return {"device": "primary_a", "result": {"nested": {"device": "primary_a"}}}
+
+    wrapped = _LegacyTopologyDeviceAlias(FakeClient(), "deviceA")
+
+    assert wrapped.name == "deviceA"
+    assert wrapped.call("Client", "getCurrentUser") == {
+        "device": "deviceA",
+        "result": {"nested": {"device": "primary_a"}},
+    }
 
 
 def test_topology_case_scope_creates_marker_and_drains_selected_clients():

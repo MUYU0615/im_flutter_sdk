@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -15,6 +16,16 @@ pytestmark = [pytest.mark.client, pytest.mark.chatroom]
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_public_chat_rooms_from_server_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、public、chat、rooms、from、服务端、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchPublicChatRoomsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、public、chat、rooms、from、服务端、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchPublicChatRoomsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id = ""
     room_name = ""
     try:

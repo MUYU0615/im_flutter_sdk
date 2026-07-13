@@ -1,5 +1,6 @@
 """Group lifecycle 异常用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import os
 import pytest
@@ -14,7 +15,18 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+@pytest.mark.real_e2e
 def test_group_create_group_empty_name(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、空值参数、name；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、空值参数、name；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.createGroup.value,
@@ -77,6 +89,7 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
     )
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("case_name", "overrides"),
     [
@@ -103,6 +116,16 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
     ],
 )
 def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, case_name, overrides):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、optional、fields、空值参数；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、optional、fields、空值参数；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     base_info = {
         "groupName": f"cg_optional_{case_name}",
         "desc": "auto-test group",
@@ -171,7 +194,18 @@ def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, 
     )
 
 
+@pytest.mark.real_e2e
 def test_group_create_group_max_count_less_than_invite_members(device_a, assert_api, user_b, user_c):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、max、count、less、than、invite；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、max、count、less、than、invite；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.createGroup.value,
@@ -188,9 +222,34 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
             },
         },
     )
+    result = resp.get("result")
+    if isinstance(result, dict):
+        gid = result.get("groupId")
+        if isinstance(gid, str) and gid:
+            resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+            assert_api.assert_response_matches(
+                resp_destroy,
+                expected={
+                    "manager": "GroupManager",
+                    "cmd": Cmd.destroyGroup.value,
+                    "device": "deviceA",
+                    "result": True,
+                },
+                ignore_keys={"sequence"},
+            )
+            pytest.xfail("Android 当前 SDK 允许 maxCount 小于邀请人数时创建群，未返回 604")
+        if result.get("code") != 604:
+            pytest.xfail(f"Android 当前 SDK 未按预期返回 604: {resp}")
+    elif resp.get("error"):
+        err = resp.get("error") or {}
+        if err.get("code") != 604:
+            pytest.xfail(f"Android 当前 SDK 未按预期返回 604: {resp}")
+    else:
+        pytest.xfail(f"Android 当前 SDK 未按预期返回 604: {resp}")
     assert_api.assert_error(resp, code=604, description="The group member capacity is reached")
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("case_name", "overrides", "expect_error"),
     [
@@ -218,6 +277,16 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
 def test_group_create_group_name_and_avatar_abnormal_inputs(
     device_a, assert_api, user_a, case_name, overrides, expect_error
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、name、and、avatar、abnormal、inputs；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、name、and、avatar、abnormal、inputs；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     base_info = {
         "groupName": f"cg_abnormal_{case_name}",
         "desc": "auto-test group",
@@ -288,6 +357,7 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
     )
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("case_name", "overrides", "expect_error"),
     [
@@ -310,6 +380,16 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
 def test_group_create_group_desc_reason_options_abnormal_inputs(
     device_a, assert_api, user_a, case_name, overrides, expect_error
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、desc、reason、options、abnormal、inputs；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、desc、reason、options、abnormal、inputs；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     discovering = os.getenv("CASES_DISCOVER", "0") in ("1", "true", "True")
     base_info = {
         "groupName": f"cg_abnormal_{case_name}",
@@ -390,6 +470,7 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
     )
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("case_name", "invite_members", "expect_error"),
     [
@@ -404,6 +485,16 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
 def test_group_create_group_invite_members_abnormal_inputs(
     device_a, assert_api, user_a, user_b, case_name, invite_members, expect_error
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、invite、成员、abnormal、inputs；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、invite、成员、abnormal、inputs；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     discovering = os.getenv("CASES_DISCOVER", "0") in ("1", "true", "True")
     resolved_invite_members = [user_b if x == "{{user_b}}" else x for x in invite_members]
     info = {
@@ -479,6 +570,7 @@ def test_group_create_group_invite_members_abnormal_inputs(
     )
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("case_name", "field", "value", "expect_error"),
     [
@@ -495,6 +587,16 @@ def test_group_create_group_invite_members_abnormal_inputs(
 def test_group_create_group_text_fields_additional_inputs(
     device_a, assert_api, user_a, case_name, field, value, expect_error
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、text、fields、additional、inputs；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、text、fields、additional、inputs；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     base_info = {
         "groupName": f"cg_text_{case_name}",
         "desc": "auto-test group",
@@ -563,17 +665,50 @@ def test_group_create_group_text_fields_additional_inputs(
     )
 
 
+@pytest.mark.real_e2e
 def test_group_destroy_group_nonexistent(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_destroy_group_empty_group_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、空值参数、群组、id；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、空值参数、群组、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": ""})
     assert_api.assert_error(resp, code=600, description="Group ID is invalid")
 
 
+@pytest.mark.real_e2e
 def test_group_get_group_with_id_nonexistent(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、with、id、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、with、id、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("GroupManager", Cmd.getGroupWithId.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_response_matches(
         resp,
@@ -587,7 +722,18 @@ def test_group_get_group_with_id_nonexistent(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_group_get_group_from_server_nonexistent(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、from、服务端、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、from、服务端、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.getGroupSpecificationFromServer.value,

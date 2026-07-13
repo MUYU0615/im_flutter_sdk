@@ -244,7 +244,7 @@ def test_chat_manager_p1_equivalent_native_apis_are_not_wrapper_missing():
         assert wrapper in row["covered_by_wrapper_api"]
 
     row = rows[("ChatManager", "getConversationsByType", "native_android_api")]
-    assert row["target_case"] == "native-auto-test/tests/chat/test_chat_s1_local_conversation.py"
+    assert row["target_case"] == "native-auto-test/tests/chat/test_chat_local_conversation_store.py"
 
 
 def test_chat_manager_native_conversation_load_apis_are_covered_by_positive_case():
@@ -334,7 +334,12 @@ def test_task6_chatroom_equivalent_native_apis_are_not_wrapper_missing():
 
     for key, wrapper in TASK6_CHATROOM_EQUIVALENT_APIS.items():
         row = rows[(key[0], key[1], "native_android_api")]
-        assert row["coverage_conclusion"] == "covered_by_case"
+        expected_conclusion = (
+            "blocked_by_service_environment"
+            if key == ("ChatRoomManager", "asyncCreateChatRoom")
+            else "covered_by_case"
+        )
+        assert row["coverage_conclusion"] == expected_conclusion
         assert row["android_covered"] == "yes"
         assert row["automation_covered"] == "yes"
         assert wrapper in row["covered_by_wrapper_api"]
@@ -481,6 +486,32 @@ def test_task7a_group_join_leave_rows_require_positive_evidence():
         assert row["automation_positive_refs"] != "0"
         assert row["automation_covered"] == "yes"
         assert row["coverage_conclusion"] == "covered_by_case"
+
+
+def test_task7a_group_invitation_accept_decline_rows_require_positive_evidence():
+    rows = {
+        (row["manager"], row["api"], row["row_kind"]): row
+        for row in build_rows()
+    }
+    if not any(row[0] == "GroupManager" and row[2] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    for key in (
+        ("GroupManager", "acceptInvitation"),
+        ("GroupManager", "declineInvitation"),
+    ):
+        row = rows[(key[0], key[1], "native_android_api")]
+        assert row["review_requires_positive_case"] == "true"
+        assert row["automation_positive_refs"] != "0"
+        assert row["automation_covered"] == "yes"
+        assert row["coverage_conclusion"] == "covered_by_case"
+
+
+def test_pytest_function_blocks_include_decorators_to_avoid_cross_case_evidence_leakage():
+    automation = scan_automation()
+    evidence = automation[("ConversationManager", "conversationDeleteServerMessageWithIds")]["evidence_kinds"]
+
+    assert evidence["positive"] > 0
 
 
 def test_task7b_group_member_role_block_mute_native_apis_are_not_wrapper_missing():
@@ -759,6 +790,67 @@ def test_review_actions_can_override_wrapper_missing_conclusion():
     assert mapping_row["native_test_requirement"] == "not_applicable"
 
 
+def test_service_environment_blocked_rows_are_explicit_not_missing_positive_cases():
+    rows = build_rows()
+    if not any(row["row_kind"] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "native_android_api"
+    }
+
+    for key in (
+        ("ChatManager", "voiceFileToText"),
+        ("ChatRoomManager", "asyncCreateChatRoom"),
+    ):
+        row = row_by_key[key]
+        assert row["review_action"] == "service_environment_blocked"
+        assert row["native_test_requirement"] == "blocked_by_service_environment"
+        assert row["coverage_conclusion"] == "blocked_by_service_environment"
+        assert row["automation_covered"] == "yes"
+        assert row["automation_error_only_refs"] != "0"
+        assert row["coverage_reason_zh"]
+
+    chatroom_row = row_by_key[("ChatRoomManager", "asyncCreateChatRoom")]
+    assert "703" in chatroom_row["coverage_reason_zh"]
+    assert "无 SDK 创建聊天室权限" in chatroom_row["coverage_reason_zh"]
+
+
+def test_client_session_lifecycle_rows_are_explicitly_isolated():
+    rows = build_rows()
+    if not any(row["row_kind"] == "native_android_api" for row in rows):
+        pytest.skip("Android 4.23 native API rows unavailable; run coverage report after Gradle resolves the API jar.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "native_android_api"
+    }
+
+    for key in (
+        ("Client", "changeAppkey"),
+        ("Client", "createAccount"),
+        ("Client", "getLoggedInDevicesFromServer"),
+        ("Client", "getLoggedInDevicesFromServerWithToken"),
+        ("Client", "kickAllDevices"),
+        ("Client", "kickAllDevicesWithToken"),
+        ("Client", "kickDevice"),
+        ("Client", "kickDeviceWithToken"),
+        ("Client", "login"),
+        ("Client", "loginWithAgoraToken"),
+        ("Client", "loginWithToken"),
+        ("Client", "logout"),
+        ("Client", "renewToken"),
+    ):
+        row = row_by_key[key]
+        assert row["review_action"] == "session_lifecycle_isolated"
+        assert row["native_test_requirement"] == "session_lifecycle_isolated"
+        assert row["coverage_conclusion"] == "requires_session_lifecycle_isolation"
+        assert row["coverage_reason_zh"]
+
+
 def test_covered_by_case_rows_default_to_direct_e2e_review_action_when_unreviewed():
     rows = build_rows()
     if not any(row["row_kind"] == "native_android_api" for row in rows):
@@ -791,3 +883,98 @@ def test_scan_android_accepts_double_parenthesized_call_method():
     assert row["android_covered"] == "yes"
     assert row["android_wrapper_sdk_call_evidence"] == "yes"
     assert row["android_handler"] == "ConversationManager.insertMessage"
+
+
+def test_android_download_wrappers_count_reflection_as_sdk_call_evidence():
+    rows = build_rows()
+    if not any(row["row_kind"] == "wrapper_api" for row in rows):
+        pytest.skip("Wrapper API rows unavailable.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "wrapper_api"
+    }
+
+    for api in ("downloadAttachment", "downloadBigImage", "downloadThumbnail"):
+        row = row_by_key[("ChatManager", api)]
+        assert row["android_covered"] == "yes"
+        assert row["android_wrapper_sdk_call_evidence"] == "yes"
+        assert f"ChatManager.{api}" in row["android_native_calls"]
+        assert "反射调用 Android EMChatManager 下载 API" in row["android_evidence"]
+
+
+def test_start_callback_is_marked_as_test_bridge_not_sdk_gap():
+    rows = build_rows()
+    if not any(row["row_kind"] == "wrapper_api" for row in rows):
+        pytest.skip("Wrapper API rows unavailable.")
+
+    row_by_key = {
+        (row["manager"], row["api"]): row
+        for row in rows
+        if row["row_kind"] == "wrapper_api"
+    }
+
+    row = row_by_key[("Client", "startCallback")]
+    assert row["android_covered"] == "yes"
+    assert row["android_wrapper_sdk_call_evidence"] == "bridge"
+    assert row["android_native_calls"] == "Client.startCallback"
+    assert "测试桥" in row["android_evidence"]
+
+
+def test_direct_cmd_call_uses_cmd_api_name_for_positive_evidence_detection():
+    automation = scan_automation()
+
+    mute = automation[("GroupManager", "muteMembers")]["evidence_kinds"]
+    unmute = automation[("GroupManager", "unMuteMembers")]["evidence_kinds"]
+
+    assert mute["positive"] > 0
+    assert unmute["positive"] > 0
+
+
+def test_chat_response_helper_counts_as_positive_evidence_for_server_delete_cases():
+    automation = scan_automation()
+
+    for key in (
+        ("ChatManager", "deleteRemoteConversation"),
+        ("ChatManager", "removeMessagesFromServerWithMsgIds"),
+        ("ChatManager", "removeMessagesFromServerWithTs"),
+    ):
+        evidence = automation[key]["evidence_kinds"]
+        assert evidence["positive"] > 0
+
+
+def test_success_envelope_helper_counts_as_positive_evidence_for_chatroom_admin_cases():
+    automation = scan_automation()
+
+    for key in (
+        ("ChatRoomManager", "addChatRoomAdmin"),
+        ("ChatRoomManager", "removeChatRoomAdmin"),
+    ):
+        evidence = automation[key]["evidence_kinds"]
+        assert evidence["positive"] > 0
+
+
+def test_mixed_error_and_success_block_classifies_each_response_variable_independently():
+    automation = scan_automation()
+
+    evidence = automation[("ContactManager", "fetchAllContacts")]["evidence_kinds"]
+    assert evidence["positive"] > 0
+
+
+def test_contact_block_list_direct_calls_count_as_positive_evidence():
+    automation = scan_automation()
+
+    for key in (
+        ("ContactManager", "addUserToBlockList"),
+        ("ContactManager", "removeUserFromBlockList"),
+    ):
+        evidence = automation[key]["evidence_kinds"]
+        assert evidence["positive"] > 0
+
+
+def test_push_action_helper_counts_as_positive_current_environment_evidence():
+    automation = scan_automation()
+
+    evidence = automation[("PushManager", "reportPushAction")]["evidence_kinds"]
+    assert evidence["positive"] > 0

@@ -350,6 +350,74 @@ def _load_pytest_run_context(config):
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
 
+def _legacy_topology_client_name(context: dict, legacy_device: str) -> str:
+    accounts = context.get("accounts") or {}
+    primary_clients = list((accounts.get("primary") or {}).get("clients") or [])
+    remote_clients = list((accounts.get("remote") or {}).get("clients") or [])
+    if legacy_device in {"deviceA", "primary"} and primary_clients:
+        return str(primary_clients[0])
+    if legacy_device in {"deviceB", "secondary"}:
+        if remote_clients:
+            return str(remote_clients[0])
+        if len(primary_clients) > 1:
+            return str(primary_clients[1])
+    return legacy_device
+
+
+def _topology_client_for_legacy_device(config, legacy_device: str, *, debug: bool = False):
+    context = _load_pytest_run_context(config)
+    if not context:
+        return None
+    client_name = _legacy_topology_client_name(context, legacy_device)
+    raw = (context.get("clients") or {}).get(client_name)
+    if not raw:
+        return None
+    from src.tools.topology_fixture import TopologyClient
+
+    return TopologyClient(
+        name=client_name,
+        platform=raw["platform"],
+        account_name=raw["account"],
+        user_id=raw["user_id"],
+        device_id=raw["device"]["id"],
+        topic=raw["relay"]["topic"],
+        sdk_version=raw["sdk_version"],
+        debug=debug,
+    )
+
+
+class _LegacyTopologyDeviceAlias:
+    def __init__(self, client, legacy_device: str):
+        self._client = client
+        self._legacy_device = legacy_device
+        self.name = legacy_device
+        self.topic = getattr(client, "topic", "")
+        self.user_id = getattr(client, "user_id", "")
+
+    def start(self) -> None:
+        self._client.start()
+
+    def stop(self) -> None:
+        self._client.stop()
+
+    def call(self, manager: str, cmd: str, info: dict | None = None, **kwargs):
+        resp = self._client.call(manager, cmd, info, **kwargs)
+        if isinstance(resp, dict) and "device" in resp:
+            resp = dict(resp)
+            resp["device"] = self._legacy_device
+        return resp
+
+    def receive_message(self, *, match_cmd=None, match_event_type=None, timeout=10.0):
+        return self._client.receive_message(
+            match_cmd=match_cmd,
+            match_event_type=match_event_type,
+            timeout=timeout,
+        )
+
+    def drain_events(self, timeout: float = 2.0) -> None:
+        self._client.drain_events(timeout=timeout)
+
+
 @pytest.fixture(scope="session")
 def topology(request, ws_debug):
     context = _load_pytest_run_context(request.config)
@@ -689,11 +757,20 @@ class _DeviceChannelWrapper:
 
 
 @pytest.fixture(scope="session")
-def device_a(ws_debug):
+def device_a(request, ws_debug):
     """
     设备 A 的单连接双工通道：同一 WebSocket 上 .call() 发请求、.receive_message() 收推送。
     登录、addContact、onFriendRequestAccepted 等均走该连接，保证能收到服务端回调。
     """
+    topology_client = _topology_client_for_legacy_device(request.config, "deviceA", debug=ws_debug)
+    if topology_client is not None:
+        alias = _LegacyTopologyDeviceAlias(topology_client, "deviceA")
+        alias.start()
+        try:
+            yield alias
+        finally:
+            alias.stop()
+        return
     conn = DeviceConnection(device="deviceA", debug=ws_debug)
     conn.start()
     try:
@@ -703,10 +780,19 @@ def device_a(ws_debug):
 
 
 @pytest.fixture(scope="session")
-def device_b(ws_debug):
+def device_b(request, ws_debug):
     """
     设备 B 的单连接双工通道：同一 WebSocket 上 .call() 发请求、.receive_message() 收推送。
     """
+    topology_client = _topology_client_for_legacy_device(request.config, "deviceB", debug=ws_debug)
+    if topology_client is not None:
+        alias = _LegacyTopologyDeviceAlias(topology_client, "deviceB")
+        alias.start()
+        try:
+            yield alias
+        finally:
+            alias.stop()
+        return
     conn = DeviceConnection(device="deviceB", debug=ws_debug)
     conn.start()
     try:
@@ -716,8 +802,17 @@ def device_b(ws_debug):
 
 
 @pytest.fixture(scope="session")
-def primary_device(target_device_pair, ws_debug):
+def primary_device(request, target_device_pair, ws_debug):
     """目标平台的主设备；android/ios/mobile=deviceA，web=webA。"""
+    topology_client = _topology_client_for_legacy_device(request.config, "primary", debug=ws_debug)
+    if topology_client is not None:
+        alias = _LegacyTopologyDeviceAlias(topology_client, target_device_pair[0])
+        alias.start()
+        try:
+            yield alias
+        finally:
+            alias.stop()
+        return
     conn = DeviceConnection(device=target_device_pair[0], debug=ws_debug)
     conn.start()
     try:
@@ -727,8 +822,17 @@ def primary_device(target_device_pair, ws_debug):
 
 
 @pytest.fixture(scope="session")
-def secondary_device(target_device_pair, ws_debug):
+def secondary_device(request, target_device_pair, ws_debug):
     """目标平台的副设备；android/ios/mobile=deviceB，web=webB。"""
+    topology_client = _topology_client_for_legacy_device(request.config, "secondary", debug=ws_debug)
+    if topology_client is not None:
+        alias = _LegacyTopologyDeviceAlias(topology_client, target_device_pair[1])
+        alias.start()
+        try:
+            yield alias
+        finally:
+            alias.stop()
+        return
     conn = DeviceConnection(device=target_device_pair[1], debug=ws_debug)
     conn.start()
     try:

@@ -36,6 +36,60 @@ def _default_android_pytest_args() -> list[str]:
     return [*ANDROID_DEFAULT_TEST_PATHS, "--target-platform", "android", "-m", "real_e2e", "-q"]
 
 
+_PYTEST_OPTIONS_WITH_VALUE = {
+    "--alluredir",
+    "--capture",
+    "--html",
+    "--junitxml",
+    "--maxfail",
+    "--run-context",
+    "--target-platform",
+    "-k",
+    "-m",
+    "-o",
+}
+
+
+def _has_pytest_option(pytest_args: list[str], *names: str) -> bool:
+    prefixes = tuple(f"{name}=" for name in names if name.startswith("--"))
+    return any(arg in names or (prefixes and arg.startswith(prefixes)) for arg in pytest_args)
+
+
+def _has_explicit_test_selection(pytest_args: list[str]) -> bool:
+    skip_next = False
+    for arg in pytest_args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg == "--":
+            continue
+        if arg in _PYTEST_OPTIONS_WITH_VALUE:
+            skip_next = True
+            continue
+        if any(arg.startswith(f"{option}=") for option in _PYTEST_OPTIONS_WITH_VALUE if option.startswith("--")):
+            continue
+        if arg.startswith("-"):
+            continue
+        return True
+    return False
+
+
+def _normalize_android_pytest_args(pytest_args: list[str]) -> list[str]:
+    if not pytest_args:
+        return _default_android_pytest_args()
+    if _has_explicit_test_selection(pytest_args):
+        return pytest_args
+
+    normalized = [*ANDROID_DEFAULT_TEST_PATHS, *pytest_args]
+    if not _has_pytest_option(normalized, "--target-platform"):
+        normalized.extend(["--target-platform", "android"])
+    if not _has_pytest_option(normalized, "-m"):
+        normalized.extend(["-m", "real_e2e"])
+    if not _has_pytest_option(normalized, "-q", "--quiet", "-v", "--verbose"):
+        normalized.append("-q")
+    return normalized
+
+
 @dataclass(frozen=True)
 class AndroidE2ECommands:
     env: dict[str, str]
@@ -502,7 +556,7 @@ def run(args: argparse.Namespace) -> int:
     native_auto_test_dir = repo_dir / "native-auto-test"
     im_flutter_test_dir = repo_dir / "im_flutter_test"
     run_id = args.run_id or _default_run_id()
-    pytest_args = args.pytest_args or _default_android_pytest_args()
+    pytest_args = _normalize_android_pytest_args(args.pytest_args)
     context = _load_run_context(args.run_context)
     context_path = Path(args.run_context) if args.run_context else None
     context_clients = _android_clients_from_context(context)

@@ -8,6 +8,7 @@ import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'bridge_timeout.dart';
 import 'bridge_socket.dart';
 import 'event_bridge_handler.dart';
 
@@ -52,6 +53,7 @@ class IMWebSocketBridge {
   int? _nativeHandlerHashCode;
   int _nativeHandlerInstallCount = 0;
   Timer? _webRealTextFlushTimer;
+  bool _webRealTextFlushInFlight = false;
   final Set<String> _flushedWebRealTextMsgIds = <String>{};
   final Set<String> _flushedWebRealSuccessMsgIds = <String>{};
   final Set<String> _flushedWebRealClientEventKeys = <String>{};
@@ -351,6 +353,7 @@ class IMWebSocketBridge {
   }
 
   void _startWebRealTextFlush() {
+    if (!kIsWeb) return;
     if (_webSdkMode != 'real_sdk') return;
     _webRealTextFlushTimer ??= Timer.periodic(
       const Duration(milliseconds: 500),
@@ -367,8 +370,11 @@ class IMWebSocketBridge {
   }
 
   Future<void> _flushPendingWebRealTextMessages() async {
+    if (!kIsWeb) return;
     if (_socket == null || _socket!.isClosed) return;
     if (_webSdkMode != 'real_sdk') return;
+    if (_webRealTextFlushInFlight) return;
+    _webRealTextFlushInFlight = true;
     try {
       final result = await Client.instance.chatManager.callNativeMethod(
         'getPendingRealTextMessages',
@@ -449,6 +455,8 @@ class IMWebSocketBridge {
       }
     } catch (e, st) {
       _logE('flush pending real web text messages: $e\n$st');
+    } finally {
+      _webRealTextFlushInFlight = false;
     }
   }
 
@@ -619,9 +627,10 @@ class IMWebSocketBridge {
           (method == 'destroyChatRoom' || method == 'changeChatRoomOwner')) {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'getChatRoom',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('getChatRoom', detailArgs),
+          managerName: managerName,
+          method: 'getChatRoom',
         );
         if (detail is Map && detail['getChatRoom'] is Map) {
           final room = Map<String, dynamic>.from(detail['getChatRoom']);
@@ -639,9 +648,10 @@ class IMWebSocketBridge {
           (method == 'destroyGroup' || method == 'updateGroupOwner')) {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'getGroupWithId',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('getGroupWithId', detailArgs),
+          managerName: managerName,
+          method: 'getGroupWithId',
         );
         if (detail is Map && detail['getGroupWithId'] is Map) {
           final group = Map<String, dynamic>.from(detail['getGroupWithId']);
@@ -659,9 +669,10 @@ class IMWebSocketBridge {
               method == 'removeMemberFromChatThread')) {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'fetchChatThreadDetail',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('fetchChatThreadDetail', detailArgs),
+          managerName: managerName,
+          method: 'fetchChatThreadDetail',
         );
         if (detail is Map && detail['fetchChatThreadDetail'] is Map) {
           chatThreadBeforeDestroy =
@@ -675,9 +686,10 @@ class IMWebSocketBridge {
           args is Map) {
         final msgId = args['msgId']?.toString() ?? '';
         if (msgId.isNotEmpty) {
-          final detail = await manager.callNativeMethod(
-            'getMessage',
-            {'msgId': msgId},
+          final detail = await withBridgeTimeout(
+            manager.callNativeMethod('getMessage', {'msgId': msgId}),
+            managerName: managerName,
+            method: 'getMessage',
           );
           if (detail is Map && detail['getMessage'] is Map) {
             messageBeforeRecallOrUnpin =
@@ -709,13 +721,21 @@ class IMWebSocketBridge {
         }
         final type = EMSendMessageType.values.byName(typeStr);
         final payload = Map<String, dynamic>.from(payloadRaw);
-        final message = await EMClient.getInstance.chatManager.sendMessageWithType(
-          type,
-          payload,
+        final message = await withBridgeTimeout(
+          EMClient.getInstance.chatManager.sendMessageWithType(
+            type,
+            payload,
+          ),
+          managerName: managerName,
+          method: method,
         );
         result = {method: message.toJson()};
       } else {
-        result = await manager.callNativeMethod(method, args);
+        result = await withBridgeTimeout(
+          manager.callNativeMethod(method, args),
+          managerName: managerName,
+          method: method,
+        );
       }
       // 返回的 result 是 map 格式，key 是 method，value 是结果 JSON，通过 WebSocket 发送回去。
       if (result is Map<String, dynamic>) {
@@ -732,7 +752,11 @@ class IMWebSocketBridge {
       // 登录成功后触发 startCallback，使平台插件开始向 Flutter 侧下发回调。
       if (managerName == 'Client' && _isLoginMethod(method)) {
         try {
-          await Client.instance.callNativeMethod(_startCallback);
+          await withBridgeTimeout(
+            Client.instance.callNativeMethod(_startCallback),
+            managerName: 'Client',
+            method: _startCallback,
+          );
           EventBridgeHandler.instance.registerAllHandlers(
             deviceName: _deviceName,
             sendEvent: sendEvent,
@@ -781,9 +805,10 @@ class IMWebSocketBridge {
           method == 'changeChatRoomSubject') {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'getChatRoom',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('getChatRoom', detailArgs),
+          managerName: managerName,
+          method: 'getChatRoom',
         );
         if (detail is Map && detail['getChatRoom'] is Map) {
           EventBridgeHandler.instance.emitChatRoomSpecificationChanged(
@@ -954,9 +979,10 @@ class IMWebSocketBridge {
       if (managerName == 'GroupManager' && method == 'updateGroupSubject') {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'getGroupWithId',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('getGroupWithId', detailArgs),
+          managerName: managerName,
+          method: 'getGroupWithId',
         );
         if (detail is Map && detail['getGroupWithId'] is Map) {
           EventBridgeHandler.instance.emitGroupSpecificationChanged(
@@ -1129,11 +1155,12 @@ class IMWebSocketBridge {
         if (_webSdkMode != 'real_sdk') {
           final userId = await _currentUser();
           if (userId != null && userId.isNotEmpty) {
-            final detail = await manager.callNativeMethod(
-              'fetchPresenceStatus',
-              {
+            final detail = await withBridgeTimeout(
+              manager.callNativeMethod('fetchPresenceStatus', {
                 'members': [userId],
-              },
+              }),
+              managerName: managerName,
+              method: 'fetchPresenceStatus',
             );
             final presences =
                 detail is Map ? detail['fetchPresenceStatus'] : null;
@@ -1224,9 +1251,10 @@ class IMWebSocketBridge {
           response['result'] == 1) {
         final msgId = args['msgId']?.toString() ?? '';
         if (msgId.isNotEmpty) {
-          final detail = await manager.callNativeMethod(
-            'getMessage',
-            {'msgId': msgId},
+          final detail = await withBridgeTimeout(
+            manager.callNativeMethod('getMessage', {'msgId': msgId}),
+            managerName: managerName,
+            method: 'getMessage',
           );
           if (detail is Map && detail['getMessage'] is Map) {
             final message = Map<String, dynamic>.from(detail['getMessage']);
@@ -1318,9 +1346,10 @@ class IMWebSocketBridge {
         final operator = await _currentUser();
         Map<String, dynamic>? message;
         if (method == 'pinMessage') {
-          final detail = await manager.callNativeMethod(
-            'getMessage',
-            {'msgId': msgId},
+          final detail = await withBridgeTimeout(
+            manager.callNativeMethod('getMessage', {'msgId': msgId}),
+            managerName: managerName,
+            method: 'getMessage',
           );
           if (detail is Map && detail['getMessage'] is Map) {
             message = Map<String, dynamic>.from(detail['getMessage']);
@@ -1394,9 +1423,10 @@ class IMWebSocketBridge {
           method == 'updateChatThreadSubject') {
         final detailArgs =
             args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
-        final detail = await manager.callNativeMethod(
-          'fetchChatThreadDetail',
-          detailArgs,
+        final detail = await withBridgeTimeout(
+          manager.callNativeMethod('fetchChatThreadDetail', detailArgs),
+          managerName: managerName,
+          method: 'fetchChatThreadDetail',
         );
         if (detail is Map && detail['fetchChatThreadDetail'] is Map) {
           EventBridgeHandler.instance.emitChatThreadCreated(
@@ -1453,7 +1483,11 @@ class IMWebSocketBridge {
   }
 
   Future<String?> _currentUser() async {
-    final result = await Client.instance.callNativeMethod('getCurrentUser');
+    final result = await withBridgeTimeout(
+      Client.instance.callNativeMethod('getCurrentUser'),
+      managerName: 'Client',
+      method: 'getCurrentUser',
+    );
     if (result is Map) {
       return result['getCurrentUser']?.toString();
     }

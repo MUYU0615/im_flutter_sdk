@@ -1,5 +1,6 @@
 """Group members 正常链路。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -19,7 +20,18 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+@pytest.mark.real_e2e
 def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、成员；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupSpecificationFromServer、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、成员；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupSpecificationFromServer、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_name = new_group_name("member")
     group_id = ""
     try:
@@ -154,15 +166,18 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_a, user_b):
     """
-    joinPublicGroup + leaveGroup：
-    - A 创建允许自由加入的公开群（style=3 / PublicOpenJoin）
-    - B 成功加入公开群
-    - 服务端确认 B 已入群
-    - B 成功退群
-    - 服务端确认 B 已离开
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、加入、and、离开、public、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.joinPublicGroup、GroupManager.getGroupSpecificationFromServer、GroupManager.leaveGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、加入、and、离开、public、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.joinPublicGroup、GroupManager.getGroupSpecificationFromServer、GroupManager.leaveGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_name = new_group_name("public")
     group_id = ""
     try:
@@ -277,12 +292,18 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_members_batch_join_exit_new_events(device_a, device_b, assert_api, user_a, user_b, user_c):
     """
-    校验新事件名：
-    - onMembersJoinedFromGroup
-    - onMembersExitedFromGroup
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、成员、batch、加入、exit、new、events；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、成员、batch、加入、exit、new、events；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_name = new_group_name("member_batch_evt")
     group_id = ""
     members = [user_b, user_c]
@@ -332,7 +353,7 @@ def test_group_members_batch_join_exit_new_events(device_a, device_b, assert_api
             all_user_ids: list[str] = []
             for evt in joined_batch:
                 data_join = (evt.get("data") or {})
-                user_ids_join = data_join.get("userIds") or []
+                user_ids_join = data_join.get("userIds") or data_join.get("members") or []
                 assert isinstance(user_ids_join, list), f"onMembersJoinedFromGroup.userIds 非 list: {evt}"
                 all_user_ids.extend(user_ids_join)
             assert all(m in all_user_ids for m in members), (
@@ -386,7 +407,7 @@ def test_group_members_batch_join_exit_new_events(device_a, device_b, assert_api
             all_exit_ids: list[str] = []
             for evt in exited_batch:
                 data_exit = (evt.get("data") or {})
-                user_ids_exit = data_exit.get("userIds") or []
+                user_ids_exit = data_exit.get("userIds") or data_exit.get("members") or []
                 assert isinstance(user_ids_exit, list), f"onMembersExitedFromGroup.userIds 非 list: {evt}"
                 all_exit_ids.extend(user_ids_exit)
             assert all(m in all_exit_ids for m in members), (

@@ -63,11 +63,12 @@ def collect_chatroom_events(
                 continue
             room = data.get("room")
             nested_room_id = room.get("roomId") if isinstance(room, dict) else None
-            if (
-                data.get("roomId") not in (None, chatroom_id)
-                and data.get("chatRoomId") not in (None, chatroom_id)
-                and nested_room_id not in (None, chatroom_id)
-            ):
+            event_room_ids = [
+                value
+                for value in (data.get("roomId"), data.get("chatRoomId"), nested_room_id)
+                if value is not None
+            ]
+            if event_room_ids and chatroom_id not in event_room_ids:
                 continue
         events.append(evt)
     if require_event and expected_event_types and not events:
@@ -99,7 +100,7 @@ def assert_chatroom_event(
     assert_api.assert_response_matches(
         evt,
         expected=expected,
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "data.operation"},
     )
 
 

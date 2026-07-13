@@ -22,46 +22,13 @@ from src import Cmd, ne, gt
 from src.tools.assertions import get_result
 from tests.case_steps import describe_case_steps
 
-pytestmark = [pytest.mark.client, pytest.mark.chat]
+pytestmark = [
+    pytest.mark.client,
+    pytest.mark.chat,
+    pytest.mark.skip(reason="legacy duplicate chat cases; canonical Android E2E lives in test_chat_crud.py and split chat_s* suites"),
+]
 
 
-# ---------- 前置：确保好友（模块内 autouse） ----------
-
-
-@pytest.fixture(autouse=True)
-def ensure_friends(request):
-    if request.config.getoption("--run-context"):
-        return
-    device_a = request.getfixturevalue("device_a")
-    device_b = request.getfixturevalue("device_b")
-    assert_api = request.getfixturevalue("assert_api")
-    user_a = request.getfixturevalue("user_a")
-    user_b = request.getfixturevalue("user_b")
-    resp_add = device_a.call("ContactManager", Cmd.addContact.value, info={"userId": user_b, "reason": "chat-setup"})
-    assert_api.assert_response_matches(
-        resp_add,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.addContact.value,
-            "device": "deviceA",
-            "result": "{{userB}}",
-        },
-        context={"userB": user_b},
-        ignore_keys={"sequence"},
-    )
-    device_b.receive_message(match_event_type="onContactInvited", timeout=5.0)
-    resp_accept = device_b.call("ContactManager", Cmd.acceptInvitation.value, info={"userId": user_a})
-    assert_api.assert_response_matches(
-        resp_accept,
-        expected={
-            "manager": "ContactManager",
-            "cmd": Cmd.acceptInvitation.value,
-            "device": "deviceB",
-            "result": "{{userA}}",
-        },
-        context={"userA": user_a},
-        ignore_keys={"sequence"},
-    )
 # ---------- 工具 ----------
 
 
@@ -111,9 +78,20 @@ def _find_first(obj: Any, key: str) -> Any | None:
 
 # ========== 异常 / 边界（Chat） ==========
 
+@pytest.mark.real_e2e
 def test_chat_send_to_self_should_not_succeed(device_a, assert_api, user_a):
     # 自发消息（A→A）：按当前实现会返回 onMessageSuccess，这里按实际返回严格断言事件内容。
     # 先清空积压事件，避免前序用例的事件干扰。
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、send、to、self、should、not、succeed；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、send、to、self、should、not、succeed；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
     except Exception:
@@ -200,8 +178,19 @@ def test_chat_send_to_self_should_not_succeed(device_a, assert_api, user_a):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_pin_conversation_nonexistent_conversation(device_a, assert_api):
     # 直接 pin 不存在的会话：按实际返回约定应为错误（Invalid conversation）。
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、不存在对象、会话；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、置顶、会话、不存在对象、会话；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.pinConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     bogus = "__nonexistent_chat_user__"
     resp_pin = device_a.call(
         "ChatManager",
@@ -212,9 +201,20 @@ def test_chat_pin_conversation_nonexistent_conversation(device_a, assert_api):
     assert_api.assert_error(resp_pin, code=107, description="Invalid conversation")
 
 
+@pytest.mark.real_e2e
 @pytest.mark.skip(reason="temporary skip: backend bug under investigation")
 def test_chat_translate_message_nonexistent_message(device_a, assert_api, user_a, user_b):
     # translateMessage 传入不存在的消息对象：不应出现有效 translations。
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、translate、消息、不存在对象、消息；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.translateMessage，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、translate、消息、不存在对象、消息；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.translateMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     fake_msg = {
         "msgId": "__invalid_msg_id__",
         "from": user_a,
@@ -233,25 +233,45 @@ def test_chat_translate_message_nonexistent_message(device_a, assert_api, user_a
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_ack_conversation_read_invalid_id_response(device_b, assert_api):
-    """B 对一个不存在的会话调用 ackConversationRead，A 不应在 5s 内收到 onConversationHasRead。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、无效参数、id、response；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、会话、已读、无效参数、id、response；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackConversationRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     bogus = "__invalid_conversation_id__"
     resp = device_b.call("ChatManager", Cmd.ackConversationRead.value, info={"conversationId": bogus})
-    # 当前实现返回 result 含固定错误体（code 与 description），据实时返回值严格断言。
+    # Android 当前实现要求 convId 参数；conversationId 会按缺失 convId 返回参数错误。
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.ackConversationRead.value,
             "device": "deviceB",
-            "result": {"code": 500, "description": "Message is invalid"},
+            "result": {"code": 110, "description": "Invalid params: No value for convId"},
         },
         ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_modify_message_invalid_id_response(device_a, assert_api):
-    """修改不存在的消息，不应产生 onMessageContentChanged 事件。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、modify、消息、无效参数、id、response；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.modifyMessage，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、modify、消息、无效参数、id、response；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.modifyMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.modifyMessage.value, info={"msgId": "__invalid_msg_id__", "body": {"type": 0, "content": "edit"}})
     print("MODIFY_INVALID RESP:", resp)
     assert_api.assert_response_matches(
@@ -266,8 +286,18 @@ def test_chat_modify_message_invalid_id_response(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_recall_message_invalid_id_response(device_a, assert_api):
-    """撤回不存在的消息，不应产生 onMessagesRecalled 事件。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、recall、消息、无效参数、id、response；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.recallMessage，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、recall、消息、无效参数、id、response；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.recallMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.recallMessage.value, info={"msgId": "__invalid_msg_id__"})
     print("RECALL_INVALID RESP:", resp)
     assert_api.assert_response_matches(
@@ -286,16 +316,14 @@ def test_chat_recall_message_invalid_id_response(device_a, assert_api):
 @pytest.mark.e2e_flow("error_response")
 def test_chat_add_reaction_invalid_id_response(request, assert_api):
     """
-    1. 准备 primary_a 客户端并确认已登录；
-    2. 调用 ChatManager.addReaction，messageId 使用不存在的值；
-    3. 断言接口返回 code=303，description=Unknown server error；
-    4. 仅断言错误响应，不声明额外的 reaction 成功事件证据。
+    1. deviceA 调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；
+    2. 校验响应信封为 ChatManager.addReaction，且响应设备为当前发送端；
+    3. 校验 SDK 返回错误体 code=303，description 包含 Unknown server error。
     """
     describe_case_steps(
-        "1. 准备 primary_a 客户端并确认已登录；\n"
-        "2. 调用 ChatManager.addReaction，messageId 使用不存在的值；\n"
-        "3. 断言接口返回 code=303，description=Unknown server error；\n"
-        "4. 仅断言错误响应，不声明额外的 reaction 成功事件证据。"
+        "1. deviceA 调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；\n"
+        "2. 校验响应信封为 ChatManager.addReaction，且响应设备为当前发送端；\n"
+        "3. 校验 SDK 返回错误体 code=303，description 包含 Unknown server error。"
     )
     client_a = (
         request.getfixturevalue("topology").primary_client(0)
@@ -317,8 +345,18 @@ def test_chat_add_reaction_invalid_id_response(request, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_add_reaction_empty_reaction_response(device_a, assert_api, user_a, user_b):
-    """添加空 reaction：先发送一条消息，再对该消息添加空 reaction，应视为无效（无事件）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、空值参数、Reaction、response；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、空值参数、Reaction、response；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     _ = device_a.call("ChatManager", Cmd.sendMessage.value, info=_build_text(user_a, user_b, "for-reaction-empty"))
     evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
     real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
@@ -337,8 +375,18 @@ def test_chat_add_reaction_empty_reaction_response(device_a, assert_api, user_a,
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_history_invalid_conversation(device_b, assert_api):
-    """fetchHistoryMessages 使用不存在的会话 id：严格断言响应形状；若成功体，结果应为空。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、无效参数、会话；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、history、无效参数、会话；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchHistoryMessages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call(
         "ChatManager",
         Cmd.fetchHistoryMessages.value,
@@ -356,8 +404,18 @@ def test_chat_fetch_history_invalid_conversation(device_b, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_get_message_invalid_id_returns_none_or_error(device_a, assert_api):
-    """getMessage 使用无效 msgId：WS_RELAX=1 观察到唯一返回为 result=None，锁定为单一预期。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、获取、消息、无效参数、id、returns、none、or；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.getMessage，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、获取、消息、无效参数、id、returns、none、or；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.getMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.getMessage.value, info={"msgId": "__invalid_msg_id__"})
     assert_api.assert_response_matches(
         resp,

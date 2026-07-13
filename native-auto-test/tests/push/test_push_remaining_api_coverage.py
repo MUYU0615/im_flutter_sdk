@@ -5,6 +5,7 @@ Push 模块剩余 API 覆盖用例。
 预期返回通过 discovery 从真实模拟器响应确认后固定。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -73,7 +74,16 @@ def _assert_push_action_result(assert_api, resp: dict):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
-    """fetchPushConfigsFromServer / updatePushNickname / updatePushDisplayStyle：拉取推送配置并更新昵称和展示样式。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送查询/拉取场景所需的测试数据，场景为推送、拉取、configs、更新、nickname、and、style；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.getImPushConfigFromServer、PushManager.updatePushNickname、PushManager.updateImPushStyle，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送查询/拉取场景所需的测试数据，场景为推送、拉取、configs、更新、nickname、and、style；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.getImPushConfigFromServer、PushManager.updatePushNickname、PushManager.updateImPushStyle，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     configs_resp = device_a.call("PushManager", Cmd.getImPushConfigFromServer.value, info={})
     assert_api.assert_response_matches(
         configs_resp,
@@ -116,7 +126,16 @@ def test_push_fetch_configs_update_nickname_and_style(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_api):
-    """reportPushAction：上报点击行为参数到 Android SDK；厂商推送环境不稳定时允许已知环境失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送查询/拉取场景所需的测试数据，场景为推送、report、推送、action、calls、sdk、with、click；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送查询/拉取场景所需的测试数据，场景为推送、report、推送、action、calls、sdk、with、click；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "PushManager",
         Cmd.reportPushAction.value,
@@ -137,7 +156,16 @@ def test_push_report_push_action_calls_sdk_with_click_payload(device_a, assert_a
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_requires_action(device_a, assert_api):
-    """reportPushAction：缺少 action 时返回参数错误，不默认按 CLICK 上报。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、report、推送、action、requires、action；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、report、推送、action、requires、action；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call(
         "PushManager",
         Cmd.reportPushAction.value,
@@ -153,7 +181,16 @@ def test_push_report_push_action_requires_action(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_report_push_action_rejects_invalid_action(device_a, assert_api, action):
-    """reportPushAction：未知 action 字符串和不支持的数字值返回参数错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送异常/边界场景所需的测试数据，场景为推送、report、推送、action、rejects、无效参数、action；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送异常/边界场景所需的测试数据，场景为推送、report、推送、action、rejects、无效参数、action；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.reportPushAction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "PushManager",
         Cmd.reportPushAction.value,
@@ -172,7 +209,16 @@ def test_push_report_push_action_rejects_invalid_action(device_a, assert_api, ac
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_global_silent_mode_flow(device_a, assert_api):
-    """setSilentModeForAll / fetchSilentModeForAll：设置全局离线推送提醒类型，并拉取全局设置。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、global、silent、mode、flow；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.setSilentModeForAll、PushManager.fetchSilentModeForAll，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、global、silent、mode、flow；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.setSilentModeForAll、PushManager.fetchSilentModeForAll，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     set_resp = device_a.call(
         "PushManager",
         Cmd.setSilentModeForAll.value,
@@ -209,7 +255,16 @@ def test_push_global_silent_mode_flow(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_conversation_silent_mode_flow(device_a, assert_api, user_b):
-    """set/fetch/removeConversationSilentMode：对单聊会话设置、查询、移除离线推送设置。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、会话、silent、mode、flow；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.setConversationSilentMode、PushManager.fetchConversationSilentMode、PushManager.fetchSilentModeForConversations、PushManager.removeConversationSilentMode，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、会话、silent、mode、flow；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.setConversationSilentMode、PushManager.fetchConversationSilentMode、PushManager.fetchSilentModeForConversations、PushManager.removeConversationSilentMode，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     conv_id = user_b
     set_resp = device_a.call(
         "PushManager",
@@ -287,7 +342,16 @@ def test_push_conversation_silent_mode_flow(device_a, assert_api, user_b):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_preferred_language_and_template(device_a, assert_api):
-    """set/fetchPreferredNotificationLanguage 与 set/getPushTemplate：设置并查询推送语言和模板名称。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、preferred、language、and、template；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.setPreferredNotificationLanguage、PushManager.fetchPreferredNotificationLanguage、PushManager.setPushTemplate、PushManager.getPushTemplate，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、preferred、language、and、template；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.setPreferredNotificationLanguage、PushManager.fetchPreferredNotificationLanguage、PushManager.setPushTemplate、PushManager.getPushTemplate，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     set_lang_resp = device_a.call(
         "PushManager",
         Cmd.setPreferredNotificationLanguage.value,
@@ -359,7 +423,16 @@ def test_push_preferred_language_and_template(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_vendor_token_update_current_environment(device_a, assert_api, cmd, info, expected_result):
-    """update*PushToken / bindDeviceToken：使用测试 token 调用，冻结当前模拟器环境下的真实返回语义。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送状态变更场景所需的测试数据，场景为推送、vendor、token、更新、current、environment；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.updateHMSPushToken、PushManager.updateFCMPushToken、PushManager.bindDeviceToken，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送状态变更场景所需的测试数据，场景为推送、vendor、token、更新、current、environment；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.updateHMSPushToken、PushManager.updateFCMPushToken、PushManager.bindDeviceToken，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call("PushManager", cmd, info=info)
     assert_api.assert_response_matches(
         resp,
@@ -379,7 +452,16 @@ def test_push_vendor_token_update_current_environment(device_a, assert_api, cmd,
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_apns_token_update_android_missing_plugin(device_a, assert_api):
-    """updateAPNsPushToken：Android 模拟器调用 APNs token 更新，冻结 MissingPlugin 当前环境语义。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送异常/边界场景所需的测试数据，场景为推送、apns、token、更新、android、missing、plugin；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.updateAPNsPushToken，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送异常/边界场景所需的测试数据，场景为推送、apns、token、更新、android、missing、plugin；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.updateAPNsPushToken，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "PushManager",
         Cmd.updateAPNsPushToken.value,
@@ -394,7 +476,16 @@ def test_push_apns_token_update_android_missing_plugin(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_push_sync_conversations_silent_mode_current_environment(device_a, assert_api):
-    """syncSilentModels：同步所有会话免打扰信息，冻结当前模拟器返回语义。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、sync、conversations、silent、mode、current、environment；
+    2. 通过 WebSocket 控制测试 App 调用 PushManager.syncSilentModels，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备推送基础能力场景所需的测试数据，场景为推送、sync、conversations、silent、mode、current、environment；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PushManager.syncSilentModels，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call("PushManager", Cmd.syncSilentModels.value, info={})
     assert_api.assert_response_matches(
         resp,

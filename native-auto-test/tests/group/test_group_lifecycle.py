@@ -1,5 +1,6 @@
 """Group lifecycle 正常链路。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -63,10 +64,21 @@ def test_group_create_group(device_a, device_b, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.case_id("group.get_group.local.success")
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.getGroupWithId")
 def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("local")
     group_id = ""
     try:
@@ -92,10 +104,21 @@ def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.case_id("group.get_group_from_server.success")
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
 def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("server")
     group_id = ""
     try:
@@ -125,11 +148,22 @@ def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, use
             destroy_group(device_a, assert_api, group_id, device_b=device_b)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.case_id("group.get_group_from_server_after_destroy.error")
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.destroyGroup")
 @pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
 def test_group_get_group_from_server_after_destroy(device_a, device_b, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端、after、销毁；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端、after、销毁；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("server_after_destroy")
     group_id = ""
     try:

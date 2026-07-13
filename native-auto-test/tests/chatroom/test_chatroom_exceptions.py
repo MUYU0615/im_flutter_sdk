@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 from uuid import uuid4
 
@@ -21,6 +22,16 @@ def _nonexistent_room_id() -> str:
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_room_info_nonexistent(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、room、信息、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、room、信息、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = _nonexistent_room_id()
     resp = device_a.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": room_id})
     assert_api.assert_error(resp, code=700, description="do not find this group")
@@ -32,6 +43,16 @@ def test_chatroom_fetch_room_info_nonexistent(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_destroy_room_nonexistent(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、销毁、room、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、销毁、room、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = _nonexistent_room_id()
     resp = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": room_id})
     assert_api.assert_error(resp, code=700, description="do not find this group")
@@ -43,6 +64,16 @@ def test_chatroom_destroy_room_nonexistent(device_a, assert_api):
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_join_room_nonexistent_current_behavior(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、加入、room、不存在对象、current、behavior；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、加入、room、不存在对象、current、behavior；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = _nonexistent_room_id()
     resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
     assert_api.assert_error(resp, code=705, description="Chat room does not exist")
@@ -54,6 +85,16 @@ def test_chatroom_join_room_nonexistent_current_behavior(device_b, assert_api):
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_join_room_empty_id(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、加入、room、空值参数、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、加入、room、空值参数、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": ""})
     assert_api.assert_error(resp, code=700, description="Chat room ID is invalid")
 
@@ -64,6 +105,16 @@ def test_chatroom_join_room_empty_id(device_b, assert_api):
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_leave_room_nonexistent(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、离开、room、不存在对象；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、离开、room、不存在对象；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = _nonexistent_room_id()
     resp = device_b.call("ChatRoomManager", Cmd.leaveChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
@@ -84,6 +135,16 @@ def test_chatroom_leave_room_nonexistent(device_b, assert_api):
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_leave_room_empty_id(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、离开、room、空值参数、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、离开、room、空值参数、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call("ChatRoomManager", Cmd.leaveChatRoom.value, info={"roomId": ""})
     assert_api.assert_response_matches(
         resp,
@@ -103,6 +164,16 @@ def test_chatroom_leave_room_empty_id(device_b, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_room_info_empty_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、room、信息、空值参数、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、room、信息、空值参数、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatRoomManager", Cmd.fetchChatRoomInfoFromServer.value, info={"roomId": ""})
     assert_api.assert_error(resp, code=700, description="Chat room ID is invalid")
 
@@ -113,6 +184,16 @@ def test_chatroom_fetch_room_info_empty_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_members_nonexistent_room(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、成员、不存在对象、room；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、成员、不存在对象、room；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = _nonexistent_room_id()
     resp = device_a.call(
         "ChatRoomManager",
@@ -128,6 +209,16 @@ def test_chatroom_fetch_members_nonexistent_room(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_members_empty_room_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、成员、空值参数、room、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、成员、空值参数、room、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatRoomManager",
         Cmd.fetchChatRoomMembers.value,
@@ -142,6 +233,16 @@ def test_chatroom_fetch_members_empty_room_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_destroy_room_empty_id(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、销毁、room、空值参数、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、销毁、room、空值参数、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.destroyChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatRoomManager", Cmd.destroyChatRoom.value, info={"roomId": ""})
     assert_api.assert_error(resp, code=700, description="Chat room ID is invalid")
 
@@ -161,6 +262,16 @@ def test_chatroom_destroy_room_empty_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_public_chat_rooms_invalid_paging(device_a, assert_api, page_num, page_size):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、public、chat、rooms、无效参数、paging；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchPublicChatRoomsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、public、chat、rooms、无效参数、paging；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchPublicChatRoomsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "ChatRoomManager",
         Cmd.fetchPublicChatRoomsFromServer.value,

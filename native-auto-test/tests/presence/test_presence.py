@@ -3,6 +3,7 @@ Presence 在线状态用例，对应 presence_manager.dart。
 场景：A 发布 presence，B 订阅 A → B 查询 A 的在线状态与订阅列表 → B 取消订阅 → 再次查询应返回空。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -32,10 +33,15 @@ USER_NONEXISTENT = "nonexistent_user_xyz_999"
 @pytest.mark.api("PresenceManager.presenceUnsubscribe")
 def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert_api, user_a):
     """
-    A 发布 presence，B 订阅 A；
-    B 查询指定用户 A 的当前在线状态，并获取订阅用户列表（应含 A）；
-    B 取消订阅后，再次查询订阅列表与 A 的状态应返回空。
+    1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为在线状态、发布、订阅、query、取消订阅；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为在线状态、发布、订阅、query、取消订阅；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     # 1. A 发布自定义在线状态（PresenceManager.publishPresenceWithDescription）
     resp_pub = device_a.call(
         "PresenceManager",
@@ -161,8 +167,15 @@ def test_presence_publish_subscribe_query_unsubscribe(device_a, device_b, assert
 @pytest.mark.roles_mode("ordered")
 def test_presence_publish_empty_desc_then_fetch(device_a, device_b, assert_api, user_a):
     """
-    A 发布空 desc 的在线状态，B 订阅 A 后 fetchPresenceStatus，断言 statusDescription 为空。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、发布、空值参数、desc、then、拉取；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、发布、空值参数、desc、then、拉取；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchPresenceStatus，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     # 1. A 发布 desc 为空
     resp_pub = device_a.call(
         "PresenceManager",
@@ -210,8 +223,15 @@ DESC_128K = "x" * (128 * 1024)
 @pytest.mark.roles_mode("ordered")
 def test_presence_publish_128k_desc(device_a, device_b, assert_api):
     """
-    A 发布 128KB 大小 desc 的在线状态
+    1. 在已登录的 Android 共享 session 中准备在线状态基础能力场景所需的测试数据，场景为在线状态、发布、128k、desc；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态基础能力场景所需的测试数据，场景为在线状态、发布、128k、desc；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     # 1. A 发布 128k desc
     resp_pub = device_a.call(
         "PresenceManager",
@@ -241,8 +261,15 @@ def test_presence_publish_128k_desc(device_a, device_b, assert_api):
 @pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_nonexistent_user(device_a, assert_api):
     """
-    订阅不存在用户：B 对不存在用户发起 presenceSubscribe。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、不存在对象、用户；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、不存在对象、用户；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
@@ -268,8 +295,15 @@ def test_presence_subscribe_nonexistent_user(device_a, assert_api):
 @pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_expiry_over_30_days(device_a, device_b, assert_api, user_a):
     """
-    订阅存在用户但过期时间大于 30 天：B 订阅 A，expiry 设为超过 30 天，预期返回错误。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、expiry、over、30、days；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、expiry、over、30、days；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     # A 先发布 presence，确保 A 存在且在线
     resp_pub = device_a.call(
         "PresenceManager",
@@ -297,8 +331,15 @@ PRESENCE_SUBSCRIBE_MAX_MEMBERS = 100
 @pytest.mark.roles_mode("ordered")
 def test_presence_subscribe_over_100_members(device_a, assert_api):
     """
-    订阅超过 100 个用户：presenceSubscribe 传入超过 100 个 members，预期返回错误。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、over、100、成员；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、over、100、成员；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     members_over_limit = [f"user_{i}" for i in range(PRESENCE_SUBSCRIBE_MAX_MEMBERS + 1)]
     resp = device_a.call(
         "PresenceManager",
@@ -328,8 +369,15 @@ def test_presence_subscribe_over_100_members(device_a, assert_api):
 @pytest.mark.roles_mode("ordered")
 def test_presence_unsubscribe_over_100_members(device_b, assert_api):
     """
-    取消订阅超过 100 个用户：presenceUnsubscribe 传入超过 100 个 members，预期返回错误。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、取消订阅、over、100、成员；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceUnsubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、取消订阅、over、100、成员；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceUnsubscribe，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     members_over_limit = [f"user_{i}" for i in range(PRESENCE_SUBSCRIBE_MAX_MEMBERS + 1)]
     resp = device_b.call(
         "PresenceManager",
@@ -363,8 +411,15 @@ def test_presence_unsubscribe_over_100_members(device_b, assert_api):
 @pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, user_a):
     """
-    分页查询订阅列表：B 订阅 A 后，第 1 页有数据，第 2 页为空。
+    1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     # 准备：A 发布，B 订阅 A
     resp_pub = device_a.call(
         "PresenceManager",
@@ -425,8 +480,15 @@ def test_fetch_subscribed_members_pagination(device_a, device_b, assert_api, use
 @pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, assert_api, user_a):
     """
-    分页 pageSize=1：第 1 页 1 条，第 2 页 0 条。
+    1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination、page、size、one；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态查询/拉取场景所需的测试数据，场景为拉取、subscribed、成员、pagination、page、size、one；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription、PresenceManager.presenceSubscribe、PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp_pub = device_a.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
@@ -482,8 +544,15 @@ def test_fetch_subscribed_members_pagination_page_size_one(device_a, device_b, a
 @pytest.mark.roles_mode("ordered")
 def test_fetch_subscribed_members_invalid_pagination(device_b, assert_api, user_a):
     """
-    非法分页参数：pageNum=0 或 pageSize=0，预期返回错误。
+    1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为拉取、subscribed、成员、无效参数、pagination；
+    2. 通过 WebSocket 控制测试 App 调用 PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为拉取、subscribed、成员、无效参数、pagination；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 PresenceManager.fetchSubscribedMembersWithPageNum，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp_zero_page = device_b.call(
         "PresenceManager",
         Cmd.fetchSubscribedMembersWithPageNum.value,

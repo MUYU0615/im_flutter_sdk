@@ -19,7 +19,7 @@ native_api_review:
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 asyncFetchHistoryMessage 已由 Flutter ChatManager.fetchHistoryMessages 等价覆盖，自动化覆盖发送后拉取历史消息与非法参数。"
-    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
+    target_case: native-auto-test/tests/chat/test_chat_non_message_operations.py
   - manager: ChatManager
     api: asyncFilterConversationsFromDB
     action: direct_e2e_case
@@ -33,14 +33,14 @@ native_api_review:
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 asyncRecallMessage 已由 Flutter ChatManager.recallMessage 等价覆盖，自动化覆盖撤回响应与接收方撤回事件。"
-    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
+    target_case: native-auto-test/tests/chat/test_chat_non_message_operations.py
   - manager: ChatManager
     api: cleanConversationsMemoryCache
     action: direct_e2e_case
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 cleanConversationsMemoryCache 已由 Flutter ChatManager.cleanConversationsMemoryCache 同名暴露，自动化覆盖清理内存缓存后重新加载本地会话。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+    target_case: native-auto-test/tests/chat/test_chat_local_conversation_store.py
   - manager: ChatManager
     api: downloadBigImage
     action: direct_e2e_case
@@ -48,7 +48,7 @@ native_api_review:
     batch: chat_p1
     requires_positive_case: true
     reason_zh: "Android 原生 downloadBigImage 已由 Flutter ChatManager.downloadBigImage 覆盖；Android wrapper 通过 invokeDownloadMethod 反射调用真实 downloadBigImage(EMMessage, EMCallBack)，现有 E2E 发送真实图片后调用该命令并等待下载回调。"
-    target_case: native-auto-test/tests/chat/test_chat_s423_message_callback_and_combine.py
+    target_case: native-auto-test/tests/chat/test_chat_message_callbacks_and_combine.py
   - manager: ChatManager
     api: fetchGroupReadAcks
     action: direct_e2e_case
@@ -63,14 +63,14 @@ native_api_review:
     batch: chat_p1
     requires_positive_case: true
     reason_zh: "Android 原生 getAllConversations 已由测试桥接命令 ChatManager.getAllConversations 覆盖；Android wrapper 真实调用 getAllConversations 并返回本地会话列表，E2E 发送消息后断言列表包含目标会话。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+    target_case: native-auto-test/tests/chat/test_chat_local_conversation_store.py
   - manager: ChatManager
     api: getConversationsByType
     action: direct_e2e_case
     priority: P1
     batch: chat_p1
     reason_zh: "Android 原生 getConversationsByType 已由 Flutter ChatManager.getConversationsByType 同名暴露，自动化覆盖发送消息后按会话类型查询与非法 type 参数。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+    target_case: native-auto-test/tests/chat/test_chat_local_conversation_store.py
   - manager: ChatManager
     api: getReactionDetail
     action: direct_e2e_case
@@ -92,7 +92,7 @@ native_api_review:
     batch: chat_p1
     requires_positive_case: true
     reason_zh: "Android 原生 loadAllConversations 已由测试桥接命令 ChatManager.loadAllConversationsFromDB 覆盖；保留现有公开 loadAllConversations 的会话列表语义，新增命令真实调用原生 boolean 加载本地缓存能力。"
-    target_case: native-auto-test/tests/chat/test_chat_s1_local_conversation.py
+    target_case: native-auto-test/tests/chat/test_chat_local_conversation_store.py
   - manager: ChatManager
     api: removeReaction
     action: direct_e2e_case
@@ -107,7 +107,7 @@ native_api_review:
     batch: chat_p1
     requires_positive_case: true
     reason_zh: "Android 原生 reportMessage 已由 Flutter ChatManager.reportMessage 等价覆盖；Android wrapper 调用 asyncReportMessage，现有 E2E 发送真实消息后使用真实 msgId 举报并断言成功。"
-    target_case: native-auto-test/tests/chat/test_chat_s3_non_message_ops.py
+    target_case: native-auto-test/tests/chat/test_chat_non_message_operations.py
   - manager: ChatManager
     api: saveMessage
     action: direct_e2e_case
@@ -133,10 +133,10 @@ native_api_review:
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: voiceFileToText
-    action: direct_e2e_case
+    action: service_environment_blocked
     priority: P1
     batch: chat_p1
-    reason_zh: "Android 原生 voiceFileToText 已由 Flutter ChatManager.voiceFileToText 同名暴露；Android wrapper 调用真实语音转写接口，自动化覆盖非法音频参数错误路径。"
+    reason_zh: "Android 原生 voiceFileToText 已由 Flutter ChatManager.voiceFileToText 同名暴露；Android wrapper 调用真实语音转写接口。当前 native-auto-test 只有非法音频参数错误路径，正向需要真实可转写音频文件和语音转写服务能力，先按当前环境阻塞记录。"
     target_case: native-auto-test/tests/chat/test_chat_manager_remaining_api_coverage.py
   - manager: ChatManager
     api: voiceMessageToText
@@ -183,10 +183,10 @@ native_api_review:
     target_case: native-auto-test/tests/chatroom/test_chatroom_management_basics.py
   - manager: ChatRoomManager
     api: asyncCreateChatRoom
-    action: direct_e2e_case
+    action: service_environment_blocked
     priority: P1
     batch: chatroom_p1
-    reason_zh: "Android 原生 asyncCreateChatRoom 已由 Flutter ChatRoomManager.createChatRoom 等价覆盖；Android wrapper 在后台线程调用 createChatRoom。"
+    reason_zh: "Android 原生 asyncCreateChatRoom 已由 Flutter ChatRoomManager.createChatRoom 等价覆盖；Android wrapper 在后台线程调用 createChatRoom。当前真实 Android case 调 SDK 创建聊天室返回 703 you have no permission to do this，说明普通测试账号或当前 appkey 无 SDK 创建聊天室权限；其他聊天室正向用 REST 前置创建后覆盖。"
     target_case: native-auto-test/tests/chatroom/test_chatroom_lifecycle.py
   - manager: ChatRoomManager
     api: asyncDestroyChatRoom
@@ -334,6 +334,97 @@ native_api_review:
     priority: P2
     batch: client_rtc_platform_gap
     reason_zh: "Android 原生 SDK 暴露 RTC token/uid 相关能力，但 iOS/Web 当前缺少同等原生能力，需要作为 Android 可暴露能力记录平台差异。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: changeAppkey
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.changeAppKey 会改变 SDK appKey 配置，不能在共享登录 session 中作为普通正向 case 执行；需在 session_lifecycle 专项中使用隔离 App 实例和可恢复配置单独验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: createAccount
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.createAccount 会创建真实服务端账号，存在账号唯一性和环境数据污染风险；需在 session_lifecycle 专项中使用一次性账号或 REST 清理策略单独验证。"
+    target_case: native-auto-test/tests/client/test_client_single_device_smoke.py
+  - manager: Client
+    api: getLoggedInDevicesFromServer
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.getLoggedInDevicesFromServer 依赖真实账号密码和多设备登录态；需在 session_lifecycle 专项中准备隔离多设备账号后验证，不应混入普通共享 session。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: getLoggedInDevicesFromServerWithToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.getLoggedInDevicesFromServerWithToken 依赖有效 token 和多设备登录态；需在 session_lifecycle 专项中准备隔离 token/账号后验证，不应混入普通共享 session。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: kickAllDevices
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.kickAllDevices 会踢掉账号全部在线设备，直接破坏普通 E2E 共享 session；需在 session_lifecycle 专项中使用隔离账号和独立设备组合验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: kickAllDevicesWithToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.kickAllDevicesWithToken 会踢掉账号全部在线设备，且依赖有效 token；需在 session_lifecycle 专项中使用隔离账号和独立设备组合验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: kickDevice
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.kickDevice 会踢掉指定资源设备，直接影响多设备 session；需在 session_lifecycle 专项中先获取隔离设备 resource 后验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: kickDeviceWithToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.kickDeviceWithToken 会踢掉指定资源设备，且依赖有效 token；需在 session_lifecycle 专项中先获取隔离设备 resource 后验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: login
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.login 会切换设备登录态并触发离线同步/回调重建，不能在普通共享 session 中重复执行；需在 session_lifecycle 专项中先 logout 或使用未登录隔离实例验证。"
+    target_case: native-auto-test/tests/client/test_client.py
+  - manager: Client
+    api: loginWithAgoraToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.loginWithAgoraToken 会切换登录态且依赖有效 Agora token；需在 session_lifecycle 专项中准备 token 并使用未登录隔离实例验证。"
+    target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
+  - manager: Client
+    api: loginWithToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.loginWithToken 会切换登录态且依赖有效 token；需在 session_lifecycle 专项中使用未登录隔离实例验证，不能混入普通共享 session。"
+    target_case: native-auto-test/tests/client/test_client.py
+  - manager: Client
+    api: logout
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.logout 会清理当前设备登录态和回调 handle，直接破坏普通 E2E 共享 session；需在 session_lifecycle 专项中单独验证。"
+    target_case: native-auto-test/tests/client/test_client.py
+  - manager: Client
+    api: renewToken
+    action: session_lifecycle_isolated
+    priority: P1
+    batch: client_session_lifecycle
+    reason_zh: "Client.renewToken 依赖真实 token 生命周期和即将过期/已过期状态；需在 session_lifecycle/token 专项环境中验证，普通共享 session 只保留非法 token 边界。"
     target_case: native-auto-test/tests/client/test_client_remaining_api_coverage.py
   - manager: Client
     api: addConnectionListener
@@ -767,6 +858,7 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
+    requires_positive_case: true
     reason_zh: "Android 原生 acceptInvitation 已由 Flutter GroupManager.acceptInvitationFromGroup 等价覆盖；Android wrapper 调用 asyncAcceptInvitation，现有群邀请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
@@ -918,6 +1010,7 @@ native_api_review:
     action: direct_e2e_case
     priority: P1
     batch: group_membership_p1
+    requires_positive_case: true
     reason_zh: "Android 原生 declineInvitation 已由 Flutter GroupManager.declineInvitationFromGroup 等价覆盖；Android wrapper 调用 asyncDeclineInvitation，现有群邀请 E2E 直接调用该命令。"
     target_case: native-auto-test/tests/group/test_group_join_requests_and_invitations.py
   - manager: GroupManager
@@ -1145,7 +1238,7 @@ native_api_review:
     batch: message_factory_p1
     requires_positive_case: true
     reason_zh: "Android 原生 EMMessage.createCombinedSendMessage 已由 Flutter ChatManager.sendMessageWithType(combine) 等价覆盖；真实 Android 双设备 E2E 已验证前置图片/视频消息发送、combine 发送成功、接收、解析内部消息以及内部附件下载链路。"
-    target_case: native-auto-test/tests/chat/test_chat_s423_message_callback_and_combine.py
+    target_case: native-auto-test/tests/chat/test_chat_message_callbacks_and_combine.py
   - manager: MessageManager
     api: createFileSendMessage
     action: direct_e2e_case

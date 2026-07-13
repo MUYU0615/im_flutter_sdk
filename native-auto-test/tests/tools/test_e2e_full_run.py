@@ -68,6 +68,20 @@ def test_full_run_android_matrix_delegates_to_real_android_runner():
     assert "out/api-coverage/android-20260706-153000-gap-backlog.csv" in commands[1]
 
 
+def test_full_run_android_matrix_uses_runner_default_real_e2e_scope_when_no_pytest_args():
+    commands = build_android_runner_commands(
+        client_args=["android:a@4.23.0", "android:b@4.23.0"],
+        sdk_version_args=[],
+        run_id="android-20260708-complete",
+        output_root="out",
+        platform_matrix="android-android",
+        pytest_args=[],
+    )
+
+    assert commands[0][2] == "src.tools.android_e2e_runner"
+    assert commands[0][-1] == "--"
+
+
 def test_full_run_topology_builds_prepare_runner_coverage_stages():
     commands = build_topology_runner_commands(
         topology="config/topologies/android-primary-dual-remote.yaml",

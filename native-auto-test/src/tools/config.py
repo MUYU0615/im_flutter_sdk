@@ -323,9 +323,22 @@ def get_configured_test_users() -> tuple[str, str, str] | None:
     """
     cfg = load_config()
     users = (cfg.get("accounts") or {}).get("users") or {}
-    user_a = (os.getenv("NATIVE_AUTO_TEST_USER_A") or users.get("a") or "").strip()
-    user_b = (os.getenv("NATIVE_AUTO_TEST_USER_B") or users.get("b") or "").strip()
-    user_c = (os.getenv("NATIVE_AUTO_TEST_USER_C") or users.get("c") or "").strip()
+
+    def _username(slot: str) -> str:
+        value = users.get(slot)
+        if isinstance(value, dict):
+            value = (
+                value.get("username")
+                or value.get("userId")
+                or value.get("user_id")
+                or value.get("name")
+                or ""
+            )
+        return str(value or "").strip()
+
+    user_a = (os.getenv("NATIVE_AUTO_TEST_USER_A") or _username("a")).strip()
+    user_b = (os.getenv("NATIVE_AUTO_TEST_USER_B") or _username("b")).strip()
+    user_c = (os.getenv("NATIVE_AUTO_TEST_USER_C") or _username("c")).strip()
     if not user_a and not user_b and not user_c:
         return None
     if not user_a or not user_b:

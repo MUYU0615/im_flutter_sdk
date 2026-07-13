@@ -1,5 +1,6 @@
 """Group block/unblock API 正常用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -29,7 +30,18 @@ def _assert_group_blocked_flag(device_a, assert_api, group_id: str, blocked: boo
     )
 
 
+@pytest.mark.real_e2e
 def test_group_block_then_unblock_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、封禁、then、unblock、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockGroup、GroupManager.unblockGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、封禁、then、unblock、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockGroup、GroupManager.unblockGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(

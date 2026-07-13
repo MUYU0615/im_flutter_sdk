@@ -1,5 +1,6 @@
 """Group list API 用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -16,7 +17,18 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
+@pytest.mark.real_e2e
 def test_group_get_joined_groups_local_contains_created_group(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、joined、groups、本地、contains、created、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getJoinedGroups，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、joined、groups、本地、contains、created、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getJoinedGroups，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("joined_local")
     group_id = ""
     try:
@@ -43,7 +55,18 @@ def test_group_get_joined_groups_local_contains_created_group(device_a, assert_a
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_load_all_groups_local_cache_contains_created_group(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、load、all、groups、本地、cache、contains、created；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.loadAllGroups、GroupManager.getJoinedGroups，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、load、all、groups、本地、cache、contains、created；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.loadAllGroups、GroupManager.getJoinedGroups，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("load_all")
     group_id = ""
     try:
@@ -82,7 +105,18 @@ def test_group_load_all_groups_local_cache_contains_created_group(device_a, asse
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_get_joined_groups_from_server_contains_created_group(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、joined、groups、from、服务端、contains、created；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getJoinedGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、joined、groups、from、服务端、contains、created；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getJoinedGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     group_name = new_group_name("joined_server")
     group_id = ""
     try:

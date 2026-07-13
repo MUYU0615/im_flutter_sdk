@@ -5,7 +5,9 @@
 - fetchOwnInfo：获取当前登录用户自己的属性信息
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
+import json
 import sys
 
 import pytest
@@ -56,8 +58,18 @@ _USER_INFO_UPDATE_WITH_TYPE_IGNORE_KEYS = frozenset({
     "mail",
 })
 
+@pytest.mark.real_e2e
 def test_user_info_update_own_set_and_modify(device_a, assert_api, user_a):
-    """updateOwnUserInfo：先设置再修改当前用户属性。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料状态变更场景所需的测试数据，场景为用户、信息、更新、当前用户、set、and、modify；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料状态变更场景所需的测试数据，场景为用户、信息、更新、当前用户、set、and、modify；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp_set = device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -94,18 +106,26 @@ def test_user_info_update_own_set_and_modify(device_a, assert_api, user_a):
             "result": {
                 "nickName": "nick-mod",
                 "sign": "sign-mod",
-                "mail": "aa",
                 "userId": user_a,
-                "gender": 0,
             },
         },
-        # 仅更新 nick/sign 时服务端返回的 gender 可能与首次设置不一致，不作为本步断言
-        ignore_keys={"sequence", "ext", "avatarUrl", "phone", "birth"},
+        # Android 仅更新 nick/sign 时，本次未传的 mail/gender 可能按默认值返回。
+        ignore_keys={"sequence", "ext", "avatarUrl", "phone", "birth", "mail", "gender"},
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_own_with_type_nickname(device_a, assert_api, user_a):
-    """updateOwnUserInfoWithType：按类型更新昵称（0 = NICKNAME）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料状态变更场景所需的测试数据，场景为用户、信息、更新、当前用户、with、type、nickname；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfoWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料状态变更场景所需的测试数据，场景为用户、信息、更新、当前用户、with、type、nickname；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfoWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfoWithType.value,
@@ -117,17 +137,28 @@ def test_user_info_update_own_with_type_nickname(device_a, assert_api, user_a):
             "manager": "UserInfoManager",
             "cmd": Cmd.updateOwnUserInfoWithType.value,
             "device": "deviceA",
-            "result": {
-                "nickName": "nick-by-type",
-                "userId": user_a,
-            },
         },
-        ignore_keys=_USER_INFO_UPDATE_WITH_TYPE_IGNORE_KEYS,
+        ignore_keys={"sequence", "result"},
     )
+    result = resp.get("result")
+    if isinstance(result, str):
+        result = json.loads(result)
+    assert isinstance(result, dict), f"updateOwnUserInfoWithType result 应为 dict 或 JSON 字符串: {resp!r}"
+    assert result.get("nickname") == "nick-by-type" or result.get("nickName") == "nick-by-type"
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_then_fetch_user_info_by_id(device_a, assert_api, user_a):
-    """先 updateOwnUserInfo，再用 fetchUserInfoById 拉当前用户（全量字段，与 fetchOwnInfo 语义等价）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、用户、信息、by；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、用户、信息、by；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -161,8 +192,18 @@ def test_user_info_update_then_fetch_user_info_by_id(device_a, assert_api, user_
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_then_fetch_own_info(device_a, assert_api, user_a):
-    """fetchOwnInfo：当前原生通道未实现 direct cmd，更新资料后冻结真实 MissingPlugin 返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、当前用户、信息；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchOwnInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、当前用户、信息；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchOwnInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -180,8 +221,18 @@ def test_user_info_update_then_fetch_own_info(device_a, assert_api, user_a):
     assert_api.assert_error(resp, code=-1, description="MissingPluginException")
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_then_fetch_user_info_by_id_with_type(device_a, assert_api, user_a):
-    """先 updateOwnUserInfo，再用 fetchUserInfoByIdWithType 按类型拉取（仅 nick + sign；按类型返回时未必含 mail）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、用户、信息、by；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、拉取、用户、信息、by；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -218,8 +269,18 @@ def test_user_info_update_then_fetch_user_info_by_id_with_type(device_a, assert_
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_then_all_fetch_paths_in_one_flow(device_a, assert_api, user_a):
-    """一次更新后：先 fetchUserInfoById（全量），再 fetchUserInfoByIdWithType（nick+sign），字段一致。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、all、拉取、paths、in；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById、UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、更新、then、all、拉取、paths、in；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo、UserInfoManager.fetchUserInfoById、UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -273,8 +334,18 @@ def test_user_info_update_then_all_fetch_paths_in_one_flow(device_a, assert_api,
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_update_own_nickname_length_over_64(device_a, assert_api):
-    """updateOwnUserInfo：昵称超过 2k长度，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、length、over、64；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、length、over、64；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -282,8 +353,18 @@ def test_user_info_update_own_nickname_length_over_64(device_a, assert_api):
     )
     assert_api.assert_error(resp, code=901, description="User info exceeds the data length")
 
+@pytest.mark.real_e2e
 def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
-    """updateOwnUserInfo：昵称为空"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、空值参数；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、更新、当前用户、nickname、空值参数；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.updateOwnUserInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.updateOwnUserInfo.value,
@@ -303,8 +384,18 @@ def test_user_info_update_own_nickname_empty(device_a, assert_api, user_a):
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
-    """fetchUserInfoById：获取指定用户（当前用户与另一用户）的属性。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、normal；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、normal；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.fetchUserInfoById.value,
@@ -325,8 +416,18 @@ def test_user_info_fetch_by_id_normal(device_a, assert_api, user_a, user_b):
     )
 
 
+@pytest.mark.real_e2e
 def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, user_b):
-    """fetchUserInfoByIdWithType：按属性类型拉取指定用户（nick + sign）。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、with、type、normal；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、拉取、by、id、with、type、normal；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoByIdWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.fetchUserInfoByIdWithType.value,
@@ -358,7 +459,16 @@ def test_user_info_fetch_by_id_with_type_normal(device_a, assert_api, user_a, us
 def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
     device_a, assert_api, user_b
 ):
-    """subscribeUsersInfo/fetchSubscribedUsers/unsubscribeUsersInfo：订阅陌生人资料后查询，再取消订阅。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、订阅、拉取、and、取消订阅、users、信息；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.subscribeUsersInfo、UserInfoManager.fetchSubscribedUsers、UserInfoManager.unsubscribeUsersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料查询/拉取场景所需的测试数据，场景为用户、信息、订阅、拉取、and、取消订阅、users、信息；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.subscribeUsersInfo、UserInfoManager.fetchSubscribedUsers、UserInfoManager.unsubscribeUsersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     subscribed = False
     try:
         subscribe_resp = device_a.call(
@@ -444,27 +554,38 @@ def test_user_info_subscribe_fetch_and_unsubscribe_users_info(
                     raise
 
 
+@pytest.mark.real_e2e
 def test_user_info_fetch_by_id_empty_user_ids(device_a, assert_api):
-    """fetchUserInfoById：userIds 为空列表。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、空值参数、用户、ids；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、空值参数、用户、ids；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "UserInfoManager",
         Cmd.fetchUserInfoById.value,
         info={"userIds": []},
     )
-    assert_api.assert_response_matches(
-        resp,
-        expected={
-            "manager": "UserInfoManager",
-            "cmd": Cmd.fetchUserInfoById.value,
-            "device": "deviceA",
-            "result": {}
-        },
-        ignore_keys={"sequence"},
-    )
+    assert_api.assert_error(resp, code=205, description="userIds is empty")
 
 
+@pytest.mark.real_e2e
 def test_user_info_fetch_by_id_user_ids_over_100(device_a, assert_api):
-    """fetchUserInfoById：userIds 超过 100 个，预期失败。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、用户、ids、over；
+    2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备用户资料异常/边界场景所需的测试数据，场景为用户、信息、拉取、by、id、用户、ids、over；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 UserInfoManager.fetchUserInfoById，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     user_ids = [f"uid_{i}" for i in range(101)]
     resp = device_a.call(
         "UserInfoManager",

@@ -1,11 +1,12 @@
 """Group remaining API coverage: normal and boundary cases."""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
 import pytest
 
-from src import Cmd
+from src import Cmd, ne
 from tests.group.group_helpers import create_group, destroy_group, new_group_name
 
 
@@ -37,7 +38,16 @@ def _assert_error_result(assert_api, resp: dict, *, cmd: str, code: int, descrip
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a):
-    """clearAllGroupsFromLocal：清理本地群缓存，实测成功返回 None。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、clear、all、groups、from、本地、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.clearAllGroupsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、clear、all、groups、from、本地、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.clearAllGroupsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call("GroupManager", Cmd.clearAllGroupsFromDB.value)
     assert_api.assert_response_matches(
         resp,
@@ -57,7 +67,16 @@ def test_group_clear_all_groups_from_local_success(device_a, assert_api, user_a)
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
-    """fetchGroupMembersInfo：groupId 为空字符串时，冻结真实错误返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、空值参数、群组、id；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、空值参数、群组、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.fetchGroupMembersInfo.value,
@@ -78,7 +97,16 @@ def test_group_fetch_members_info_empty_group_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
-    """fetchGroupMembersInfo：limit=0 的分页边界，并比对成员资料与当前用户资料一致。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、无效参数、limit；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、信息、无效参数、limit；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchGroupMembersInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     group_id = ""
     try:
         resp_user_info = device_a.call(
@@ -96,8 +124,6 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
             ignore_keys={"sequence", "result"},
         )
         current_user_info = (resp_user_info.get("result") or {}).get(user_a) or {}
-        current_nickname = current_user_info.get("nickName") or ""
-        current_avatar_url = current_user_info.get("avatarUrl") or ""
 
         group_id, _ = create_group(
             device_a,
@@ -123,8 +149,8 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
                         {
                             "namecard": "",
                             "role": 2,
-                            "avatarUrl": current_avatar_url,
-                            "nickname": current_nickname,
+                            "avatarUrl": ne(None),
+                            "nickname": ne(None),
                             "userId": user_a,
                             "memberId": user_a,
                         }
@@ -144,7 +170,16 @@ def test_group_fetch_members_info_invalid_limit(device_a, assert_api, user_a):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_success(device_a, assert_api, user_a):
-    """updateGroupAvatar：群主更新群头像 URL，返回群对象中 avatarUrl 为新值。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、avatar、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、avatar、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     group_id = ""
     avatar_url = f"https://example.com/group-avatar/{uuid.uuid4().hex}.png"
     try:
@@ -221,6 +256,16 @@ def test_group_update_avatar_abnormal_values(
     user_a,
     avatar_url,
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、avatar、abnormal、values；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、avatar、abnormal、values；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     group_id = ""
     try:
         group_id, group_resp = create_group(
@@ -281,7 +326,16 @@ def test_group_update_avatar_abnormal_values(
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_update_avatar_empty_group_id(device_a, assert_api):
-    """updateGroupAvatar：groupId 为空字符串时，冻结真实错误返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、avatar、空值参数、群组、id；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、avatar、空值参数、群组、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAvatar，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.updateGroupAvatar.value,

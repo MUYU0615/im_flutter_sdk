@@ -820,7 +820,9 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
         String groupId = param.getString("groupId");
 
         String username = null;
-        if (param.has("userId")){
+        if (param.has("inviter")){
+            username = param.getString("inviter");
+        } else if (param.has("userId")){
             username = param.getString("userId");
         }
 

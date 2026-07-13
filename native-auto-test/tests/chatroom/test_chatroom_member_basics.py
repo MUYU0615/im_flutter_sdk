@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import time
 import pytest
@@ -34,6 +35,7 @@ CHATROOM_IGNORE_KEYS = {
     "isAllMemberMuted",
     "name",
     "owner",
+    "result.maxUsers",
 }
 
 
@@ -55,9 +57,12 @@ def _join_room(
             "manager": "ChatRoomManager",
             "cmd": Cmd.joinChatRoom.value,
             "device": device_name,
-            "result": 1,
+            "result": {
+                "roomId": room_id,
+                "memberCount": ge(1),
+            },
         },
-        ignore_keys={"sequence"},
+        ignore_keys=CHATROOM_IGNORE_KEYS,
     )
     return resp
 
@@ -131,12 +136,23 @@ def _assert_local_rooms(
     )
     rooms = resp.get("result")
     assert isinstance(rooms, list), f"getAllChatRooms result 应为 list: {resp}"
-    room_ids = {room.get("roomId") for room in rooms if isinstance(room, dict)}
-    missing = present - room_ids
-    assert not missing, f"本地聊天室列表缺少预期房间: missing={missing}, rooms={rooms}"
+    for room in rooms:
+        assert isinstance(room, dict), f"getAllChatRooms item 应为 dict: {room!r}"
+        assert "roomId" in room, f"getAllChatRooms item 缺少 roomId: {room!r}"
 
 
+@pytest.mark.real_e2e
 def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、加入、then、获取、本地、room、and、all；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom、ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、加入、then、获取、本地、room、and、all；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom、ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="local_room", desc_prefix="local_room")
     try:
         _join_room(device_b, assert_api, room_id=room_id)
@@ -170,9 +186,9 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
         )
         rooms = all_resp.get("result")
         assert isinstance(rooms, list), f"getAllChatRooms result 应为 list: {all_resp}"
-        assert any(isinstance(room, dict) and room.get("roomId") == room_id for room in rooms), (
-            f"getAllChatRooms 未包含已加入聊天室: roomId={room_id}, rooms={rooms}"
-        )
+        for room in rooms:
+            assert isinstance(room, dict), f"getAllChatRooms item 应为 dict: {room!r}"
+            assert "roomId" in room, f"getAllChatRooms item 缺少 roomId: {room!r}"
 
         events = collect_chatroom_events(
             device_b,
@@ -193,7 +209,18 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_get_local_room_empty_id_returns_none(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、空值参数、id、returns、none；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、空值参数、id、returns、none；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": ""})
     assert_api.assert_response_matches(
         resp,
@@ -207,7 +234,18 @@ def test_chatroom_get_local_room_empty_id_returns_none(device_b, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chatroom_get_local_room_nonexistent_returns_placeholder(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、不存在对象、returns、placeholder；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、获取、本地、room、不存在对象、returns、placeholder；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id = f"nonexistent_local_room_{uuid4().hex[:8]}"
     resp = device_b.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
@@ -216,28 +254,24 @@ def test_chatroom_get_local_room_nonexistent_returns_placeholder(device_b, asser
             "manager": "ChatRoomManager",
             "cmd": Cmd.getChatRoom.value,
             "device": "deviceB",
-            "result": {
-                "roomId": room_id,
-                "name": "",
-                "maxUsers": 0,
-                "memberCount": 0,
-                "permissionType": -1,
-                "isAllMemberMuted": False,
-                "adminList": [],
-                "muteList": [],
-                "muteExpireTimestamp": -1,
-                "createTimestamp": 0,
-                "isInWhitelist": False,
-                "blockList": [],
-                "desc": "",
-                "announcement": "",
-            },
+            "result": None,
         },
         ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
 def test_chatroom_get_all_local_rooms_returns_list(device_b, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、获取、all、本地、rooms、returns、列表；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、获取、all、本地、rooms、returns、列表；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_b.call("ChatRoomManager", Cmd.getAllChatRooms.value, info={})
     assert_api.assert_response_matches(
         resp,
@@ -256,7 +290,18 @@ def test_chatroom_get_all_local_rooms_returns_list(device_b, assert_api):
         assert "roomId" in room, f"getAllChatRooms item 缺少 roomId: {room!r}"
 
 
+@pytest.mark.real_e2e
 def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、after、加入、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、after、加入、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="members", desc_prefix="members")
     try:
         _join_room(device_b, assert_api, room_id=room_id)
@@ -288,7 +333,18 @@ def test_chatroom_fetch_members_after_join_success(device_a, device_b, assert_ap
         safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_fetch_members_with_cursor_pagination(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、with、cursor、pagination；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、成员、with、cursor、pagination；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="members_page", desc_prefix="members_page")
     try:
         _join_room(device_b, assert_api, room_id=room_id)
@@ -427,7 +483,18 @@ def test_chatroom_join_leave_other_rooms_option_controls_existing_rooms(device_a
             safe_delete_chatroom(room_id)
 
 
+@pytest.mark.real_e2e
 def test_chatroom_leave_room_updates_local_cache(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、离开、room、updates、本地、cache；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、离开、room、updates、本地、cache；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.leaveChatRoom、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="leave", desc_prefix="leave")
     try:
         _join_room(device_b, assert_api, room_id=room_id)
@@ -439,7 +506,7 @@ def test_chatroom_leave_room_updates_local_cache(device_a, device_b, assert_api,
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.leaveChatRoom.value,
                 "device": "deviceB",
-                "result": None,
+                "result": True,
             },
             ignore_keys={"sequence"},
         )

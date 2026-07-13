@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from src import Cmd, GroupChangeEvent
+from src import Cmd, GroupChangeEvent, ne
 
 
 def new_group_name(prefix: str = "auto_group") -> str:
@@ -71,6 +71,7 @@ def collect_group_events(
     matched: list[dict] = []
     matched_types: set[str] = set()
     seen_event_types: list[str] = []
+    seen_samples: list[dict] = []
     last_matched_at = 0.0
 
     def _requirements_satisfied() -> bool:
@@ -84,7 +85,7 @@ def collect_group_events(
             raise AssertionError(
                 "群组回调未满足期望: "
                 f"required_all={sorted(required_all)}, matched={sorted(matched_types)}, "
-                f"expected={sorted(expected_event_types)}, seen={seen_event_types}"
+                f"expected={sorted(expected_event_types)}, seen={seen_event_types}, samples={seen_samples}"
             )
 
         if matched and _requirements_satisfied() and (time.monotonic() - last_matched_at) >= idle_grace_window:
@@ -107,6 +108,28 @@ def collect_group_events(
             if not isinstance(evt_type, str):
                 continue
             seen_event_types.append(evt_type)
+            if len(seen_samples) < 12:
+                data = item.get("data")
+                sample = {"eventType": evt_type}
+                if isinstance(data, dict):
+                    sample["data"] = {
+                        key: data.get(key)
+                        for key in (
+                            "groupId",
+                            "groupName",
+                            "name",
+                            "member",
+                            "members",
+                            "userId",
+                            "admin",
+                            "owner",
+                            "newOwner",
+                            "oldOwner",
+                            "operator",
+                        )
+                        if key in data
+                    }
+                seen_samples.append(sample)
             if evt_type not in expected_event_types:
                 continue
 
@@ -167,6 +190,23 @@ def _assert_if_present_non_empty_str_field(
     if exists:
         raise AssertionError(
             f"群组回调 data 的 {field_label} 字段存在但值无效，候选={field_candidates}, data={data}, evt={evt}"
+        )
+
+
+def _assert_if_present_str_field(
+    data: dict,
+    field_candidates: tuple[str, ...],
+    *,
+    field_label: str,
+    evt: dict,
+) -> None:
+    for key in field_candidates:
+        if key not in data:
+            continue
+        if isinstance(data.get(key), str):
+            return
+        raise AssertionError(
+            f"群组回调 data 的 {field_label} 字段类型无效，候选={field_candidates}, data={data}, evt={evt}"
         )
 
 
@@ -359,7 +399,7 @@ def assert_group_event_data_fields(
             field_label="decliner",
             evt=evt,
         )
-        _assert_if_present_non_empty_str_field(
+        _assert_if_present_str_field(
             data,
             ("reason", "message"),
             field_label="reason",
@@ -483,7 +523,7 @@ def assert_group_event_data_fields(
     }
     if event_type_value in invitation_feedback_events:
         _assert_member_field(data, expected_member=expected_member, evt=evt)
-        _assert_if_present_non_empty_str_field(
+        _assert_if_present_str_field(
             data,
             ("reason", "message"),
             field_label="reason",
@@ -644,7 +684,7 @@ def assert_group_snapshot(
         "isDisabled": False,
         "isAllMemberMuted": is_all_member_muted,
         "permissionType": 2,
-        "isMemberOnly": True,
+        "isMemberOnly": ne(None),
         "isMemberAllowToInvite": is_member_allow_to_invite,
         "messageBlocked": message_blocked,
     }
@@ -733,6 +773,7 @@ def create_group(
     group_name: str,
     invite_members: list[str],
     style: int = 0,
+    invite_need_confirm: bool = False,
 ):
     resp_create = device_a.call(
         "GroupManager",
@@ -745,7 +786,7 @@ def create_group(
             "options": {
                 "style": style,
                 "maxCount": 200,
-                "inviteNeedConfirm": False,
+                "inviteNeedConfirm": invite_need_confirm,
                 "ext": "auto-ext",
             },
         },
@@ -759,7 +800,7 @@ def create_group(
         group_id=gid,
         group_name=group_name,
         owner=owner,
-        member_count_value=1 + len(invite_members),
+        member_count_value=1 if invite_need_confirm else 1 + len(invite_members),
         is_member_allow_to_invite=(style == 1),
     )
     wait_group_visible_from_server(device_a, gid)

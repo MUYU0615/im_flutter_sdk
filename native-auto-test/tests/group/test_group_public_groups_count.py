@@ -1,5 +1,6 @@
 """Group public list/count API 用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -27,7 +28,18 @@ def _assert_public_groups_result(result: object, *, resp: dict) -> None:
         assert isinstance(name, str), f"getPublicGroupsFromServer list[{idx}].name 非法: {item!r}"
 
 
+@pytest.mark.real_e2e
 def test_group_fetch_joined_group_count_success(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、拉取、joined、群组、count、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchJoinedGroupCount，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、拉取、joined、群组、count、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchJoinedGroupCount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call("GroupManager", Cmd.fetchJoinedGroupCount.value, info={})
     assert_api.assert_response_matches(
         resp,
@@ -43,7 +55,18 @@ def test_group_fetch_joined_group_count_success(device_a, assert_api):
     assert result >= 0, f"fetchJoinedGroupCount result 应>=0: {resp}"
 
 
+@pytest.mark.real_e2e
 def test_group_get_public_groups_from_server_success(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、public、groups、from、服务端、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getPublicGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、public、groups、from、服务端、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getPublicGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.getPublicGroupsFromServer.value,

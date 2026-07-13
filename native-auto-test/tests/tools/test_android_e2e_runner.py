@@ -12,6 +12,7 @@ from src.tools.android_e2e_runner import (
     _find_free_tcp_port,
     _init_bridge_device,
     _is_emulator_device,
+    _normalize_android_pytest_args,
     _pytest_args_with_allure_report,
     _pytest_args_with_html_report,
     _relay_bind_host,
@@ -242,11 +243,43 @@ def test_default_android_pytest_args_use_only_android_directories():
     ]
 
 
+def test_android_runner_normalizes_option_only_args_to_default_android_scope():
+    assert _normalize_android_pytest_args(["--target-platform", "android"]) == [
+        "tests/client",
+        "tests/contact",
+        "tests/chat",
+        "tests/chatroom",
+        "tests/group",
+        "tests/presence",
+        "tests/push",
+        "tests/user_info",
+        "--target-platform",
+        "android",
+        "-m",
+        "real_e2e",
+        "-q",
+    ]
+
+
+def test_android_runner_keeps_explicit_test_selection():
+    args = [
+        "tests/chat/test_chat_crud.py::test_chat_send_and_received",
+        "--target-platform",
+        "android",
+        "-q",
+    ]
+
+    assert _normalize_android_pytest_args(args) == args
+
+
 def test_android_target_does_not_promote_real_web_cases_to_real_e2e():
     class _FakeConfig:
         def getoption(self, name):
-            assert name == "--target-platform"
-            return "android"
+            if name == "--target-platform":
+                return "android"
+            if name == "--run-context":
+                return ""
+            raise AssertionError(name)
 
     class _FakeItem:
         def __init__(self):

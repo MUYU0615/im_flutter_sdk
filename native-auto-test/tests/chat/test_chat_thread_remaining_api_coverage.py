@@ -5,6 +5,7 @@ ChatThread 剩余 API 覆盖用例。
 A 建群并邀请 B、B 发送群父消息、A 基于父消息创建子区、B 加入子区。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 import time
@@ -12,6 +13,7 @@ import time
 import pytest
 
 from src import Cmd, ne
+from tests.chat._message_helpers import wait_for_success_message
 from tests.chat._utils import build_text
 from tests.group.group_helpers import create_group, new_group_name
 
@@ -22,6 +24,23 @@ pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.group, pytest.ma
 def _find_msg_with_id(messages: list, msg_id: str) -> dict | None:
     for item in messages:
         if isinstance(item, dict) and str(item.get("msgId")) == str(msg_id):
+            return item
+    return None
+
+
+def _find_group_text_message(messages: list, *, from_user: str, group_id: str, content: str) -> dict | None:
+    for item in messages:
+        if not isinstance(item, dict):
+            continue
+        body = item.get("body") if isinstance(item.get("body"), dict) else {}
+        if (
+            item.get("from") == from_user
+            and item.get("to") == group_id
+            and item.get("convId") == group_id
+            and item.get("chatType") == 1
+            and body.get("type") == 0
+            and body.get("content") == content
+        ):
             return item
     return None
 
@@ -129,13 +148,19 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
             },
             ignore_keys={"sequence", "result"},
         )
-        evt_success = device_b.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-        parent_msg_id = ((evt_success or {}).get("data") or {}).get("msg", {}).get("msgId")
-        assert isinstance(parent_msg_id, str) and parent_msg_id, f"未拿到群父消息 msgId: {evt_success}"
+        success_msg = wait_for_success_message(
+            device_b,
+            from_user=user_b,
+            to_user=group_id,
+            content=content,
+            chat_type=1,
+        )
+        parent_msg_id = success_msg.get("msgId")
+        assert isinstance(parent_msg_id, str) and parent_msg_id, f"未拿到群父消息 msgId: {success_msg}"
 
         evt_group_recv = device_a.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
         messages = ((evt_group_recv or {}).get("data") or {}).get("messages") or []
-        assert _find_msg_with_id(messages, parent_msg_id) is not None, (
+        assert _find_group_text_message(messages, from_user=user_b, group_id=group_id, content=content) is not None, (
             f"A 端未收到父消息: targetMsgId={parent_msg_id}, evt={evt_group_recv}"
         )
 
@@ -292,7 +317,16 @@ def _assert_cursor_contains_thread(resp: dict, *, thread_id: str, cmd: str):
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
 def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user_a, user_b):
-    """fetchChatThreadDetail/getThreadConversation/joined/parent 列表：创建并加入子区后校验详情、线程会话和列表。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、detail、and、lists；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getThreadConversation、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、detail、and、lists；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getThreadConversation、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     context: dict = {}
     try:
         context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
@@ -430,7 +464,16 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
 def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert_api, user_a, user_b):
-    """fetchChatThreadMember / fetchLastMessageWithChatThreads：成员列表包含 A/B，新建子区未发线程消息时最新消息映射为空。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、成员、and、latest、消息；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.fetchChatThreadMember，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、成员、and、latest、消息；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.fetchChatThreadMember，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     context: dict = {}
     try:
         context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
@@ -486,7 +529,16 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
 def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_a, user_b):
-    """updateChatThreadSubject / leaveChatThread：更新子区名称后，B 退出子区并从已加入列表消失。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、更新、name、and、离开；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.updateChatThreadSubject，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、更新、name、and、离开；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.updateChatThreadSubject，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     context: dict = {}
     try:
         context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
@@ -595,7 +647,16 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
 def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, assert_api, user_a, user_b):
-    """destroyChatThread：子区创建后由 owner 解散，群成员收到 onChatThreadDestroy 事件并携带子区信息。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、销毁、event、received、by、群组、成员；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.destroyChatThread，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、销毁、event、received、by、群组、成员；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.destroyChatThread，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     context: dict = {}
     try:
         context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)

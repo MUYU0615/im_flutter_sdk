@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import time
 import uuid
@@ -103,9 +104,15 @@ def _extract_conv_ids_in_order(resp: dict) -> list[str]:
 @pytest.mark.expects_event
 def test_chat_get_all_conversations_by_sort_orders_latest_first(device_a, device_b, assert_api, user_a, user_b):
     """
-    目标：验证 ChatManager#getAllConversationsBySort 返回的会话排序正确（最新消息会话优先）。
-    用 A->A 与 A->B 两个会话构造时间先后，再检查排序。
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、获取、all、conversations、by、sort、orders、latest；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadAllConversations，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、获取、all、conversations、by、sort、orders、latest；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.loadAllConversations，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     self_conv_id = user_a
     peer_conv_id = user_b
 

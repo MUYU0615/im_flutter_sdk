@@ -1,5 +1,6 @@
 """Group announcement API 异常/边界用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -19,6 +20,16 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_update_announcement_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、announcement、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、announcement、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.updateGroupAnnouncement.value,
@@ -33,6 +44,16 @@ def test_group_update_announcement_nonexistent_group(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_get_announcement_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、announcement、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupAnnouncementFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、announcement、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupAnnouncementFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.getGroupAnnouncementFromServer.value,
@@ -41,7 +62,18 @@ def test_group_get_announcement_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_update_announcement_empty(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、announcement、空值参数；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAnnouncement、GroupManager.getGroupAnnouncementFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、更新、announcement、空值参数；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupAnnouncement、GroupManager.getGroupAnnouncementFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(

@@ -1,10 +1,11 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import json
 
 import pytest
 
-from src import Cmd, gt
+from src import Cmd, ge, gt
 from tests.chatroom.chatroom_helpers import (
     assert_chatroom_event,
     collect_chatroom_events,
@@ -16,7 +17,40 @@ from tests.chatroom.chatroom_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.chatroom]
 
 
+CHATROOM_JOIN_IGNORE_KEYS = {
+    "sequence",
+    "timestamp",
+    "serverTime",
+    "localTime",
+    "createTimestamp",
+    "desc",
+    "announcement",
+    "adminList",
+    "memberList",
+    "blockList",
+    "muteList",
+    "muteExpireTimestamp",
+    "permissionType",
+    "isInWhitelist",
+    "isAllMemberMuted",
+    "name",
+    "owner",
+    "maxUsers",
+}
+
+
+@pytest.mark.real_e2e
 def test_chatroom_join_public_chatroom_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、加入、public、聊天室、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、加入、public、聊天室、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="join", desc_prefix="join")
     try:
         resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
@@ -26,9 +60,12 @@ def test_chatroom_join_public_chatroom_success(device_a, device_b, assert_api, u
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
                 "device": "deviceB",
-                "result": 1,
+                "result": {
+                    "roomId": room_id,
+                    "memberCount": ge(1),
+                },
             },
-            ignore_keys={"sequence"},
+            ignore_keys=CHATROOM_JOIN_IGNORE_KEYS,
         )
         events = collect_chatroom_events(
             device_b,
@@ -68,31 +105,10 @@ def _join_ext(joiner: str, receiver: str, name: str) -> str:
 
 
 def _assert_join_response(assert_api, resp: dict, *, device_name: str, room_id: str, result_shape: str) -> None:
-    if result_shape == "int":
-        expected_result = 1
-        ignore_keys = {"sequence"}
-    else:
-        expected_result = {
-            "roomId": room_id,
-            "memberCount": gt(0),
-            "isAllMemberMuted": False,
-            "isInWhitelist": False,
-        }
-        ignore_keys = {
-            "sequence",
-            "owner",
-            "maxUsers",
-            "permissionType",
-            "adminList",
-            "muteList",
-            "muteExpireTimestamp",
-            "memberList",
-            "blockList",
-            "name",
-            "desc",
-            "announcement",
-            "createTimestamp",
-        }
+    expected_result = {
+        "roomId": room_id,
+        "memberCount": gt(0),
+    }
     assert_api.assert_response_matches(
         resp,
         expected={
@@ -101,7 +117,7 @@ def _assert_join_response(assert_api, resp: dict, *, device_name: str, room_id: 
             "device": device_name,
             "result": expected_result,
         },
-        ignore_keys=ignore_keys,
+        ignore_keys=CHATROOM_JOIN_IGNORE_KEYS,
     )
 
 

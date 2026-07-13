@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
@@ -8,9 +9,19 @@ from src.tools.assertions import get_result
 from tests.chat._utils import build_text
 
 
+@pytest.mark.real_e2e
 @pytest.mark.skip(reason="MissingPlugin: searchChatMsgFromDB 未在当前集成端实现")
 def test_chat_search_chat_msg_from_db_success(device_a, device_b, assert_api, user_a, user_b):
-    """发送带唯一关键词的文本；按关键词本地搜索应命中。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、search、chat、msg、from、db、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.searchChatMsgFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、search、chat、msg、from、db、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.searchChatMsgFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()

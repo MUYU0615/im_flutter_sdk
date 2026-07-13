@@ -1,5 +1,6 @@
 """ChatRoom 管理类接口异常用例。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -292,22 +293,44 @@ _EMPTY_ROOM_ID_MANAGEMENT_CASES = [
 ]
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("cmd", "info", "expected_code", "expected_description"),
     _NONEXISTENT_MANAGEMENT_CASES,
     ids=[case[0] for case in _NONEXISTENT_MANAGEMENT_CASES],
 )
 def test_chatroom_management_api_nonexistent_room(device_a, assert_api, cmd, info, expected_code, expected_description):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、不存在对象、room；
+    2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、不存在对象、room，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、不存在对象、room；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、不存在对象、room，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatRoomManager", cmd, info=info)
     assert_api.assert_error(resp, code=expected_code, description=expected_description)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     ("cmd", "info", "expected_code", "expected_description"),
     _EMPTY_ROOM_ID_MANAGEMENT_CASES,
     ids=[case[0] for case in _EMPTY_ROOM_ID_MANAGEMENT_CASES],
 )
 def test_chatroom_management_api_empty_room_id(device_a, assert_api, cmd, info, expected_code, expected_description):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、空值参数、room、id；
+    2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、management、api、空值参数、room、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 聊天室、management、api、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatRoomManager", cmd, info=info)
     if expected_description == "":
         assert_api.assert_response_matches(

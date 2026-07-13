@@ -1,5 +1,6 @@
 """Group 共享文件（正常 + 异常）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import os
 import shlex
@@ -153,6 +154,16 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
     target_platform,
     tmp_path,
 ):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、shared、file、upload、列表、download、移除、positive；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile、GroupManager.getGroupFileListFromServer、GroupManager.downloadGroupSharedFile、GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、shared、file、upload、列表、download、移除、positive；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile、GroupManager.getGroupFileListFromServer、GroupManager.downloadGroupSharedFile、GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     if target_platform != "android":
         pytest.skip("Android shared-file positive flow requires Android file staging")
 
@@ -261,7 +272,18 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、current、无效参数、file、behavior；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、current、无效参数、file、behavior；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(
@@ -286,7 +308,18 @@ def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.uploadGroupSharedFile.value,
@@ -295,7 +328,18 @@ def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、download、shared、file、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.downloadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、download、shared、file、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.downloadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.downloadGroupSharedFile.value,
@@ -304,7 +348,18 @@ def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、移除、shared、file、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、移除、shared、file、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.removeGroupSharedFile.value,
@@ -313,7 +368,18 @@ def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_upload_shared_file_invalid_path(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、无效参数、path；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、无效参数、path；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(

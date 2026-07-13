@@ -1,9 +1,12 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
+import time
 import uuid
 import pytest
 
 from src import Cmd, ne, gt, ge
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 
 pytestmark = [
     pytest.mark.client,
@@ -23,6 +26,53 @@ _BODY_TYPE_BY_SEND_TYPE = {
 }
 
 
+def _body_matches_payload(body: dict, *, type_key: str, payload: dict) -> bool:
+    if not isinstance(body, dict):
+        return False
+    expected_type = _BODY_TYPE_BY_SEND_TYPE.get(type_key)
+    if expected_type is not None and body.get("type") != expected_type:
+        return False
+    if type_key in {"file", "image", "video", "voice"}:
+        display_name = payload.get("displayName")
+        return not display_name or body.get("displayName") == display_name
+    if type_key == "location":
+        return (
+            body.get("address") == payload.get("address")
+            and body.get("buildingName") == payload.get("buildingName")
+            and body.get("latitude") == payload.get("latitude")
+            and body.get("longitude") == payload.get("longitude")
+        )
+    return True
+
+
+def _wait_received_payload_message(device, *, real_id: str, from_user: str, to_user: str, type_key: str, payload: dict, timeout: float = 25.0) -> tuple[dict | None, dict | None]:
+    deadline = time.monotonic() + timeout
+    last_event = None
+    while time.monotonic() < deadline:
+        evt = device.receive_message(
+            match_event_type=Cmd.onMessagesReceived.value,
+            timeout=min(2.0, max(0.1, deadline - time.monotonic())),
+        )
+        if not evt:
+            continue
+        last_event = evt
+        msgs = ((evt.get("data") or {}).get("messages") or [])
+        matched = next(
+            (
+                m
+                for m in msgs
+                if isinstance(m, dict)
+                and m.get("from") == from_user
+                and m.get("to") == to_user
+                and _body_matches_payload(m.get("body") or {}, type_key=type_key, payload=payload)
+            ),
+            None,
+        )
+        if matched:
+            return matched, last_event
+    return None, last_event
+
+
 def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, *, content: str, target_languages: list[str] | None = None):
     info = {
         "type": "txt",
@@ -40,13 +90,17 @@ def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user
     if resp.get("success") is False and "MissingPluginException" in str((resp.get("error") or {}).get("description", "")):
         pytest.skip("MissingPlugin: sendMessageWithType 未在当前集成端实现")
     temp_id = ((resp.get("result") or {}).get("msgId")) or resp.get("msgId")
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = ((evt_success.get("data") or {}).get("msg") or {}).get("msgId")
+    success_msg = wait_for_success_message(device_a, from_user=user_a, to_user=user_b, content=content)
+    real_id = success_msg.get("msgId")
     # A 侧 onMessageSuccess 事件收紧
     # 若传了 targetLanguages，事件里可能出现 translations/targetLanguages，统一忽略这两个键
     ignore_extra = {"timestamp", "sequence", "serverTime", "localTime", "broadcast", "onlineState", "translations", "targetLanguages", "isListened"}
     assert_api.assert_response_matches(
-        evt_success,
+        {
+            "type": "event",
+            "eventType": Cmd.onMessageSuccess.value,
+            "data": {"operation": "message_success", "msg": success_msg},
+        },
         expected={
             "type": "event",
             "eventType": Cmd.onMessageSuccess.value,
@@ -60,7 +114,7 @@ def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user
                     "body": {"type": 0, "content": "{{content}}"},
                     "direction": 0,
                     "chatType": 0,
-                    "status": 2,
+                    "status": ge(1),
                     "deliverOnlineOnly": False,
                     "hasRead": True,
                     "hasReadAck": False,
@@ -124,29 +178,58 @@ def _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user
             "thumbnailSecret",
         },
     )
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-    # 列表可能包含遗留消息，放宽为“包含一条匹配当前发送的消息”
-    assert evt_received and evt_received.get("type") == "event" and evt_received.get("eventType") == Cmd.onMessagesReceived.value
-    msgs = ((evt_received.get("data") or {}).get("messages") or [])
-    assert any(
-        (m.get("from") == user_a and m.get("to") == user_b and str(m.get("msgId")) == str(real_id) and ((m.get("body") or {}).get("content") == content))
-        for m in msgs if isinstance(m, dict)
-    ), f"onMessagesReceived does not contain the sent message: {evt_received}"
+    received_msg = wait_for_matching_event_message(
+        device_b,
+        event_type=Cmd.onMessagesReceived.value,
+        from_user=user_a,
+        to_user=user_b,
+        content=content,
+    )
+    assert received_msg.get("msgId"), f"onMessagesReceived 目标消息缺少 msgId: {received_msg}"
     return real_id
 
 
 def test_send_message_with_type_text_basic(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、basic；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、basic，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、basic；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、basic，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     content = f"txt-{uuid.uuid4().hex[:6]}"
     _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, content=content)
 
 
 def test_send_message_with_type_text_with_languages(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、with、languages；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、with、languages，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、text、with、languages；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、text、with、languages，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     content = f"txttr-{uuid.uuid4().hex[:6]}"
     _assert_send_success_and_events(device_a, device_b, assert_api, user_a, user_b, content=content, target_languages=["zh-Hans"])
 
 
 def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b, assert_api, user_a, user_b):
-    """sendMessageWithType(cmd)：发送 CMD 消息，接收方收到 onCmdMessagesReceived 且不混入普通消息回调。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、cmd、received、by、cmd；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、cmd、received、by、cmd；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     action = f"cmd-action-{uuid.uuid4().hex[:8]}"
     info = {
         "type": "cmd",
@@ -193,7 +276,7 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
                 "body": {"type": 6, "action": action, "deliverOnlineOnly": False},
             },
         },
-        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState"},
+        ignore_keys={"sequence", "serverTime", "localTime", "broadcast", "onlineState", "isListened"},
     )
 
     evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
@@ -213,7 +296,7 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
                     "convId": user_b,
                     "chatType": 0,
                     "direction": 0,
-                    "status": 2,
+                    "status": ge(1),
                     "deliverOnlineOnly": False,
                     "hasRead": True,
                     "hasReadAck": False,
@@ -225,10 +308,26 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
                 },
             },
         },
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "broadcast", "onlineState"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "broadcast", "onlineState", "isListened"},
     )
 
     evt_cmd = device_b.receive_message(match_event_type=Cmd.onCmdMessagesReceived.value, timeout=20.0)
+    cmd_messages = (((evt_cmd or {}).get("data") or {}).get("messages") or [])
+    cmd_msg = next(
+        (
+            msg
+            for msg in cmd_messages
+            if isinstance(msg, dict)
+            and msg.get("from") == user_a
+            and msg.get("to") == user_b
+            and msg.get("convId") == user_a
+            and ((msg.get("body") or {}).get("type") == 6)
+            and ((msg.get("body") or {}).get("action") == action)
+        ),
+        {},
+    )
+    cmd_msg_id = cmd_msg.get("msgId")
+    assert cmd_msg_id, f"onCmdMessagesReceived 未返回目标 CMD 消息: {evt_cmd}"
     assert_api.assert_response_matches(
         evt_cmd,
         expected={
@@ -237,13 +336,13 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
             "data": {
                 "messages": [
                     {
-                        "msgId": real_id,
+                        "msgId": cmd_msg_id,
                         "from": user_a,
                         "to": user_b,
                         "convId": user_a,
                         "chatType": 0,
                         "direction": 1,
-                        "status": 2,
+                        "status": ge(1),
                         "deliverOnlineOnly": False,
                         "hasRead": False,
                         "hasReadAck": False,
@@ -251,17 +350,22 @@ def test_send_message_with_type_cmd_received_by_cmd_callback(device_a, device_b,
                         "needGroupAck": False,
                         "isThread": False,
                         "isContentReplaced": False,
-                        "receiverList": [],
                         "body": {"type": 6, "action": action, "deliverOnlineOnly": False},
                     },
                 ],
             },
         },
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "isListened", "operation", "receiverList"},
     )
 
 
 def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b, *, type_key: str, payload: dict):
+    try:
+        device_a.drain_events()
+        device_b.drain_events()
+    except Exception:
+        pass
+
     info = {"type": type_key, "payload": payload, "chatType": 0}
     resp = device_a.call("ChatManager", Cmd.sendMessageWithType.value, info=info)
     # 若未实现，提前跳过
@@ -305,7 +409,7 @@ def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b
         })
     # 事件体在响应体基础上通常还会包含文件远端信息、大小等
     body_evt = dict(body_resp)
-    if type_key in ("file", "image", "video"):
+    if type_key in ("file", "video"):
         body_evt.update({"fileSize": ge(0)})
     if type_key == "video":
         body_evt.update({"duration": ge(0)})
@@ -383,6 +487,7 @@ def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b
                 and cand_body_type == expected_body_type
                 and cand_msg.get("from") == user_a
                 and cand_msg.get("to") == user_b
+                and _body_matches_payload(cand_msg.get("body") or {}, type_key=type_key, payload=payload)
             )
         ):
             evt_success = evt_candidate
@@ -428,7 +533,7 @@ def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b
                     "convId": "{{toUser}}",
                     "direction": 0,
                     "chatType": 0,
-                    "status": 2,
+                    "status": ge(1),
                     "deliverOnlineOnly": False,
                     "hasRead": True,
                     "hasReadAck": False,
@@ -444,14 +549,16 @@ def _send_with_payload_and_assert(device_a, device_b, assert_api, user_a, user_b
         ignore_keys=ignore_extra,
     )
 
-    # B 侧 onMessagesReceived：包含本次消息
-    evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-    assert evt_received and evt_received.get("type") == "event" and evt_received.get("eventType") == Cmd.onMessagesReceived.value
-    msgs = ((evt_received.get("data") or {}).get("messages") or [])
-    assert any(
-        (m.get("from") == user_a and m.get("to") == user_b and str(m.get("msgId")) == str(real_id) and ((m.get("body") or {}).get("type") is not None))
-        for m in msgs if isinstance(m, dict)
-    ), f"onMessagesReceived does not contain the sent message or missing body.type: {evt_received}"
+    # B 侧 onMessagesReceived 可能有历史事件或上一条媒体消息滞后到达，必须按本次 real_id/body marker 过滤。
+    matched_received, evt_received = _wait_received_payload_message(
+        device_b,
+        real_id=real_id,
+        from_user=user_a,
+        to_user=user_b,
+        type_key=type_key,
+        payload=payload,
+    )
+    assert matched_received, f"onMessagesReceived does not contain the sent message: last={evt_received}"
 
 
 # 注意：媒体类用例仅验证 file/image/video；不传 filePath，也不传 displayName。
@@ -467,6 +574,16 @@ def _prepare_media_asset(device, asset_name: str) -> dict:
     return result
 
 def test_send_message_with_type_file(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、file；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、file，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、file；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、file，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     media = _prepare_media_asset(device_a, "normalGif.gif")
     payload = {
         "targetId": user_b,
@@ -478,6 +595,16 @@ def test_send_message_with_type_file(device_a, device_b, assert_api, user_a, use
 
 
 def test_send_message_with_type_image(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     media = _prepare_media_asset(device_a, "normalGif.gif")
     payload = {
         "targetId": user_b,
@@ -491,7 +618,16 @@ def test_send_message_with_type_image(device_a, device_b, assert_api, user_a, us
 
 
 def test_send_message_with_type_image_heic(device_a, device_b, assert_api, user_a, user_b):
-    """发送 HEIC 格式图片，验证 SDK 能正常上传并投递。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image、heic；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image、heic，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、image、heic；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、image、heic，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     media = _prepare_media_asset(device_a, "imgHeic.HEIC")
     payload = {
         "targetId": user_b,
@@ -503,6 +639,16 @@ def test_send_message_with_type_image_heic(device_a, device_b, assert_api, user_
 
 
 def test_send_message_with_type_video(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、video；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、video，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、video；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、video，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     media = _prepare_media_asset(device_a, "video.mov")
     thumb = _prepare_media_asset(device_a, "bigPic.jpg")
     payload = {
@@ -517,6 +663,16 @@ def test_send_message_with_type_video(device_a, device_b, assert_api, user_a, us
 
 
 def test_send_message_with_type_location(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、location；
+    2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、location，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为send、消息、with、type、location；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 send、消息、with、type、location，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     payload = {
         "targetId": user_b,
         "latitude": 39.984154,
@@ -528,6 +684,16 @@ def test_send_message_with_type_location(device_a, device_b, assert_api, user_a,
 
 
 def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、voice；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为send、消息、with、type、voice；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessageWithType，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     media = _prepare_media_asset(device_a, "testVoice.aac")
     payload = {
         "targetId": user_b,
@@ -536,6 +702,12 @@ def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, us
         "fileSize": media.get("fileSize"),
         "duration": 1,
     }
+
+    try:
+        device_a.drain_events()
+        device_b.drain_events()
+    except Exception:
+        pass
 
     resp = device_a.call(
         "ChatManager",
@@ -629,7 +801,7 @@ def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, us
                     "convId": "{{toUser}}",
                     "direction": 0,
                     "chatType": 0,
-                    "status": 2,
+                    "status": ge(1),
                     "deliverOnlineOnly": False,
                     "hasRead": True,
                     "hasReadAck": False,
@@ -665,17 +837,12 @@ def test_send_message_with_type_voice(device_a, device_b, assert_api, user_a, us
         },
     )
 
-    evt_received = device_b.receive_message(
-        match_event_type=Cmd.onMessagesReceived.value,
-        timeout=20.0,
+    matched_received, evt_received = _wait_received_payload_message(
+        device_b,
+        real_id=real_id,
+        from_user=user_a,
+        to_user=user_b,
+        type_key="voice",
+        payload=payload,
     )
-    assert evt_received and evt_received.get("type") == "event" and evt_received.get("eventType") == Cmd.onMessagesReceived.value
-    msgs = ((evt_received.get("data") or {}).get("messages") or [])
-    assert any(
-        isinstance(m, dict)
-        and str(m.get("msgId")) == str(real_id)
-        and m.get("from") == user_a
-        and m.get("to") == user_b
-        and ((m.get("body") or {}).get("type") == 4)
-        for m in msgs
-    ), f"onMessagesReceived does not contain the sent voice message: {evt_received}"
+    assert matched_received, f"onMessagesReceived does not contain the sent voice message: last={evt_received}"

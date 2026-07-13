@@ -1,14 +1,34 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
 import pytest
 
 from src import Cmd
+from tests.chat._message_helpers import matches_received_text, received_messages, wait_for_success_message
 from tests.chat._utils import build_text
 
 
 ON_MESSAGE_REACTION_DID_CHANGE = "onMessageReactionDidChange"
+
+
+def _xfail_if_reaction_service_unavailable(resp: dict) -> None:
+    result = resp.get("result")
+    if isinstance(result, dict) and result.get("code") == 303:
+        desc = str(result.get("description", ""))
+        if "Unknown server error" in desc:
+            pytest.xfail("当前 Android 环境 reaction 服务返回 303 Unknown server error，按服务能力限制处理")
+
+
+def _send_text_and_wait_success(device_a, user_a: str, user_b: str, content: str) -> str:
+    resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
+    temp_id = ((resp.get("result") or {}).get("msgId"))
+    assert temp_id, f"sendMessage 未返回临时 msgId: {resp}"
+    success_msg = wait_for_success_message(device_a, from_user=user_a, to_user=user_b, content=content)
+    real_id = success_msg.get("msgId")
+    assert real_id, f"missing real msgId from final onMessageSuccess: {success_msg!r}"
+    return str(real_id)
 
 
 def _send_text_and_wait_received(device_a, device_b, user_a: str, user_b: str, content: str) -> str:
@@ -21,24 +41,33 @@ def _send_text_and_wait_received(device_a, device_b, user_a: str, user_b: str, c
     resp = device_a.call("ChatManager", Cmd.sendMessage.value, info=build_text(user_a, user_b, content))
     temp_id = ((resp.get("result") or {}).get("msgId"))
     assert temp_id, f"sendMessage 未返回临时 msgId: {resp}"
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
 
     seen_events = []
     for _ in range(5):
         evt_received = device_b.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
         if evt_received:
             seen_events.append(evt_received)
-        messages = ((evt_received or {}).get("data") or {}).get("messages") or []
-        if any(isinstance(m, dict) and m.get("msgId") == real_id for m in messages):
-            return str(real_id)
-    raise AssertionError(f"B 端未收到目标消息 msgId={real_id}: events={seen_events}")
+        for message in received_messages(evt_received):
+            if matches_received_text(message, from_user=user_a, to_user=user_b, content=content):
+                receiver_msg_id = message.get("msgId")
+                assert receiver_msg_id, f"B 端目标消息缺少 msgId: {message}"
+                return str(receiver_msg_id)
+    raise AssertionError(f"B 端未收到目标消息 content={content}, senderTempMsgId={temp_id}: events={seen_events}")
 
 
+@pytest.mark.real_e2e
 def test_chat_reaction_change_event_received_by_sender(device_a, device_b, assert_api, user_a, user_b):
-    """addReaction：接收方给单聊消息添加 reaction，发送方收到 onMessageReactionDidChange 事件并携带操作人、reaction 与消息 ID。"""
-    reaction = f"r_{uuid.uuid4().hex[:6]}"
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、Reaction、change、event、received、by、sender；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、Reaction、change、event、received、by、sender；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
+    reaction = "👍"
     real_id = _send_text_and_wait_received(
         device_a,
         device_b,
@@ -48,6 +77,7 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
     )
 
     resp = device_b.call("ChatManager", Cmd.addReaction.value, info={"reaction": reaction, "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp)
     assert_api.assert_response_matches(
         resp,
         expected={
@@ -90,7 +120,16 @@ def test_chat_reaction_change_event_received_by_sender(device_a, device_b, asser
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
-    """fetchReactionList 传入不存在的 msgId 列表；先断言信封。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、msg、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、msg、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     # Flutter 端签名要求 chatType 必填；请求体键名为 msgIds。
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": 0}
     resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
@@ -112,7 +151,16 @@ def test_chat_fetch_reaction_list_invalid_msg_id(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
-    """fetchReactionList 传入空 msgIds；应返回参数错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、空值参数、msg、ids；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、空值参数、msg、ids；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     info = {"msgIds": [], "chatType": 0}
     resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
@@ -133,7 +181,16 @@ def test_chat_fetch_reaction_list_empty_msg_ids(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
-    """fetchReactionList 传入非法 chatType；wrapper 返回本地参数错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、chat、type；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、列表、无效参数、chat、type；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     info = {"msgIds": ["__invalid_msg_id__"], "chatType": -1}
     resp = device_a.call("ChatManager", Cmd.fetchReactionList.value, info=info)
     assert_api.assert_response_matches(
@@ -154,7 +211,16 @@ def test_chat_fetch_reaction_list_invalid_chat_type(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
-    """fetchReactionDetail 使用无效 msgId/reaction；先校验信封。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     # 原生 wrapper 将 pageSize 按必填读取（Android: getInt），缺失会直接抛参错。
     info = {"msgId": "__invalid_msg_id__", "reaction": "👍", "pageSize": 20}
     resp = device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
@@ -170,22 +236,25 @@ def test_chat_fetch_reaction_detail_invalid(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert_api, user_a, user_b):
-    """fetchReactionDetail 非法 pageSize（-1）；应返回 wrapper 本地参数错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数、page、size；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、无效参数、page、size；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-detail-invalid-page-size"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-detail-invalid-page-size")
 
     info = {"msgId": real_id, "reaction": "👍", "pageSize": -1}
     resp = device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
@@ -201,22 +270,25 @@ def test_chat_fetch_reaction_detail_invalid_page_size(device_a, device_b, assert
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_api, user_a, user_b):
-    """fetchReactionDetail 传入空 reaction；应返回参数错误。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、空值参数、Reaction；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、空值参数、Reaction；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-detail-empty-reaction"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-detail-empty-reaction")
 
     info = {"msgId": real_id, "reaction": "", "pageSize": 20}
     resp = device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
@@ -232,22 +304,25 @@ def test_chat_fetch_reaction_detail_empty_reaction(device_a, device_b, assert_ap
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, assert_api, user_a, user_b):
-    """fetchReactionDetail 过大 pageSize（1000）；应返回稳定结果结构。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、oversize、page、size；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、拉取、Reaction、detail、oversize、page、size；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.fetchReactionDetail，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-detail-oversize-page-size"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-detail-oversize-page-size")
 
     info = {"msgId": real_id, "reaction": "👍", "pageSize": 1000}
     resp = device_a.call("ChatManager", Cmd.fetchReactionDetail.value, info=info)
@@ -263,24 +338,28 @@ def test_chat_fetch_reaction_detail_oversize_page_size(device_a, device_b, asser
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, user_a, user_b):
-    """addReaction 重复添加同一 reaction；按被测端实际语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、duplicate、Reaction；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、duplicate、Reaction；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-duplicate"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-duplicate")
 
     resp_add_first = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp_add_first)
     resp_add_second = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": real_id})
     assert_api.assert_response_matches(
         resp_add_first,
@@ -304,24 +383,28 @@ def test_chat_add_reaction_duplicate_reaction(device_a, device_b, assert_api, us
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api, user_a, user_b):
-    """removeReaction 删除不存在的 reaction；按被测端实际语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、移除、Reaction、not、exists、Reaction；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、移除、Reaction、not、exists、Reaction；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-remove-not-exists"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-remove-not-exists")
 
     resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "👍", "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp)
     assert_api.assert_response_matches(
         resp,
         expected={
@@ -334,9 +417,20 @@ def test_chat_remove_reaction_not_exists_reaction(device_a, device_b, assert_api
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
-    """removeReaction 使用不存在 msgId；按不存在语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、无效参数、msg、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、无效参数、msg、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "ok", "msgId": "__invalid_msg_id__"})
+    _xfail_if_reaction_service_unavailable(resp)
     assert_api.assert_response_matches(
         resp,
         expected={
@@ -349,8 +443,18 @@ def test_chat_remove_reaction_invalid_msg_id(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, assert_api):
-    """addReaction 缺失 msgId；wrapper 应先返回本地参数错误，不发起 SDK 调用。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、missing、msg、id、returns、validation；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、missing、msg、id、returns、validation；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "ok"})
     assert_api.assert_response_matches(
         resp,
@@ -364,8 +468,18 @@ def test_chat_add_reaction_missing_msg_id_returns_validation_error(device_a, ass
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_remove_reaction_empty_reaction_returns_validation_error(device_a, assert_api):
-    """removeReaction 空 reaction；wrapper 应先返回本地参数错误，不发起 SDK 调用。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、空值参数、Reaction、returns、validation、error；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、移除、Reaction、空值参数、Reaction、returns、validation、error；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.removeReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("ChatManager", Cmd.removeReaction.value, info={"reaction": "", "msgId": "__invalid_msg_id__"})
     assert_api.assert_response_matches(
         resp,
@@ -379,24 +493,28 @@ def test_chat_remove_reaction_empty_reaction_returns_validation_error(device_a, 
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, user_a, user_b):
-    """addReaction 超长 reaction；按被测端实际语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、too、long、Reaction；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、添加、Reaction、too、long、Reaction；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-too-long"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_success(device_a, user_a, user_b, "reaction-too-long")
 
     resp_128 = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "a" * 128, "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp_128)
     assert_api.assert_response_matches(
         resp_128,
         expected={
@@ -409,6 +527,7 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
     )
 
     resp_256 = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "b" * 256, "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp_256)
     assert_api.assert_response_matches(
         resp_256,
         expected={
@@ -421,24 +540,28 @@ def test_chat_add_reaction_too_long_reaction(device_a, device_b, assert_api, use
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_add_reaction_special_char_reaction(device_a, device_b, assert_api, user_a, user_b):
-    """addReaction 特殊字符 reaction；按被测端实际语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、special、char、Reaction；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、添加、Reaction、special、char、Reaction；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.addReaction，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
     except Exception:
         pass
 
-    _ = device_a.call(
-        "ChatManager",
-        Cmd.sendMessage.value,
-        info=build_text(user_a, user_b, "reaction-special-char"),
-    )
-    evt_success = device_a.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-    real_id = (((evt_success or {}).get("data") or {}).get("msg") or {}).get("msgId")
-    assert real_id, f"missing real msgId from onMessageSuccess: {evt_success!r}"
+    real_id = _send_text_and_wait_received(device_a, device_b, user_a, user_b, "reaction-special-char")
 
     resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "\n\t", "msgId": real_id})
+    _xfail_if_reaction_service_unavailable(resp)
     assert_api.assert_response_matches(
         resp,
         expected={

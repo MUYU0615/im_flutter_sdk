@@ -55,6 +55,8 @@ ALLOWED_REVIEW_ACTIONS = {
     "listener_registration_internal",
     "manager_getter_internal",
     "platform_native_missing",
+    "service_environment_blocked",
+    "session_lifecycle_isolated",
     "not_applicable",
 }
 
@@ -181,7 +183,7 @@ THREAD_APIS = {
 
 INDIRECT_COVERAGE_RULES = {
     ("listener", "ChatManager"): (
-        "tests/chat/test_chat_manager_remaining_api_coverage.py; tests/chat/test_chat_s423_message_callback_and_combine.py",
+        "tests/chat/test_chat_manager_remaining_api_coverage.py; tests/chat/test_chat_message_callbacks_and_combine.py",
         "消息与会话监听通过 startCallback 后触发 onMessagesReceived/onMessageSuccess/onMessageError/onMessagesRecalled/onConversationUpdate 等事件间接覆盖。",
     ),
     ("listener", "Client"): (
@@ -201,7 +203,7 @@ INDIRECT_COVERAGE_RULES = {
         "聊天室监听通过 onChatRoomChanged 事件流间接覆盖。",
     ),
     ("listener", "ChatThreadManager"): (
-        "tests/chat/test_chat_thread_remaining_api_coverage.py; tests/chat/test_chat_s4_thread_user_removed.py",
+        "tests/chat/test_chat_thread_remaining_api_coverage.py; tests/chat/test_chat_thread_user_removed.py",
         "子区监听通过 chat thread 创建、更新、销毁、踢出事件间接覆盖。",
     ),
     ("listener", "PresenceManager"): (
@@ -217,7 +219,7 @@ INDIRECT_COVERAGE_RULES = {
         "消息模型属性通过 sendMessage/onMessagesReceived/getMessage/importMessages/updateChatMessage 等消息流字段断言间接覆盖。",
     ),
     ("conversation_model_property", "ConversationManager"): (
-        "tests/chat/test_conversation_remaining_api_coverage.py; tests/chat/test_chat_s1_local_conversation.py; tests/web_real/test_real_web_chat_server.py",
+        "tests/chat/test_conversation_remaining_api_coverage.py; tests/chat/test_chat_local_conversation_store.py; tests/web_real/test_real_web_chat_server.py",
         "会话模型属性通过 getConversation/loadAllConversations/getConversationsFromServer/会话标记与消息查询间接覆盖。",
     ),
 }
@@ -1243,6 +1245,41 @@ def _native_calls_from_java_body(body: str) -> set[tuple[str, str]]:
     return calls
 
 
+ANDROID_WRAPPER_SPECIAL_EVIDENCE = {
+    ("ChatManager", "downloadAttachment"): {
+        "evidence": "反射调用 Android EMChatManager 下载 API；downloadMessage -> invokeDownloadMethod。",
+        "native_call": ("ChatManager", "downloadAttachment"),
+    },
+    ("ChatManager", "downloadBigImage"): {
+        "evidence": "反射调用 Android EMChatManager 下载 API；downloadMessage -> invokeDownloadMethod。",
+        "native_call": ("ChatManager", "downloadBigImage"),
+    },
+    ("ChatManager", "downloadThumbnail"): {
+        "evidence": "反射调用 Android EMChatManager 下载 API；downloadMessage -> invokeDownloadMethod。",
+        "native_call": ("ChatManager", "downloadThumbnail"),
+    },
+    ("Client", "startCallback"): {
+        "evidence": "测试桥事件开关；调用 ListenerHandle.startCallback，用于启动 Flutter 测试 App 事件回传，不是业务 SDK API 缺口。",
+        "native_call": ("Client", "startCallback"),
+        "evidence_status": "bridge",
+    },
+}
+
+
+def _apply_android_wrapper_special_evidence(
+    manager: str,
+    api: str,
+    evidence: str,
+    native_calls: set[tuple[str, str]],
+) -> tuple[str, set[tuple[str, str]], str | None]:
+    special = ANDROID_WRAPPER_SPECIAL_EVIDENCE.get((manager, api))
+    if not special:
+        return evidence, native_calls, None
+    native_calls = set(native_calls)
+    native_calls.add(special["native_call"])
+    return special["evidence"], native_calls, special.get("evidence_status", "yes")
+
+
 def _semantics_group(manager: str, method: str) -> str:
     lower = method.lower()
     if LISTENER_METHOD_RE.match(method):
@@ -1334,12 +1371,19 @@ def scan_android() -> dict[tuple[str, str], dict[str, str]]:
                 continue
             body = _java_method_body(text, handler)
             evidence = _sdk_evidence(body, "android")
-            native_calls = sorted(f"{manager_name}.{method}" for manager_name, method in _native_calls_from_java_body(body))
+            native_call_items = _native_calls_from_java_body(body)
+            evidence, native_call_items, special_evidence_status = _apply_android_wrapper_special_evidence(
+                manager,
+                api,
+                evidence,
+                native_call_items,
+            )
+            native_calls = sorted(f"{manager_name}.{method}" for manager_name, method in native_call_items)
             output[(manager, api)] = {
                 "manager": manager,
                 "api": api,
                 "android_covered": "yes",
-                "android_wrapper_sdk_call_evidence": "yes" if evidence else "no",
+                "android_wrapper_sdk_call_evidence": special_evidence_status or ("yes" if evidence else "no"),
                 "android_native_calls": "; ".join(native_calls),
                 "android_file": str(path.relative_to(REPO_ROOT)),
                 "android_line": str(_line_no(text, match.start())),
@@ -1470,15 +1514,47 @@ def _infer_manager(path: Path, api_name: str) -> str | None:
 
 
 def _pytest_function_blocks(text: str) -> list[tuple[int, int, str]]:
-    matches = list(re.finditer(r"^def\s+test_[A-Za-z0-9_]+\s*\(", text, re.M))
-    if not matches:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        matches = list(re.finditer(r"^def\s+test_[A-Za-z0-9_]+\s*\(", text, re.M))
+        if not matches:
+            return [(0, len(text), text)]
+        return [
+            (
+                match.start(),
+                matches[index + 1].start() if index + 1 < len(matches) else len(text),
+                text[match.start() : matches[index + 1].start() if index + 1 < len(matches) else len(text)],
+            )
+            for index, match in enumerate(matches)
+        ]
+
+    lines = text.splitlines(keepends=True)
+    line_offsets: list[int] = []
+    offset = 0
+    for line in lines:
+        line_offsets.append(offset)
+        offset += len(line)
+
+    functions: list[tuple[int, int]] = []
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not node.name.startswith("test_"):
+            continue
+        start_line = node.lineno
+        if node.decorator_list:
+            start_line = min(decorator.lineno for decorator in node.decorator_list)
+        end_line = getattr(node, "end_lineno", None)
+        if end_line is None:
+            continue
+        start = line_offsets[start_line - 1]
+        end = line_offsets[end_line] if end_line < len(line_offsets) else len(text)
+        functions.append((start, end))
+
+    if not functions:
         return [(0, len(text), text)]
-    blocks: list[tuple[int, int, str]] = []
-    for index, match in enumerate(matches):
-        start = match.start()
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        blocks.append((start, end, text[start:end]))
-    return blocks
+    return [(start, end, text[start:end]) for start, end in sorted(functions)]
 
 
 def _is_automation_scan_excluded(path: Path) -> bool:
@@ -1492,18 +1568,23 @@ def _is_automation_scan_excluded(path: Path) -> bool:
 def _automation_evidence_kind(block: str, cmd: str, api_name: str | None = None) -> str:
     cmd_tokens = [cmd]
     if api_name:
-        cmd_tokens.append(f"Cmd.{api_name}.value")
+        cmd_tokens.insert(0, f"Cmd.{api_name}.value")
     if not any(token in block for token in cmd_tokens):
         return "unknown"
-    cmd_pos = min(pos for token in cmd_tokens if (pos := block.find(token)) >= 0)
+    cmd_pos = next(pos for token in cmd_tokens if (pos := block.find(token)) >= 0)
     prefix = block[max(0, cmd_pos - 120) : cmd_pos]
     local_context = block[max(0, cmd_pos - 260) : cmd_pos + 360].lower()
-    if any(token in local_context for token in ("nonexistent", "invalid", "error")):
-        return "error_only"
     response_var = ""
     assign_match = re.search(r"(\w+)\s*=\s*[^\n]{0,120}$", prefix)
+    if not assign_match:
+        call_assignments = list(re.finditer(r"(\w+)\s*=\s*\w+\.call\(", prefix))
+        assign_match = call_assignments[-1] if call_assignments else None
     if assign_match:
         response_var = assign_match.group(1)
+    if any(token in local_context for token in ("nonexistent", "invalid")):
+        return "error_only"
+    if not response_var and any(token in local_context for token in ("nonexistent", "invalid", "error")):
+        return "error_only"
 
     if response_var and re.search(rf"\bassert_api\.assert_error\(\s*{re.escape(response_var)}\b", block):
         has_error_for_cmd = True
@@ -1536,7 +1617,10 @@ def _automation_evidence_kind(block: str, cmd: str, api_name: str | None = None)
 
     helper_success_patterns = (
         rf"_assert_chat_response\([\s\S]{{0,260}}(?:Cmd\.\w+\.value|['\"]{re.escape(cmd)}['\"])[\s\S]{{0,160}}\bTrue\b",
+        rf"_assert_chat_response\([\s\S]{{0,260}}(?:Cmd\.{re.escape(api_name or '')}\.value|['\"]{re.escape(cmd)}['\"])",
+        rf"_assert_success_envelope\([\s\S]{{0,260}}cmd\s*=\s*(?:Cmd\.{re.escape(api_name or '')}\.value|['\"]{re.escape(cmd)}['\"])",
         rf"_assert_download_api_with_progress\([\s\S]{{0,260}}cmd\s*=\s*(?:Cmd\.{re.escape(api_name or '')}\.value|['\"]{re.escape(cmd)}['\"])",
+        rf"_assert_push_action_result\(\s*assert_api\s*,\s*{re.escape(response_var)}\s*\)",
     )
     if any(re.search(pattern, block) for pattern in helper_success_patterns):
         has_success_for_cmd = True
@@ -1544,6 +1628,8 @@ def _automation_evidence_kind(block: str, cmd: str, api_name: str | None = None)
     if has_success_for_cmd:
         return "positive"
     if has_error_for_cmd:
+        return "error_only"
+    if any(token in local_context for token in ("nonexistent", "invalid", "error")):
         return "error_only"
     return "unknown"
 
@@ -1599,17 +1685,19 @@ def scan_automation() -> dict[tuple[str, str], dict[str, Any]]:
                     block,
                 ):
                     manager = match.group(1)
-                    cmd = match.group(2) or cmd_values.get(match.group(3) or "")
+                    api_name = match.group(3) or ""
+                    cmd = match.group(2) or cmd_values.get(api_name)
                     if cmd:
-                        _record_automation_ref(pairs, manager, cmd, path, block)
+                        _record_automation_ref(pairs, manager, cmd, path, block, api_name=api_name or None)
                 for match in re.finditer(
                     r"['\"]manager['\"]\s*:\s*['\"]([^'\"]+)['\"][\s\S]{0,260}?['\"]cmd['\"]\s*:\s*(?:['\"]([^'\"]+)['\"]|Cmd\.(\w+)\.value)",
                     block,
                 ):
                     manager = match.group(1)
-                    cmd = match.group(2) or cmd_values.get(match.group(3) or "")
+                    api_name = match.group(3) or ""
+                    cmd = match.group(2) or cmd_values.get(api_name)
                     if cmd:
-                        _record_automation_ref(pairs, manager, cmd, path, block)
+                        _record_automation_ref(pairs, manager, cmd, path, block, api_name=api_name or None)
                 for api_name, cmd in cmd_values.items():
                     count = block.count(f"Cmd.{api_name}.value")
                     if count:
@@ -1722,23 +1810,25 @@ def build_rows() -> list[dict[str, str]]:
         automation_error_only_refs = sum(int(item.get("evidence_kinds", {}).get("error_only", 0)) for item in automation_infos)
         automation_unknown_refs = sum(int(item.get("evidence_kinds", {}).get("unknown", 0)) for item in automation_infos)
         assessment = _native_coverage_assessment(manager, method, wrappers, automation_infos)
+        review_key = f"{manager}.{method}"
+        review = review_config.get(review_key, {})
         equivalent_reasons = [
             item.get("equivalent_reason_zh", "")
             for item in wrappers
             if item.get("equivalent_reason_zh")
         ]
-        if equivalent_reasons:
+        if equivalent_reasons and review.get("action") != "service_environment_blocked":
             assessment = {
                 **assessment,
                 "coverage_reason_zh": "；".join(equivalent_reasons),
             }
-        review_key = f"{manager}.{method}"
-        review = review_config.get(review_key, {})
         if review:
             action = review.get("action", "")
             if action not in ALLOWED_REVIEW_ACTIONS:
                 raise ValueError(f"Unsupported review action: {review_key} action={action}")
-            if review.get("reason_zh") and not equivalent_reasons:
+            if review.get("reason_zh") and (
+                not equivalent_reasons or action == "service_environment_blocked"
+            ):
                 assessment = {**assessment, "coverage_reason_zh": review["reason_zh"]}
         if review.get("action") == "direct_e2e_case":
             requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
@@ -1772,12 +1862,28 @@ def build_rows() -> list[dict[str, str]]:
                 "native_test_requirement": "not_applicable",
                 "coverage_conclusion": "not_applicable",
             }
+        elif review.get("action") == "service_environment_blocked":
+            assessment = {
+                **assessment,
+                "native_test_requirement": "blocked_by_service_environment",
+                "coverage_conclusion": "blocked_by_service_environment",
+            }
+        elif review.get("action") == "session_lifecycle_isolated":
+            assessment = {
+                **assessment,
+                "native_test_requirement": "session_lifecycle_isolated",
+                "coverage_conclusion": "requires_session_lifecycle_isolation",
+            }
         automation_refs = sum(int(item["refs"]) for item in automation_infos)
         automation_files = sorted({file for item in automation_infos for file in item["files"]})
         indirect_files = _indirect_coverage_files(manager, assessment["coverage_semantics_group"])
         requires_positive_case = review.get("requires_positive_case", "").lower() == "true"
         if requires_positive_case:
             is_automation_covered = has_required_automation if review.get("action") == "direct_e2e_case" else automation_positive_refs > 0
+        elif review.get("action") == "service_environment_blocked":
+            is_automation_covered = bool(automation_infos)
+        elif review.get("action") == "session_lifecycle_isolated":
+            is_automation_covered = bool(automation_infos)
         else:
             is_automation_covered = bool(automation_infos) or assessment["coverage_conclusion"] == "indirect_covered_by_case"
         row_review_action = review.get("action", "")

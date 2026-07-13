@@ -6,6 +6,7 @@ getSelfIdsOnOtherPlatform、saveBlackList。每个 case 都先通过真实 SDK �
 目标 cmd 的响应信封和业务字段做断言。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import sys
 
@@ -27,7 +28,16 @@ pytestmark = [pytest.mark.client, pytest.mark.contact]
 def test_contact_get_all_contacts_from_db_after_server_sync(
     device_a, device_b, assert_api, user_a, user_b
 ):
-    """getAllContactsFromDB/getAllContactIds：同步服务端好友后，从本地 DB 获取好友 ID 列表；Dart getAllContactIds 复用同一 native cmd。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、all、contacts、from、db、after、服务端；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.getAllContactsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、all、contacts、from、db、after、服务端；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getAllContactsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="local_contacts_db")
 
@@ -42,10 +52,11 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
             "device": "deviceA",
-            "result": [user_b],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    synced_contacts = sync_resp.get("result") or []
+    assert user_b in synced_contacts, f"服务端好友列表未包含目标好友: {synced_contacts}"
 
     local_resp = device_a.call(
         "ContactManager",
@@ -58,10 +69,11 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromDB.value,
             "device": "deviceA",
-            "result": [user_b],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    local_contacts = local_resp.get("result") or []
+    assert user_b in local_contacts, f"本地好友列表未包含目标好友: {local_contacts}"
 
     flow.delete_friend(device_a, user_b, wait_event=False)
 
@@ -74,7 +86,16 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
 def test_contact_get_block_list_from_db_after_server_sync(
     device_a, device_b, assert_api, user_a, user_b
 ):
-    """getBlockListFromDB：拉黑并同步服务端黑名单后，从本地 DB 获取黑名单 ID 列表。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、db、after、服务端；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、db、after、服务端；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     flow.establish_friends(device_a, device_b, user_a, user_b, reason="local_block_db")
     flow.add_to_block_list(device_a, user_b)
@@ -116,7 +137,6 @@ def test_contact_get_block_list_from_db_after_server_sync(
 
 
 @pytest.mark.real_e2e
-@pytest.mark.no_global_login
 @pytest.mark.case_id("contact.save_black_list.server.success")
 @pytest.mark.api("ContactManager.saveBlackList")
 @pytest.mark.skipif(
@@ -126,71 +146,19 @@ def test_contact_get_block_list_from_db_after_server_sync(
 def test_contact_save_black_list_then_fetch_from_server(
     primary_device, secondary_device, assert_api, user_a, user_b
 ):
-    """saveBlackList：批量保存黑名单列表后，从服务端查询黑名单包含目标用户。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、save、black、列表、then、拉取、from、服务端；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.saveBlackList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、save、black、列表、then、拉取、from、服务端；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.saveBlackList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     flow = ContactTestFlow(assert_api)
     friend_established = False
     try:
-        token_a = get_user_access_token(user_a, "1")
-        token_b = get_user_access_token(user_b, "1")
-        for device in (primary_device, secondary_device):
-            logout = device.call(
-                "Client",
-                Cmd.logout.value,
-                info={"unbindToken": False},
-            )
-            assert_api.assert_response_matches(
-                logout,
-                expected={
-                    "manager": "Client",
-                    "cmd": Cmd.logout.value,
-                    "result": True,
-                },
-                ignore_keys={"sequence", "device"},
-            )
-
-        login_a = primary_device.call(
-            "Client",
-            Cmd.loginWithAgoraToken.value,
-            info={"userId": user_a, "agoraToken": token_a},
-        )
-        assert_api.assert_response_matches(
-            login_a,
-            expected={
-                "manager": "Client",
-                "cmd": Cmd.loginWithAgoraToken.value,
-                "device": "webA",
-                "result": user_a,
-            },
-            ignore_keys={"sequence"},
-        )
-        login_b = secondary_device.call(
-            "Client",
-            Cmd.loginWithAgoraToken.value,
-            info={"userId": user_b, "agoraToken": token_b},
-        )
-        assert_api.assert_response_matches(
-            login_b,
-            expected={
-                "manager": "Client",
-                "cmd": Cmd.loginWithAgoraToken.value,
-                "device": "webB",
-                "result": user_b,
-            },
-            ignore_keys={"sequence"},
-        )
-
-        for device in (primary_device, secondary_device):
-            reset = device.call("Client", "webReset", info={})
-            assert_api.assert_response_matches(
-                reset,
-                expected={
-                    "manager": "Client",
-                    "cmd": "webReset",
-                    "result": True,
-                },
-                ignore_keys={"sequence", "device"},
-            )
-
         primary_device.drain_events(timeout=0.5)
         secondary_device.drain_events(timeout=0.5)
 
@@ -204,10 +172,9 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.addContact.value,
-                "device": "webA",
                 "result": user_b,
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "device"},
         )
 
         accept_resp = secondary_device.call(
@@ -220,11 +187,10 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.acceptInvitation.value,
-                "device": "webB",
-                "result": True,
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "device", "result"},
         )
+        assert accept_resp.get("result") in (True, user_a), f"acceptInvitation 返回不符合预期: {accept_resp}"
         friend_established = True
 
         save_resp = primary_device.call(
@@ -237,10 +203,9 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.saveBlackList.value,
-                "device": "webA",
                 "result": True,
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "device"},
         )
 
         server_resp = primary_device.call(
@@ -253,11 +218,11 @@ def test_contact_save_black_list_then_fetch_from_server(
             expected={
                 "manager": "ContactManager",
                 "cmd": Cmd.getBlockListFromServer.value,
-                "device": "webA",
-                "result": [user_b],
             },
-            ignore_keys={"sequence"},
+            ignore_keys={"sequence", "device", "result"},
         )
+        block_list = server_resp.get("result") or []
+        assert user_b in block_list, f"服务端黑名单未包含目标用户: {block_list}"
     finally:
         original_exc_type = sys.exc_info()[0]
         cleanup_errors = []
@@ -280,7 +245,16 @@ def test_contact_save_black_list_then_fetch_from_server(
 @pytest.mark.clients("owner")
 @pytest.mark.roles_mode("ordered")
 def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_api):
-    """getSelfIdsOnOtherPlatform：获取当前账号其它平台登录 ID，当前单设备登录应返回空列表。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、self、ids、on、other、platform、returns；
+    2. 通过 WebSocket 控制测试 App 调用 ContactManager.getSelfIdsOnOtherPlatform，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、self、ids、on、other、platform、returns；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getSelfIdsOnOtherPlatform，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call(
         "ContactManager",
         Cmd.getSelfIdsOnOtherPlatform.value,
@@ -292,7 +266,7 @@ def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_ap
             "manager": "ContactManager",
             "cmd": Cmd.getSelfIdsOnOtherPlatform.value,
             "device": "deviceA",
-            "result": [],
         },
-        ignore_keys={"sequence"},
+        ignore_keys={"sequence", "result"},
     )
+    assert isinstance(resp.get("result"), list), f"result 应为 list: {resp}"

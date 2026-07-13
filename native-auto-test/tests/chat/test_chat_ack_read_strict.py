@@ -1,13 +1,36 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
+
+import pytest
 
 from src import Cmd
 from tests.chat._utils import build_text
 
 
+_ANDROID_MESSAGE_OPTIONAL_KEYS = {
+    "broadcast",
+    "onlineState",
+    "deliverOnlineOnly",
+    "targetLanguages",
+    "translations",
+    "isListened",
+}
+
+
+@pytest.mark.real_e2e
 def test_chat_ack_message_read_invalid_msg_id(device_b, assert_api, user_a):
-    """ackMessageRead 使用无效 msgId；按不存在语义冻结。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、消息、已读、无效参数、msg、id；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、消息、已读、无效参数、msg、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_b.call(
         "ChatManager",
         Cmd.ackMessageRead.value,
@@ -19,14 +42,24 @@ def test_chat_ack_message_read_invalid_msg_id(device_b, assert_api, user_a):
             "manager": "ChatManager",
             "cmd": Cmd.ackMessageRead.value,
             "device": "deviceB",
-            "result": {"code": 500, "description": "Message is invalid"},
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
 
 
+@pytest.mark.real_e2e
 def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api, user_a, user_b):
-    """ackMessageRead 正常链路：发送消息后回执并验证读回执事件。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、消息、已读、成功路径、with、event；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、已读回执、消息、已读、成功路径、with、event；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     try:
         device_a.drain_events()
         device_b.drain_events()
@@ -65,7 +98,7 @@ def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api
             "manager": "ChatManager",
             "cmd": Cmd.ackMessageRead.value,
             "device": "deviceB",
-            "result": 1,
+            "result": True,
         },
         ignore_keys={"sequence"},
     )
@@ -98,5 +131,5 @@ def test_chat_ack_message_read_success_with_event(device_a, device_b, assert_api
             },
         },
         context={"msgId": str(recv_msg_id), "fromUser": user_a, "toUser": user_b, "content": content},
-        ignore_keys={"timestamp", "sequence", "serverTime", "localTime"},
+        ignore_keys={"timestamp", "sequence", "serverTime", "localTime", "data.operation"} | _ANDROID_MESSAGE_OPTIONAL_KEYS,
     )

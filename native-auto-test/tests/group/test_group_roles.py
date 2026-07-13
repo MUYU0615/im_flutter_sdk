@@ -1,5 +1,6 @@
 """Group 角色权限正常用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -16,7 +17,18 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
+@pytest.mark.real_e2e
 def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、admin、and、移除、admin、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.addAdmin、GroupManager.getGroupSpecificationFromServer、GroupManager.removeAdmin，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、admin、and、移除、admin、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addAdmin、GroupManager.getGroupSpecificationFromServer、GroupManager.removeAdmin，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("role_admin")
     try:
@@ -156,7 +168,18 @@ def test_group_add_admin_and_remove_admin_success(device_a, device_b, assert_api
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_update_owner_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、更新、owner、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupOwner、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、更新、owner、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupOwner、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("role_owner")
     try:

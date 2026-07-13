@@ -35,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to Android sanity case list.",
     )
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--run-context", default=None)
     parser.add_argument("--output-root", default="out")
     parser.add_argument(
         "--device-ids",

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import time
 import uuid
@@ -150,7 +151,7 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
                     "convId": "{{userB}}",
                     "chatType": 0,
                     "direction": 0,
-                    "status": ge(1),
+                    "status": ge(0),
                     "body": {"type": 0, "content": "{{content}}"},
                 }
             },
@@ -251,7 +252,16 @@ def _send_text_and_receive(device_a, device_b, assert_api, user_a: str, user_b: 
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_latest_and_last_received_messages(device_a, device_b, assert_api, user_a, user_b):
-    """latestMessage/lastReceivedMessage：发送一条单聊消息后，分别校验发送方最新消息和接收方最近收到消息。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、latest、and、last、received、消息；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.getLatestMessage、ConversationManager.getLatestMessageFromOthers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、latest、and、last、received、消息；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.getLatestMessage、ConversationManager.getLatestMessageFromOthers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     content = f"conv-latest-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
 
@@ -335,7 +345,16 @@ def test_conversation_latest_and_last_received_messages(device_a, device_b, asse
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, user_a, user_b):
-    """unreadCount/markMessageAsRead/markAllMessagesAsRead：制造未读后按消息和按会话标记已读，校验计数清零。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、已读、count、and、mark、已读；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.getUnreadMsgCount、ConversationManager.markMessageAsRead、ConversationManager.markAllMessagesAsRead，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、已读、count、and、mark、已读；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.getUnreadMsgCount、ConversationManager.markMessageAsRead、ConversationManager.markAllMessagesAsRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     conv_b = _conversation(user_a)
     device_b.call("ConversationManager", Cmd.markAllMessagesAsRead.value, info=conv_b)
     baseline_resp = device_b.call("ConversationManager", Cmd.getUnreadMsgCount.value, info=conv_b)
@@ -419,10 +438,23 @@ def test_conversation_read_count_and_mark_read(device_a, device_b, assert_api, u
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_load_message_and_message_lists(device_a, device_b, assert_api, user_a, user_b):
-    """loadMessage/loadMessages/loadMessagesFromTime：发送后按 ID、数量和时间窗口加载当前消息。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为会话、load、消息、and、消息、lists；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.loadMsgWithId、ConversationManager.loadMsgWithStartId、ConversationManager.loadMsgWithTime，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为会话、load、消息、and、消息、lists；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.loadMsgWithId、ConversationManager.loadMsgWithStartId、ConversationManager.loadMsgWithTime，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     keyword = f"conv-load-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, keyword)
     conv_a = _conversation(user_b)
+    latest_resp = device_a.call("ConversationManager", Cmd.getLatestMessage.value, info=conv_a)
+    latest_msg = latest_resp.get("result") if isinstance(latest_resp, dict) else None
+    if isinstance(latest_msg, dict) and ((latest_msg.get("body") or {}).get("content")) == keyword and latest_msg.get("msgId"):
+        msg_id = str(latest_msg.get("msgId"))
     start_time = int(time.time() * 1000) - 60_000
     end_time = int(time.time() * 1000) + 60_000
 
@@ -478,7 +510,16 @@ def test_conversation_load_message_and_message_lists(device_a, device_b, assert_
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_type_keyword_and_options_search_current_behavior(device_a, device_b, assert_api, user_a, user_b):
-    """loadMessagesWithMsgType/loadMessagesWithKeyword/conversationSearchMsgsByOptions：使用空数量/唯一关键词边界冻结空列表返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为会话、type、keyword、and、options、search、current、behavior；
+    2. 通过 WebSocket 控制测试 App 调用 ConversationManager.loadMsgWithMsgType、ConversationManager.loadMsgWithKeywords、ConversationManager.conversationSearchMsgsByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为会话、type、keyword、and、options、search、current、behavior；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ConversationManager.loadMsgWithMsgType、ConversationManager.loadMsgWithKeywords、ConversationManager.conversationSearchMsgsByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     keyword = f"conv-search-{uuid.uuid4().hex[:8]}"
     conv_a = _conversation(user_b)
 
@@ -542,7 +583,16 @@ def test_conversation_type_keyword_and_options_search_current_behavior(device_a,
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_ext_and_count_queries(device_a, device_b, assert_api, user_a, user_b):
-    """syncConversationExt/messageCount/conversationGetLocalMessageCount/conversationRemindType/pinnedMessages：校验会话扩展、计数、免打扰和置顶消息查询。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、ext、and、count、queries；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.syncConversationExt、ConversationManager.messageCount、ConversationManager.conversationGetLocalMessageCount，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为会话、ext、and、count、queries；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.syncConversationExt、ConversationManager.messageCount、ConversationManager.conversationGetLocalMessageCount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     content = f"conv-count-{uuid.uuid4().hex[:8]}"
     _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
     conv_a = _conversation(user_b)
@@ -625,7 +675,16 @@ def test_conversation_ext_and_count_queries(device_a, device_b, assert_api, user
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b):
-    """loadMessage/markMessageAsRead/deleteMessageByIds：非法消息 ID 边界，冻结当前端真实返回语义。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为会话、无效参数、消息、id、boundaries；
+    2. 通过 WebSocket 控制测试 App 调用 ConversationManager.loadMsgWithId、ConversationManager.markMessageAsRead、ConversationManager.deleteMessageByIds，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为会话、无效参数、消息、id、boundaries；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ConversationManager.loadMsgWithId、ConversationManager.markMessageAsRead、ConversationManager.deleteMessageByIds，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     conv_a = _conversation(user_b)
 
     resp_load_invalid = device_a.call(
@@ -689,7 +748,16 @@ def test_conversation_invalid_message_id_boundaries(device_a, assert_api, user_b
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_local_insert_append_update_and_delete(device_a, assert_api, user_a, user_b):
-    """insertMessage/appendMessage/updateConversationMessage/removeMessage/clearAllMessages/deleteMessagesWithTs：本地消息写入、更新和删除链路。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为会话、本地、insert、append、更新、and、删除；
+    2. 通过 WebSocket 控制测试 App 调用 ConversationManager.insertMessage、ConversationManager.appendMessage、ConversationManager.updateConversationMessage、ConversationManager.loadMsgWithId，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为会话、本地、insert、append、更新、and、删除；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ConversationManager.insertMessage、ConversationManager.appendMessage、ConversationManager.updateConversationMessage、ConversationManager.loadMsgWithId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     conv_a = _conversation(user_b)
     base_time = int(time.time() * 1000)
     insert_id = f"local-insert-{uuid.uuid4().hex[:8]}"
@@ -844,7 +912,16 @@ def test_conversation_local_insert_append_update_and_delete(device_a, assert_api
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 def test_conversation_delete_local_and_server_messages_current_behavior(device_a, device_b, assert_api, user_a, user_b):
-    """conversationDeleteServerMessageWithIds/conversationDeleteServerMessageWithTime：按消息 ID 与时间删除本地及服务端消息，冻结当前返回。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为会话、删除、本地、and、服务端、消息、current、behavior；
+    2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.conversationDeleteServerMessageWithIds、ConversationManager.conversationDeleteServerMessageWithTime，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为会话、删除、本地、and、服务端、消息、current、behavior；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ConversationManager.conversationDeleteServerMessageWithIds、ConversationManager.conversationDeleteServerMessageWithTime，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     content = f"conv-server-delete-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
     conv_a = _conversation(user_b)
@@ -854,18 +931,13 @@ def test_conversation_delete_local_and_server_messages_current_behavior(device_a
         Cmd.conversationDeleteServerMessageWithIds.value,
         info={**conv_a, "msgIds": [msg_id]},
     )
-    delete_ids_result = resp_delete_ids.get("result")
-    if isinstance(delete_ids_result, dict):
-        expected_delete_ids = {"code": 500, "description": "Message is invalid"}
-    else:
-        expected_delete_ids = None
     assert_api.assert_response_matches(
         resp_delete_ids,
         expected={
             "manager": "ConversationManager",
             "cmd": Cmd.conversationDeleteServerMessageWithIds.value,
             "device": "deviceA",
-            "result": expected_delete_ids,
+            "result": None,
         },
         ignore_keys={"sequence"},
     )

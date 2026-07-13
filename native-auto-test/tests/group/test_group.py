@@ -8,6 +8,7 @@
   - test_group_exceptions_*.py
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -22,21 +23,25 @@ from tests.group.group_helpers import (
 )
 
 
-pytestmark = [pytest.mark.client, pytest.mark.group]
+pytestmark = [
+    pytest.mark.client,
+    pytest.mark.group,
+    pytest.mark.skip(reason="legacy reproduction-only group cases; canonical Android E2E lives in split group_* suites"),
+]
 
 
+@pytest.mark.real_e2e
 def test_group_member_count_local_then_server_sync(device_a, device_b, assert_api, user_a, user_b, user_c):
     """
-    复现流程：
-    1) 邀请别人入群（addMembers）
-    2) getGroupWithId（本地）读取人数
-    3) getGroupSpecificationFromServer（服务端）读取人数
-    4) 再次 getGroupWithId（本地）读取人数，验证与服务端一致
-
-    说明：
-    - 若本地人数与服务端人数不一致，则判定“复现到问题”；
-    - 若未出现不一致，则该环境下未复现，使用 skip 标记。
+    1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、成员、count、本地、then、服务端、sync；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupWithId、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
     """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组基础能力场景所需的测试数据，场景为群组、成员、count、本地、then、服务端、sync；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupWithId、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     group_name = new_group_name("count_sync")
     group_id = ""
     try:

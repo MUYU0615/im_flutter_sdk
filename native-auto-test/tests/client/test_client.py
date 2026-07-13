@@ -3,6 +3,7 @@ Client 模块 API 用例：init、login、logout、getCurrentUser 等。
 请求参数与 Flutter 端一致，info 为方法参数；cmd 使用 Cmd 枚举与 chat_method_keys 对齐。
 """
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import json
 
@@ -15,6 +16,7 @@ from src import Cmd
 pytestmark = [pytest.mark.client]
 
 
+@pytest.mark.no_global_login
 def test_client_login_invalid_password(api, assert_api):
     """错误密码：预期返回错误响应；若服务端仅返回 result=None 也视为合法响应。"""
     resp = api.call(
@@ -33,29 +35,53 @@ def test_client_login_invalid_password(api, assert_api):
         assert "code" in err or "description" in err
 
 
+@pytest.mark.real_e2e
 def test_client_get_current_user(device_a, assert_api):
-    """session 已登录 deviceA，校验 getCurrentUser 返回当前用户。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端查询/拉取场景所需的测试数据，场景为client、获取、current、用户；
+    2. 通过 WebSocket 控制测试 App 调用 Client.getCurrentUser，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端查询/拉取场景所需的测试数据，场景为client、获取、current、用户；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.getCurrentUser，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     resp = device_a.call("Client", Cmd.getCurrentUser.value, info={})
     assert_api.assert_success(resp)
     result = assert_api.get_result(resp)
     assert result is not None or "result" in resp
 
+@pytest.mark.real_e2e
 def test_client_change_app_id(device_a, assert_api):
-    """session 已登录 deviceA，校验 changeAppId 调用成功。"""
+    """
+    1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、change、app、id；
+    2. 通过 WebSocket 控制测试 App 调用 Client.changeAppId，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备客户端基础能力场景所需的测试数据，场景为client、change、app、id；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 Client.changeAppId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     resp = device_a.call("Client", Cmd.changeAppId.value, info={"appId": "dc4a43e610634c8989d8252d2bb71da7"})
     assert_api.assert_success(resp)
     result = assert_api.get_result(resp)
     assert result is not None or "result" in resp
 
 
+@pytest.mark.session_lifecycle
 def test_login_then_receive_offline_sync_event(device_a, assert_api, user_a):
     """
-    验证登录后能收到 onOfflineMessageSyncStart 回调。
-
-    设计：session 中 device_a 已登录，需先 logout 再 login 同一用户，
-    登录过程中 SDK 会同步离线消息并触发 onOfflineMessageSyncStart/Finish。
-    测试结束后恢复登录状态以不影响后续 cases。
+    1. 在 session lifecycle 专项中让已登录的 deviceA 先执行 Client.logout，制造重新登录场景；
+    2. 清理残留事件后，deviceA 使用同一账号调用 Client.login 并重新启动 startCallback；
+    3. 校验登录成功，并等待 onOfflineMessageSyncStart 或 onOfflineMessageSyncFinish 离线同步回调。
     """
+    describe_case_steps(
+        "1. 在 session lifecycle 专项中让已登录的 deviceA 先执行 Client.logout，制造重新登录场景；\n"
+        "2. 清理残留事件后，deviceA 使用同一账号调用 Client.login 并重新启动 startCallback；\n"
+        "3. 校验登录成功，并等待 onOfflineMessageSyncStart 或 onOfflineMessageSyncFinish 离线同步回调。"
+    )
     # 1) 先登出
     device_a.call("Client", Cmd.logout.value, info={"unbindToken": False})
 

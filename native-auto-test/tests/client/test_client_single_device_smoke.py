@@ -4,16 +4,26 @@ from __future__ import annotations
 import pytest
 
 from src import Cmd
+from tests.case_steps import describe_case_steps
 
 
-pytestmark = [pytest.mark.client, pytest.mark.real_e2e]
+pytestmark = [pytest.mark.client, pytest.mark.session_lifecycle]
 
 
 @pytest.mark.case_id("client.login.current_user.success")
 @pytest.mark.api("Client.login")
 @pytest.mark.api("Client.getCurrentUser")
 def test_single_device_login_and_get_current_user(device_a, user_a, assert_api):
-    """Verify one launched native test app can log in and answer Client calls."""
+    """
+    1. 在 session lifecycle 单设备 smoke 中，先调用 Client.getCurrentUser 判断 deviceA 是否已登录；
+    2. 若未登录，则按需创建测试账号并调用 Client.login 登录 deviceA；
+    3. 再次调用 Client.getCurrentUser 校验当前用户为 userA，最后执行 Client.logout 清理登录态。
+    """
+    describe_case_steps(
+        "1. 在 session lifecycle 单设备 smoke 中，先调用 Client.getCurrentUser 判断 deviceA 是否已登录；\n"
+        "2. 若未登录，则按需创建测试账号并调用 Client.login 登录 deviceA；\n"
+        "3. 再次调用 Client.getCurrentUser 校验当前用户为 userA，最后执行 Client.logout 清理登录态。"
+    )
     current_before = device_a.call("Client", Cmd.getCurrentUser.value, info={})
     current_result = assert_api.get_result(current_before)
     if current_result == user_a:

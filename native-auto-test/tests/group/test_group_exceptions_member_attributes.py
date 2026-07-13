@@ -1,5 +1,6 @@
 """Group 成员属性 API 异常用例（strict）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -19,6 +20,16 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_set_member_attributes_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、set、成员、attributes、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.setMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、set、成员、attributes、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.setMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.setMemberAttributesFromGroup.value,
@@ -36,7 +47,18 @@ def test_group_set_member_attributes_nonexistent_group(device_a, assert_api):
     )
 
 
+@pytest.mark.real_e2e
 def test_group_fetch_member_attributes_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、attributes、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、attributes、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.fetchMemberAttributesFromGroup.value,
@@ -63,6 +85,16 @@ def test_group_fetch_member_attributes_nonexistent_group(device_a, assert_api):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_group_fetch_members_attributes_nonexistent_group(device_a, assert_api):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、attributes、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchMembersAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、拉取、成员、attributes、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchMembersAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call(
         "GroupManager",
         Cmd.fetchMembersAttributesFromGroup.value,
@@ -85,7 +117,18 @@ def test_group_fetch_members_attributes_nonexistent_group(device_a, assert_api):
     assert user_attrs == {}, f"fetchMembersAttributesFromGroup 当前端空属性语义应为 {{}}: {resp}"
 
 
+@pytest.mark.real_e2e
 def test_group_set_member_attributes_empty_attributes(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、set、成员、attributes、空值参数、attributes；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.setMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、set、成员、attributes、空值参数、attributes；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.setMemberAttributesFromGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(

@@ -129,6 +129,346 @@ class EventBridgeHandler {
         },
       ),
     );
+    EMClient.getInstance.groupManager.addEventHandler(
+      _handlerId,
+      EMGroupEventHandler(
+        onAdminAddedFromGroup: (groupId, admin) {
+          _sendGroupEvent('onAdminAddedFromGroup', {
+            'groupId': groupId,
+            'admin': admin,
+            'operation': 'admin_added',
+          });
+        },
+        onAdminRemovedFromGroup: (groupId, admin) {
+          _sendGroupEvent('onAdminRemovedFromGroup', {
+            'groupId': groupId,
+            'admin': admin,
+            'operation': 'admin_removed',
+          });
+        },
+        onAllGroupMemberMuteStateChanged: (groupId, isAllMuted) {
+          _sendGroupEvent('onAllGroupMemberMuteStateChanged', {
+            'groupId': groupId,
+            'isMuted': isAllMuted,
+            'isAllMemberMuted': isAllMuted,
+            'operation': 'all_member_mute_changed',
+          });
+        },
+        onAllowListAddedFromGroup: (groupId, members) {
+          _sendGroupEvent('onAllowListAddedFromGroup', {
+            'groupId': groupId,
+            'members': members,
+            'operation': 'allow_list_added',
+          });
+        },
+        onAllowListRemovedFromGroup: (groupId, members) {
+          _sendGroupEvent('onAllowListRemovedFromGroup', {
+            'groupId': groupId,
+            'members': members,
+            'operation': 'allow_list_removed',
+          });
+        },
+        onAnnouncementChangedFromGroup: (groupId, announcement) {
+          _sendGroupEvent('onGroupAnnouncementChanged', {
+            'groupId': groupId,
+            'announcement': announcement,
+            'operation': 'announcement_changed',
+          });
+        },
+        onAutoAcceptInvitationFromGroup: (groupId, inviter, inviteMessage) {
+          _sendGroupEvent('onAutoAcceptInvitationFromGroup', {
+            'groupId': groupId,
+            'inviter': inviter,
+            if (inviteMessage != null) 'reason': inviteMessage,
+            'operation': 'auto_accept_invitation',
+          });
+        },
+        onGroupDestroyed: (groupId, groupName) {
+          _sendGroupEvent('onGroupDestroyed', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            'operation': 'group_destroyed',
+          });
+        },
+        onInvitationAcceptedFromGroup: (groupId, invitee, reason) {
+          _sendGroupEvent('onGroupInvitationAccepted', {
+            'groupId': groupId,
+            'member': invitee,
+            if (reason != null) 'reason': reason,
+            'operation': 'invitation_accepted',
+          });
+        },
+        onInvitationDeclinedFromGroup: (groupId, invitee, reason) {
+          _sendGroupEvent('onGroupInvitationDeclined', {
+            'groupId': groupId,
+            'member': invitee,
+            if (reason != null) 'reason': reason,
+            'operation': 'invitation_declined',
+          });
+        },
+        onInvitationReceivedFromGroup: (groupId, groupName, inviter, reason) {
+          _sendGroupEvent('onGroupInvitationReceived', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            'inviter': inviter,
+            if (reason != null) 'reason': reason,
+            'operation': 'invitation_received',
+          });
+        },
+        onMembersJoinedFromGroup: (groupId, userIds) {
+          for (final userId in userIds) {
+            _sendGroupEvent('onMemberJoinedFromGroup', {
+              'groupId': groupId,
+              'member': userId,
+              'operation': 'member_joined',
+            });
+          }
+          _sendGroupEvent('onMembersJoinedFromGroup', {
+            'groupId': groupId,
+            'members': userIds,
+            'operation': 'members_joined',
+          });
+        },
+        onMembersExitedFromGroup: (groupId, userIds) {
+          for (final userId in userIds) {
+            _sendGroupEvent('onMemberExitedFromGroup', {
+              'groupId': groupId,
+              'member': userId,
+              'operation': 'member_exited',
+            });
+          }
+          _sendGroupEvent('onMembersExitedFromGroup', {
+            'groupId': groupId,
+            'members': userIds,
+            'operation': 'members_exited',
+          });
+        },
+        onMuteListAddedFromGroup: (groupId, mutes, muteExpire) {
+          _sendGroupEvent('onMuteListAddedFromGroup', {
+            'groupId': groupId,
+            'members': mutes,
+            if (muteExpire != null) 'muteExpire': muteExpire,
+            'operation': 'mute_list_added',
+          });
+        },
+        onMuteListRemovedFromGroup: (groupId, mutes) {
+          _sendGroupEvent('onMuteListRemovedFromGroup', {
+            'groupId': groupId,
+            'members': mutes,
+            'operation': 'mute_list_removed',
+          });
+        },
+        onOwnerChangedFromGroup: (groupId, newOwner, oldOwner) {
+          _sendGroupEvent('onOwnerChangedFromGroup', {
+            'groupId': groupId,
+            'newOwner': newOwner,
+            'oldOwner': oldOwner,
+            'operation': 'owner_changed',
+          });
+        },
+        onRequestToJoinAcceptedFromGroup: (groupId, groupName, accepter) {
+          _sendGroupEvent('onRequestToJoinAcceptedFromGroup', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            'accepter': accepter,
+            'operation': 'request_to_join_accepted',
+          });
+        },
+        onRequestToJoinDeclinedFromGroup:
+            (groupId, groupName, decliner, reason, applicant) {
+          _sendGroupEvent('onRequestToJoinDeclinedFromGroup', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            if (decliner != null) 'decliner': decliner,
+            if (applicant != null) 'applicant': applicant,
+            if (reason != null) 'reason': reason,
+            'operation': 'request_to_join_declined',
+          });
+        },
+        onRequestToJoinReceivedFromGroup: (groupId, groupName, applicant, reason) {
+          _sendGroupEvent('onRequestToJoinReceivedFromGroup', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            'applicant': applicant,
+            if (reason != null) 'reason': reason,
+            'operation': 'request_to_join_received',
+          });
+        },
+        onSharedFileAddedFromGroup: (groupId, sharedFile) {
+          _sendGroupEvent('onGroupSharedFileAdded', {
+            'groupId': groupId,
+            'sharedFile': sharedFile.toJson(),
+            'operation': 'shared_file_added',
+          });
+        },
+        onSharedFileDeletedFromGroup: (groupId, fileId) {
+          _sendGroupEvent('onGroupSharedFileDeleted', {
+            'groupId': groupId,
+            'fileId': fileId,
+            'operation': 'shared_file_deleted',
+          });
+        },
+        onUserRemovedFromGroup: (groupId, groupName) {
+          _sendGroupEvent('onUserRemovedFromGroup', {
+            'groupId': groupId,
+            if (groupName != null) 'groupName': groupName,
+            'operation': 'user_removed',
+          });
+        },
+        onSpecificationDidUpdate: (group) {
+          final json = Map<String, dynamic>.from(group.toJson());
+          _sendGroupEvent('onGroupSpecificationDidUpdate', {
+            'groupId': json['groupId'],
+            'group': json,
+            'operation': 'specification_updated',
+          });
+        },
+        onDisableChanged: (groupId, isDisable) {
+          _sendGroupEvent('onGroupStateChanged', {
+            'groupId': groupId,
+            'isDisable': isDisable,
+            'operation': 'disable_changed',
+          });
+        },
+        onAttributesChangedOfGroupMember:
+            (groupId, userId, attributes, operatorId) {
+          _sendGroupEvent('onAttributesChangedOfGroupMember', {
+            'groupId': groupId,
+            'userId': userId,
+            if (attributes != null) 'attributes': attributes,
+            if (operatorId != null) 'operator': operatorId,
+            'operation': 'member_attributes_changed',
+          });
+        },
+      ),
+    );
+    EMClient.getInstance.chatRoomManager.addEventHandler(
+      _handlerId,
+      EMChatRoomEventHandler(
+        onAdminAddedFromChatRoom: (roomId, admin) {
+          _sendChatRoomEvent('onAdminAddedFromChatRoom', {
+            'roomId': roomId,
+            'admin': admin,
+            'operation': 'admin_added',
+          });
+        },
+        onAdminRemovedFromChatRoom: (roomId, admin) {
+          _sendChatRoomEvent('onAdminRemovedFromChatRoom', {
+            'roomId': roomId,
+            'admin': admin,
+            'operation': 'admin_removed',
+          });
+        },
+        onAllChatRoomMemberMuteStateChanged: (roomId, isAllMuted) {
+          _sendChatRoomEvent('onAllChatRoomMemberMuteStateChanged', {
+            'roomId': roomId,
+            'isAllMuted': isAllMuted,
+            'operation': 'all_member_mute_changed',
+          });
+        },
+        onAllowListAddedFromChatRoom: (roomId, members) {
+          _sendChatRoomEvent('onAllowListAddedFromChatRoom', {
+            'roomId': roomId,
+            'members': members,
+            'operation': 'allow_list_added',
+          });
+        },
+        onAllowListRemovedFromChatRoom: (roomId, members) {
+          _sendChatRoomEvent('onAllowListRemovedFromChatRoom', {
+            'roomId': roomId,
+            'members': members,
+            'operation': 'allow_list_removed',
+          });
+        },
+        onAnnouncementChangedFromChatRoom: (roomId, announcement) {
+          _sendChatRoomEvent('onAnnouncementChangedFromChatRoom', {
+            'roomId': roomId,
+            if (announcement != null) 'announcement': announcement,
+            'operation': 'announcement_changed',
+          });
+        },
+        onChatRoomDestroyed: (roomId, roomName) {
+          _sendChatRoomEvent('onChatRoomDestroyed', {
+            'roomId': roomId,
+            if (roomName != null) 'roomName': roomName,
+            'operation': 'room_destroyed',
+          });
+        },
+        onMemberExitedFromChatRoom: (roomId, roomName, participant) {
+          _sendChatRoomEvent('onMemberExitedFromChatRoom', {
+            'roomId': roomId,
+            if (roomName != null) 'roomName': roomName,
+            'participant': participant,
+            'operation': 'member_exited',
+          });
+        },
+        onMemberJoinedFromChatRoom: (roomId, participant, ext) {
+          _sendChatRoomEvent('onMemberJoinedFromChatRoom', {
+            'roomId': roomId,
+            'participant': participant,
+            if (ext != null) 'ext': ext,
+            'operation': 'member_joined',
+          });
+        },
+        onMuteListAddedFromChatRoom: (roomId, mutes) {
+          _sendChatRoomEvent('onMuteListAddedFromChatRoom', {
+            'roomId': roomId,
+            'members': mutes.keys.toList(),
+            'mutes': mutes,
+            'operation': 'mute_list_added',
+          });
+        },
+        onMuteListRemovedFromChatRoom: (roomId, mutes) {
+          _sendChatRoomEvent('onMuteListRemovedFromChatRoom', {
+            'roomId': roomId,
+            'members': mutes,
+            'mutes': mutes,
+            'operation': 'mute_list_removed',
+          });
+        },
+        onOwnerChangedFromChatRoom: (roomId, newOwner, oldOwner) {
+          _sendChatRoomEvent('onOwnerChangedFromChatRoom', {
+            'roomId': roomId,
+            'newOwner': newOwner,
+            'oldOwner': oldOwner,
+            'operation': 'owner_changed',
+          });
+        },
+        onRemovedFromChatRoom: (roomId, roomName, participant, reason) {
+          _sendChatRoomEvent('onRemovedFromChatRoom', {
+            'roomId': roomId,
+            if (roomName != null) 'roomName': roomName,
+            if (participant != null) 'participant': participant,
+            if (reason != null) 'reason': reason.name,
+            'operation': 'removed_from_room',
+          });
+        },
+        onSpecificationChanged: (room) {
+          final json = Map<String, dynamic>.from(room.toJson());
+          _sendChatRoomEvent('onSpecificationChanged', {
+            'roomId': json['roomId'],
+            'room': json,
+            'operation': 'specification_changed',
+          });
+        },
+        onAttributesUpdated: (roomId, attributes, from) {
+          _sendChatRoomEvent('onAttributesUpdated', {
+            'roomId': roomId,
+            'attributes': attributes,
+            'fromId': from,
+            'operation': 'attributes_updated',
+          });
+        },
+        onAttributesRemoved: (roomId, removedKeys, from) {
+          _sendChatRoomEvent('onAttributesRemoved', {
+            'roomId': roomId,
+            'keys': removedKeys,
+            'fromId': from,
+            'operation': 'attributes_removed',
+          });
+        },
+      ),
+    );
     EMClient.getInstance.chatThreadManager.addEventHandler(
       _handlerId,
       EMChatThreadEventHandler(
@@ -200,6 +540,16 @@ class EventBridgeHandler {
       'device': deviceName,
       'connected': false,
     });
+  }
+
+  void _sendGroupEvent(String eventType, Map<String, dynamic> data) {
+    if (!_registered) return;
+    _sendEvent?.call(eventType, data);
+  }
+
+  void _sendChatRoomEvent(String eventType, Map<String, dynamic> data) {
+    if (!_registered) return;
+    _sendEvent?.call(eventType, data);
   }
 
   void emitChatRoomSpecificationChanged({
@@ -846,6 +1196,8 @@ class EventBridgeHandler {
     EMClient.getInstance.chatManager.removeEventHandler(_handlerId);
     EMClient.getInstance.chatManager.removeMessageEvent(_messageEventId);
     EMClient.getInstance.contactManager.removeEventHandler(_handlerId);
+    EMClient.getInstance.groupManager.removeEventHandler(_handlerId);
+    EMClient.getInstance.chatRoomManager.removeEventHandler(_handlerId);
     EMClient.getInstance.chatThreadManager.removeEventHandler(_handlerId);
     _registered = false;
     _sendEvent = null;

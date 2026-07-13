@@ -1,5 +1,6 @@
 """Group moderation API（按当前稳定语义合并）。"""
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import pytest
 
@@ -34,7 +35,18 @@ def _group_state(device_a, assert_api, group_id: str):
     return resp
 
 
+@pytest.mark.real_e2e
 def test_group_block_unblock_members_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、封禁、unblock、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers、GroupManager.unblockMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、封禁、unblock、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers、GroupManager.unblockMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("mod_block")
     try:
@@ -105,13 +117,35 @@ def test_group_block_unblock_members_success(device_a, device_b, assert_api, use
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize("cmd", [Cmd.blockMembers.value, Cmd.unblockMembers.value])
 def test_group_block_unblock_members_nonexistent_group(device_a, assert_api, cmd):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、封禁、unblock、成员、不存在对象、群组；
+    2. 通过 WebSocket 控制测试 App 调用 群组、封禁、unblock、成员、不存在对象、群组，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、封禁、unblock、成员、不存在对象、群组；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 群组、封禁、unblock、成员、不存在对象、群组，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("GroupManager", cmd, info={"groupId": _NONEXISTENT_GROUP_ID, "members": ["user_x"]})
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
+@pytest.mark.real_e2e
 def test_group_block_members_non_member(device_a, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、封禁、成员、non、成员；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、封禁、成员、non、成员；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.blockMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     group_id = ""
     try:
         group_id, _ = create_group(device_a, assert_api, owner=user_a, group_name=new_group_name("mod_block_nm"), invite_members=[])
@@ -122,7 +156,18 @@ def test_group_block_members_non_member(device_a, assert_api, user_a, user_b):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、unmute、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteMembers、GroupManager.unMuteMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、unmute、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteMembers、GroupManager.unMuteMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("mod_mute")
     try:
@@ -196,7 +241,18 @@ def test_group_mute_unmute_members_success(device_a, device_b, assert_api, user_
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、all、unmute、all、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteAllMembers、GroupManager.unMuteAllMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、禁言、all、unmute、all、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.muteAllMembers、GroupManager.unMuteAllMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("mod_mute_all")
     try:
@@ -274,7 +330,18 @@ def test_group_mute_all_unmute_all_success(device_a, device_b, assert_api, user_
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_add_remove_white_list_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、白名单、列表、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.addWhiteList、GroupManager.removeWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、白名单、列表、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addWhiteList、GroupManager.removeWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("mod_white")
     try:
@@ -338,7 +405,18 @@ def test_group_add_remove_white_list_success(device_a, device_b, assert_api, use
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 def test_group_update_group_ext_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、群组、ext、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupExt，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、更新、群组、ext、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 GroupManager.updateGroupExt，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     group_id = ""
     group_name = new_group_name("mod_ext")
     try:
@@ -359,6 +437,7 @@ def test_group_update_group_ext_success(device_a, assert_api, user_a):
             destroy_group(device_a, assert_api, group_id)
 
 
+@pytest.mark.real_e2e
 @pytest.mark.parametrize(
     "cmd,info,code,desc",
     [
@@ -372,5 +451,15 @@ def test_group_update_group_ext_success(device_a, assert_api, user_a):
     ],
 )
 def test_group_moderation_nonexistent_group_errors(device_a, assert_api, cmd, info, code, desc):
+    """
+    1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、moderation、不存在对象、群组、errors；
+    2. 通过 WebSocket 控制测试 App 调用 群组、moderation、不存在对象、群组、errors，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、moderation、不存在对象、群组、errors；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 群组、moderation、不存在对象、群组、errors，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     resp = device_a.call("GroupManager", cmd, info=info)
     assert_api.assert_error(resp, code=code, description=desc)

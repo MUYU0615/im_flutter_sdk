@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.case_steps import describe_case_steps
 
 import uuid
 
@@ -31,6 +32,16 @@ def _assert_success_envelope(assert_api, resp: dict, *, cmd: str, device: str) -
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、更新、and、拉取、announcement、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement、ChatRoomManager.fetchChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、更新、and、拉取、announcement、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement、ChatRoomManager.fetchChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="announcement", desc_prefix="announcement")
     announcement = f"notice-{uuid.uuid4().hex[:8]}"
     try:
@@ -74,6 +85,16 @@ def test_chatroom_update_and_fetch_announcement_success(device_a, assert_api, us
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、添加、拉取、移除、白名单、列表、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.fetchChatRoomWhiteListFromServer、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、添加、拉取、移除、白名单、列表、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.fetchChatRoomWhiteListFromServer、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="whitelist", desc_prefix="whitelist")
     try:
         join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
@@ -234,6 +255,16 @@ def _assert_list_response(assert_api, resp: dict, *, cmd: str, device: str) -> l
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、禁言、拉取、unmute、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.fetchChatRoomMuteList、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、禁言、拉取、unmute、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.fetchChatRoomMuteList、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute", desc_prefix="mute")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -290,6 +321,16 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、封禁、拉取、unblock、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.blockChatRoomMembers、ChatRoomManager.fetchChatRoomBlockList、ChatRoomManager.unBlockChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、封禁、拉取、unblock、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.blockChatRoomMembers、ChatRoomManager.fetchChatRoomBlockList、ChatRoomManager.unBlockChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="block", desc_prefix="block")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -345,6 +386,16 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_change_subject_and_description_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、subject、and、description、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject、ChatRoomManager.changeChatRoomDescription、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、subject、and、description、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject、ChatRoomManager.changeChatRoomDescription、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="profile", desc_prefix="profile")
     new_subject = f"room-subject-{uuid.uuid4().hex[:8]}"
     new_description = f"room-description-{uuid.uuid4().hex[:8]}"
@@ -415,6 +466,16 @@ def test_chatroom_change_subject_and_description_success(device_a, assert_api, u
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、添加、and、移除、admin、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、添加、and、移除、admin、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addChatRoomAdmin、ChatRoomManager.removeChatRoomAdmin、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="admin", desc_prefix="admin")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -464,6 +525,16 @@ def test_chatroom_add_and_remove_admin_success(device_a, device_b, assert_api, u
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.removeChatRoomMembers、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.removeChatRoomMembers、ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="kick", desc_prefix="kick")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -508,6 +579,16 @@ def test_chatroom_remove_member_success(device_a, device_b, assert_api, user_a, 
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、禁言、and、unmute、all、成员、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、禁言、and、unmute、all、成员、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.muteAllChatRoomMembers、ChatRoomManager.unMuteAllChatRoomMembers、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute_all", desc_prefix="mute_all")
     try:
         mute_resp = device_a.call(
@@ -552,6 +633,16 @@ def test_chatroom_mute_and_unmute_all_members_success(device_a, assert_api, user
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、set、and、拉取、attributes、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、set、and、拉取、attributes、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs", desc_prefix="attrs")
     attr_key = f"room_attr_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
@@ -598,6 +689,16 @@ def test_chatroom_set_and_fetch_attributes_success(device_a, assert_api, user_a)
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、set、attributes、non、forced、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、set、attributes、non、forced、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_nf", desc_prefix="attrs_nf")
     attr_key = f"room_attr_nf_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
@@ -644,6 +745,16 @@ def test_chatroom_set_attributes_non_forced_success(device_a, assert_api, user_a
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、all、attributes、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、all、attributes、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_all", desc_prefix="attrs_all")
     attr_key_1 = f"room_attr_all_1_{uuid.uuid4().hex[:8]}"
     attr_key_2 = f"room_attr_all_2_{uuid.uuid4().hex[:8]}"
@@ -692,6 +803,16 @@ def test_chatroom_fetch_all_attributes_success(device_a, assert_api, user_a):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、attributes、by、partial、keys、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、拉取、attributes、by、partial、keys、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_partial", desc_prefix="attrs_partial")
     attr_key_1 = f"room_attr_partial_1_{uuid.uuid4().hex[:8]}"
     attr_key_2 = f"room_attr_partial_2_{uuid.uuid4().hex[:8]}"
@@ -745,6 +866,16 @@ def test_chatroom_fetch_attributes_by_partial_keys_success(device_a, assert_api,
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、更新、attribute、overwrites、previous、value；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、更新、attribute、overwrites、previous、value；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attrs_update", desc_prefix="attrs_update")
     attr_key = f"room_attr_update_{uuid.uuid4().hex[:8]}"
     old_value = f"old-{uuid.uuid4().hex[:8]}"
@@ -809,6 +940,16 @@ def test_chatroom_update_attribute_overwrites_previous_value(device_a, assert_ap
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, user_b):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、owner、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.changeChatRoomOwner、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应、关键字段和相关状态符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、change、owner、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.changeChatRoomOwner、ChatRoomManager.fetchChatRoomInfoFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应、关键字段和相关状态符合预期。'
+    )
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="owner", desc_prefix="owner")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -856,6 +997,16 @@ def test_chatroom_change_owner_success(device_a, device_b, assert_api, user_a, u
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="remove_attrs", desc_prefix="remove_attrs")
     attr_key = f"room_attr_remove_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-{uuid.uuid4().hex[:8]}"
@@ -908,6 +1059,16 @@ def test_chatroom_remove_attributes_success(device_a, assert_api, user_a):
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
 def test_chatroom_remove_attributes_non_forced_success(device_a, assert_api, user_a):
+    """
+    1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、non、forced、成功路径；
+    2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
+    3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。
+    """
+    describe_case_steps(
+        '1. 在已登录的 Android 共享 session 中准备聊天室状态变更场景所需的测试数据，场景为聊天室、移除、attributes、non、forced、成功路径；\n'
+        '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes、ChatRoomManager.fetchChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；\n'
+        '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
+    )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="remove_attrs_nf", desc_prefix="remove_attrs_nf")
     attr_key = f"room_attr_remove_nf_{uuid.uuid4().hex[:8]}"
     attr_value = f"value-nf-{uuid.uuid4().hex[:8]}"
