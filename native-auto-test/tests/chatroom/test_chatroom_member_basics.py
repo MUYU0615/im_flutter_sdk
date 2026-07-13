@@ -146,7 +146,9 @@ def _assert_local_rooms(
 
 
 @pytest.mark.real_e2e
-def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chatroom_join_then_get_local_room_and_all_rooms(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室事件回调场景所需的测试数据，场景为聊天室、加入、then、获取、本地、room、and、all；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom、ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -157,17 +159,21 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.getChatRoom、ChatRoomManager.getAllChatRooms，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="local_room", desc_prefix="local_room")
     try:
-        _join_room(device_b, assert_api, room_id=room_id)
+        _join_room(remote, assert_api, room_id=room_id, device_name=remote_device)
 
-        local_resp = device_b.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": room_id})
+        local_resp = remote.call("ChatRoomManager", Cmd.getChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             local_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.getChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "roomId": room_id,
                     "maxUsers": ge(0),
@@ -177,13 +183,13 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
             ignore_keys=CHATROOM_IGNORE_KEYS,
         )
 
-        all_resp = device_b.call("ChatRoomManager", Cmd.getAllChatRooms.value, info={})
+        all_resp = remote.call("ChatRoomManager", Cmd.getAllChatRooms.value, info={})
         assert_api.assert_response_matches(
             all_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.getAllChatRooms.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": ne(None),
             },
             ignore_keys={"sequence"},
@@ -195,7 +201,7 @@ def test_chatroom_join_then_get_local_room_and_all_rooms(device_a, device_b, ass
             assert "roomId" in room, f"getAllChatRooms item 缺少 roomId: {room!r}"
 
         events = collect_chatroom_events(
-            device_b,
+            remote,
             expected_event_types={"onMemberJoinedFromChatRoom"},
             chatroom_id=room_id,
             timeout=10.0,
