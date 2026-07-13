@@ -112,6 +112,7 @@ def _read_android_file(serial: str, remote_path: str) -> bytes:
 
 
 def _group_file_list(device, assert_api, group_id: str) -> list[dict]:
+    expected_device = getattr(device, "name", "deviceA")
     resp = device.call(
         "GroupManager",
         Cmd.getGroupFileListFromServer.value,
@@ -122,7 +123,7 @@ def _group_file_list(device, assert_api, group_id: str) -> list[dict]:
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.getGroupFileListFromServer.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
@@ -273,7 +274,9 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
 
 
 @pytest.mark.real_e2e
-def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_upload_shared_file_current_invalid_file_behavior(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、current、无效参数、file、behavior；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -284,10 +287,11 @@ def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    client = topology_primary_or_device_a
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("shared_file_upload"),
@@ -297,7 +301,7 @@ def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert
         tmp_file = Path("/private/tmp/group_shared_upload_auto.txt")
         tmp_file.write_text("group-shared-file-content", encoding="utf-8")
 
-        resp_upload = device_a.call(
+        resp_upload = client.call(
             "GroupManager",
             Cmd.uploadGroupSharedFile.value,
             info={"groupId": group_id, "filePath": str(tmp_file)},
@@ -305,11 +309,13 @@ def test_group_upload_shared_file_current_invalid_file_behavior(device_a, assert
         assert_api.assert_error(resp_upload, code=401, description="Invalid file")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_upload_shared_file_nonexistent_group(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -320,7 +326,7 @@ def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "GroupManager",
         Cmd.uploadGroupSharedFile.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "filePath": "/private/tmp/x.txt"},
@@ -329,7 +335,9 @@ def test_group_upload_shared_file_nonexistent_group(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_download_shared_file_nonexistent_group(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、download、shared、file、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.downloadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -340,7 +348,7 @@ def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.downloadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "GroupManager",
         Cmd.downloadGroupSharedFile.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "fileId": "1", "savePath": "/private/tmp"},
@@ -349,7 +357,9 @@ def test_group_download_shared_file_nonexistent_group(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_remove_shared_file_nonexistent_group(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、移除、shared、file、不存在对象、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -360,7 +370,7 @@ def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.removeGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "GroupManager",
         Cmd.removeGroupSharedFile.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "fileId": "1"},
@@ -369,7 +379,9 @@ def test_group_remove_shared_file_nonexistent_group(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_upload_shared_file_invalid_path(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_upload_shared_file_invalid_path(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、upload、shared、file、无效参数、path；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -380,16 +392,17 @@ def test_group_upload_shared_file_invalid_path(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.uploadGroupSharedFile，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    client = topology_primary_or_device_a
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            client,
             assert_api,
             owner=user_a,
             group_name=new_group_name("shared_file_invalid"),
             invite_members=[],
         )
-        resp = device_a.call(
+        resp = client.call(
             "GroupManager",
             Cmd.uploadGroupSharedFile.value,
             info={"groupId": group_id, "filePath": "/private/tmp/this_file_should_not_exist_123456789.txt"},
@@ -397,4 +410,4 @@ def test_group_upload_shared_file_invalid_path(device_a, assert_api, user_a):
         assert_api.assert_error(resp, code=401, description="Invalid file")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(client, assert_api, group_id)
