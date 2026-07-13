@@ -19,8 +19,14 @@ _ANDROID_MESSAGE_OPTIONAL_KEYS = {
 }
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_chat_ack_message_read_invalid_msg_id(device_b, assert_api, user_a):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_chat_ack_message_read_invalid_msg_id(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、已读回执、消息、已读、无效参数、msg、id；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -31,17 +37,18 @@ def test_chat_ack_message_read_invalid_msg_id(device_b, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.ackMessageRead，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_b.call(
+    client = topology.remote_client(0)
+    resp = client.call(
         "ChatManager",
         Cmd.ackMessageRead.value,
-        info={"msgId": "__invalid_msg_id__", "to": user_a},
+        info={"msgId": "__invalid_msg_id__", "to": topology.primary_client(0).user_id},
     )
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.ackMessageRead.value,
-            "device": "deviceB",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
