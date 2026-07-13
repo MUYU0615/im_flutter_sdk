@@ -52,13 +52,14 @@ def _assert_room_result(
     desc: str = "nothing left here",
     permission_type: int = 2,
     member_list: list[str] | None = None,
+    device: str = "deviceA",
 ) -> None:
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": cmd,
-            "device": "deviceA",
+            "device": device,
             "result": {
                 "owner": owner,
                 "maxUsers": 200,
@@ -82,8 +83,14 @@ def _assert_room_result(
     )
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_chatroom_change_subject_empty_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_chatroom_change_subject_empty_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、change、subject、空值参数、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -96,7 +103,8 @@ def test_chatroom_change_subject_empty_success(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="meta_boundary", desc_prefix="meta_boundary")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomSubject.value,
             info={"roomId": room_id, "subject": ""},
@@ -108,13 +116,16 @@ def test_chatroom_change_subject_empty_success(device_a, assert_api, user_a):
             room_id=room_id,
             owner=user_a,
             name="",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
-def test_chatroom_change_subject_too_long(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_change_subject_too_long(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、change、subject、too、long；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomSubject，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -127,7 +138,8 @@ def test_chatroom_change_subject_too_long(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="meta_boundary", desc_prefix="meta_boundary")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomSubject.value,
             info={"roomId": room_id, "subject": SUBJECT_TOO_LONG},
@@ -138,13 +150,16 @@ def test_chatroom_change_subject_too_long(device_a, assert_api, user_a):
             cmd=Cmd.changeChatRoomSubject.value,
             code=703,
             description="title cannot exceed to 1024",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
-def test_chatroom_change_description_empty_success(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_chatroom_change_description_empty_success(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、change、description、空值参数、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomDescription，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -161,7 +176,8 @@ def test_chatroom_change_description_empty_success(device_a, assert_api, user_a)
         desc_prefix="meta_boundary",
     )
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomDescription.value,
             info={"roomId": room_id, "description": ""},
@@ -174,13 +190,16 @@ def test_chatroom_change_description_empty_success(device_a, assert_api, user_a)
             owner=user_a,
             name=room_name,
             desc="",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
-def test_chatroom_change_description_too_long(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_change_description_too_long(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、change、description、too、long；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.changeChatRoomDescription，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -193,7 +212,8 @@ def test_chatroom_change_description_too_long(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="meta_boundary", desc_prefix="meta_boundary")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.changeChatRoomDescription.value,
             info={"roomId": room_id, "description": DESCRIPTION_TOO_LONG},
@@ -204,13 +224,16 @@ def test_chatroom_change_description_too_long(device_a, assert_api, user_a):
             cmd=Cmd.changeChatRoomDescription.value,
             code=703,
             description="desc cannot exceed to 4096",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
-def test_chatroom_update_announcement_empty(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_chatroom_update_announcement_empty(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、更新、announcement、空值参数；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.updateChatRoomAnnouncement，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -223,7 +246,8 @@ def test_chatroom_update_announcement_empty(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="announcement_empty", desc_prefix="announcement_empty")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.updateChatRoomAnnouncement.value,
             info={"roomId": room_id, "announcement": ""},
@@ -233,7 +257,7 @@ def test_chatroom_update_announcement_empty(device_a, assert_api, user_a):
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.updateChatRoomAnnouncement.value,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -243,6 +267,8 @@ def test_chatroom_update_announcement_empty(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "member_key", "expected_code", "expected_description"),
     [
@@ -263,7 +289,7 @@ def test_chatroom_update_announcement_empty(device_a, assert_api, user_a):
     ],
 )
 def test_chatroom_member_management_empty_members(
-    device_a,
+    topology_primary_or_device_a,
     assert_api,
     user_a,
     cmd,
@@ -286,19 +312,23 @@ def test_chatroom_member_management_empty_members(
         info = {"roomId": room_id, member_key: []}
         if cmd == Cmd.muteChatRoomMembers.value:
             info["duration"] = 60000
-        resp = device_a.call("ChatRoomManager", cmd, info=info)
+        client = topology_primary_or_device_a
+        resp = client.call("ChatRoomManager", cmd, info=info)
         _assert_error_result(
             assert_api,
             resp,
             cmd=cmd,
             code=expected_code,
             description=expected_description,
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "info", "expected"),
     [
@@ -344,7 +374,9 @@ def test_chatroom_member_management_empty_members(
         ),
     ],
 )
-def test_chatroom_member_management_nonexistent_user(device_a, assert_api, user_a, cmd, info, expected):
+def test_chatroom_member_management_nonexistent_user(
+    topology_primary_or_device_a, assert_api, user_a, cmd, info, expected
+):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、成员、management、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、成员、management、不存在对象、用户，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -358,14 +390,15 @@ def test_chatroom_member_management_nonexistent_user(device_a, assert_api, user_
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="bad_member", desc_prefix="bad_member")
     try:
         payload = {"roomId": room_id, **info}
-        resp = device_a.call("ChatRoomManager", cmd, info=payload)
+        client = topology_primary_or_device_a
+        resp = client.call("ChatRoomManager", cmd, info=payload)
         if expected is None:
             assert_api.assert_response_matches(
                 resp,
                 expected={
                     "manager": "ChatRoomManager",
                     "cmd": cmd,
-                    "device": "deviceA",
+                    "device": _expected_device(client),
                     "result": None,
                 },
                 ignore_keys={"sequence"},
@@ -379,6 +412,7 @@ def test_chatroom_member_management_nonexistent_user(device_a, assert_api, user_
                 room_id=room_id,
                 owner=user_a,
                 name=room_name,
+                device=_expected_device(client),
             )
             return
         code, description = expected
@@ -388,6 +422,7 @@ def test_chatroom_member_management_nonexistent_user(device_a, assert_api, user_
             cmd=cmd,
             code=code,
             description=description.replace("{room_id}", room_id),
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
@@ -520,6 +555,8 @@ def test_chatroom_fetch_members_invalid_paging(device_a, device_b, assert_api, u
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "page_num", "page_size"),
     [
@@ -541,7 +578,9 @@ def test_chatroom_fetch_members_invalid_paging(device_a, device_b, assert_api, u
         (Cmd.fetchChatRoomBlockList.value, 1, -1),
     ],
 )
-def test_chatroom_server_member_list_invalid_paging(device_a, assert_api, user_a, cmd, page_num, page_size):
+def test_chatroom_server_member_list_invalid_paging(
+    topology_primary_or_device_a, assert_api, user_a, cmd, page_num, page_size
+):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、服务端、成员、列表、无效参数、paging；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、服务端、成员、列表、无效参数、paging，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -554,7 +593,8 @@ def test_chatroom_server_member_list_invalid_paging(device_a, assert_api, user_a
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="list_page_bad", desc_prefix="list_page_bad")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             cmd,
             info={"roomId": room_id, "pageNum": page_num, "pageSize": page_size},
@@ -564,7 +604,7 @@ def test_chatroom_server_member_list_invalid_paging(device_a, assert_api, user_a
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": cmd,
-                "device": "deviceA",
+                "device": _expected_device(client),
                 "result": [],
             },
             ignore_keys={"sequence"},
@@ -574,7 +614,9 @@ def test_chatroom_server_member_list_invalid_paging(device_a, assert_api, user_a
 
 
 @pytest.mark.real_e2e
-def test_chatroom_add_attributes_empty_map(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_add_attributes_empty_map(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、添加、attributes、空值参数、map；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.setChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -587,7 +629,8 @@ def test_chatroom_add_attributes_empty_map(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attr_empty", desc_prefix="attr_empty")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.setChatRoomAttributes.value,
             info={"roomId": room_id, "attributes": {}, "autoDelete": False, "forced": True},
@@ -598,13 +641,16 @@ def test_chatroom_add_attributes_empty_map(device_a, assert_api, user_a):
             cmd=Cmd.setChatRoomAttributes.value,
             code=110,
             description="",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
-def test_chatroom_remove_attributes_empty_keys(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chatroom_remove_attributes_empty_keys(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、移除、attributes、空值参数、keys；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.removeChatRoomAttributes，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -617,7 +663,8 @@ def test_chatroom_remove_attributes_empty_keys(device_a, assert_api, user_a):
     )
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="attr_keys_empty", desc_prefix="attr_keys_empty")
     try:
-        resp = device_a.call(
+        client = topology_primary_or_device_a
+        resp = client.call(
             "ChatRoomManager",
             Cmd.removeChatRoomAttributes.value,
             info={"roomId": room_id, "keys": [], "forced": True},
@@ -628,12 +675,15 @@ def test_chatroom_remove_attributes_empty_keys(device_a, assert_api, user_a):
             cmd=Cmd.removeChatRoomAttributes.value,
             code=110,
             description="",
+            device=_expected_device(client),
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -643,7 +693,7 @@ def test_chatroom_remove_attributes_empty_keys(device_a, assert_api, user_a):
         Cmd.isMemberInChatRoomMuteList.value,
     ],
 )
-def test_chatroom_member_self_checks_empty_room_id(device_a, assert_api, cmd):
+def test_chatroom_member_self_checks_empty_room_id(topology_primary_or_device_a, assert_api, cmd):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、成员、self、checks、空值参数、room、id；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、成员、self、checks、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -654,11 +704,13 @@ def test_chatroom_member_self_checks_empty_room_id(device_a, assert_api, cmd):
         '2. 通过 WebSocket 控制测试 App 调用 聊天室、成员、self、checks、空值参数、room、id，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("ChatRoomManager", cmd, info={"roomId": ""})
+    client = topology_primary_or_device_a
+    resp = client.call("ChatRoomManager", cmd, info={"roomId": ""})
     _assert_error_result(
         assert_api,
         resp,
         cmd=cmd,
         code=700,
         description="Chat room ID is invalid",
+        device=_expected_device(client),
     )
