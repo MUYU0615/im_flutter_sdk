@@ -12,6 +12,11 @@ from src import gt, ne
 
 pytestmark = [pytest.mark.client, pytest.mark.presence]
 
+
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 # 用户 A/B 由 conftest 的 created_test_users 创建，teardown 删除；用例中注入 user_a / user_b
 
 # 订阅有效期（秒），不超过 30 天
@@ -221,7 +226,9 @@ DESC_128K = "x" * (128 * 1024)
 @pytest.mark.api("PresenceManager.publishPresenceWithDescription")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_presence_publish_128k_desc(device_a, device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_presence_publish_128k_desc(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态基础能力场景所需的测试数据，场景为在线状态、发布、128k、desc；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.publishPresenceWithDescription，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -233,7 +240,8 @@ def test_presence_publish_128k_desc(device_a, device_b, assert_api):
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
     # 1. A 发布 128k desc
-    resp_pub = device_a.call(
+    client = topology_primary_or_device_a
+    resp_pub = client.call(
         "PresenceManager",
         Cmd.presenceWithDescription.value,
         info={"desc": DESC_128K},
@@ -249,7 +257,7 @@ def test_presence_publish_128k_desc(device_a, device_b, assert_api):
 		        "code": 1100
 	        },
         },
-        context={"device": "deviceA"},
+        context={"device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
 
@@ -329,7 +337,9 @@ PRESENCE_SUBSCRIBE_MAX_MEMBERS = 100
 @pytest.mark.api("PresenceManager.presenceSubscribe")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_presence_subscribe_over_100_members(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_presence_subscribe_over_100_members(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、订阅、over、100、成员；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceSubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -341,7 +351,8 @@ def test_presence_subscribe_over_100_members(device_a, assert_api):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     members_over_limit = [f"user_{i}" for i in range(PRESENCE_SUBSCRIBE_MAX_MEMBERS + 1)]
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "PresenceManager",
         Cmd.presenceSubscribe.value,
         info={"members": members_over_limit, "expiry": PRESENCE_EXPIRY},
@@ -357,7 +368,7 @@ def test_presence_subscribe_over_100_members(device_a, assert_api):
                 "code": 1100
             },
         },
-        context={"device": "deviceA"},
+        context={"device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
 
@@ -367,7 +378,9 @@ def test_presence_subscribe_over_100_members(device_a, assert_api):
 @pytest.mark.api("PresenceManager.presenceUnsubscribe")
 @pytest.mark.clients("receiver")
 @pytest.mark.roles_mode("ordered")
-def test_presence_unsubscribe_over_100_members(device_b, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_presence_unsubscribe_over_100_members(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备在线状态异常/边界场景所需的测试数据，场景为在线状态、取消订阅、over、100、成员；
     2. 通过 WebSocket 控制测试 App 调用 PresenceManager.presenceUnsubscribe，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -379,7 +392,8 @@ def test_presence_unsubscribe_over_100_members(device_b, assert_api):
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
     members_over_limit = [f"user_{i}" for i in range(PRESENCE_SUBSCRIBE_MAX_MEMBERS + 1)]
-    resp = device_b.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "PresenceManager",
         Cmd.presenceUnsubscribe.value,
         info={"members": members_over_limit},
@@ -395,7 +409,7 @@ def test_presence_unsubscribe_over_100_members(device_b, assert_api):
                 "code": 1100
             },
         },
-        context={"device": "deviceB"},
+        context={"device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
 
