@@ -29,9 +29,9 @@ def _expected_device(client) -> str:
 @pytest.mark.api("ContactManager.getAllContactsFromDB")
 @pytest.mark.clients("owner", "peer")
 @pytest.mark.roles_mode("ordered")
-def test_contact_get_all_contacts_from_db_after_server_sync(
-    device_a, device_b, assert_api, user_a, user_b
-):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_contact_get_all_contacts_from_db_after_server_sync(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、all、contacts、from、db、after、服务端；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.getAllContactsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -42,10 +42,14 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getAllContactsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="local_contacts_db")
+    flow.establish_friends(primary, remote, primary.user_id, user_b, reason="local_contacts_db")
 
-    sync_resp = device_a.call(
+    sync_resp = primary.call(
         "ContactManager",
         Cmd.getAllContactsFromServer.value,
         info={},
@@ -55,14 +59,14 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
     synced_contacts = sync_resp.get("result") or []
     assert user_b in synced_contacts, f"服务端好友列表未包含目标好友: {synced_contacts}"
 
-    local_resp = device_a.call(
+    local_resp = primary.call(
         "ContactManager",
         Cmd.getAllContactsFromDB.value,
         info={},
@@ -72,14 +76,14 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromDB.value,
-            "device": "deviceA",
+            "device": expected_device,
         },
         ignore_keys={"sequence", "result"},
     )
     local_contacts = local_resp.get("result") or []
     assert user_b in local_contacts, f"本地好友列表未包含目标好友: {local_contacts}"
 
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
@@ -87,9 +91,9 @@ def test_contact_get_all_contacts_from_db_after_server_sync(
 @pytest.mark.api("ContactManager.getBlockListFromDB")
 @pytest.mark.clients("owner", "peer")
 @pytest.mark.roles_mode("ordered")
-def test_contact_get_block_list_from_db_after_server_sync(
-    device_a, device_b, assert_api, user_a, user_b
-):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_contact_get_block_list_from_db_after_server_sync(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、db、after、服务端；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -100,11 +104,15 @@ def test_contact_get_block_list_from_db_after_server_sync(
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="local_block_db")
-    flow.add_to_block_list(device_a, user_b)
+    flow.establish_friends(primary, remote, primary.user_id, user_b, reason="local_block_db")
+    flow.add_to_block_list(primary, user_b)
 
-    server_resp = device_a.call(
+    server_resp = primary.call(
         "ContactManager",
         Cmd.getBlockListFromServer.value,
         info={},
@@ -114,13 +122,13 @@ def test_contact_get_block_list_from_db_after_server_sync(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getBlockListFromServer.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": [user_b],
         },
         ignore_keys={"sequence"},
     )
 
-    local_resp = device_a.call(
+    local_resp = primary.call(
         "ContactManager",
         Cmd.getBlockListFromDB.value,
         info={},
@@ -130,14 +138,14 @@ def test_contact_get_block_list_from_db_after_server_sync(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getBlockListFromDB.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": [user_b],
         },
         ignore_keys={"sequence"},
     )
 
-    assert_api.assert_success(flow.remove_from_block_list(device_a, user_b))
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    assert_api.assert_success(flow.remove_from_block_list(primary, user_b))
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 @pytest.mark.real_e2e
