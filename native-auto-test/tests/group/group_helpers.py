@@ -775,6 +775,7 @@ def create_group(
     style: int = 0,
     invite_need_confirm: bool = False,
 ):
+    expected_device = getattr(device_a, "name", "deviceA")
     resp_create = device_a.call(
         "GroupManager",
         Cmd.createGroup.value,
@@ -802,6 +803,7 @@ def create_group(
         owner=owner,
         member_count_value=1 if invite_need_confirm else 1 + len(invite_members),
         is_member_allow_to_invite=(style == 1),
+        device=expected_device,
     )
     wait_group_visible_from_server(device_a, gid)
     return gid, resp_create

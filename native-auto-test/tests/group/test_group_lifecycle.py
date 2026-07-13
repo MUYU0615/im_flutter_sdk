@@ -72,7 +72,9 @@ def test_group_create_group(device_a, device_b, assert_api, user_a, user_b):
 @pytest.mark.case_id("group.get_group.local.success")
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.getGroupWithId")
-def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_get_group(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -83,17 +85,22 @@ def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     group_name = new_group_name("local")
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[user_b],
         )
-        resp_get = device_a.call("GroupManager", Cmd.getGroupWithId.value, info={"groupId": group_id})
+        resp_get = primary.call("GroupManager", Cmd.getGroupWithId.value, info={"groupId": group_id})
         assert_group_snapshot(
             assert_api,
             resp_get,
@@ -102,17 +109,20 @@ def test_group_get_group(device_a, device_b, assert_api, user_a, user_b):
             group_name=group_name,
             owner=user_a,
             member_count_value=2,
+            device=expected_device,
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id, device_b=device_b)
+            destroy_group(primary, assert_api, group_id, device_b=remote)
 
 
 @pytest.mark.real_e2e
 @pytest.mark.case_id("group.get_group_from_server.success")
 @pytest.mark.api("GroupManager.createGroup")
 @pytest.mark.api("GroupManager.getGroupSpecificationFromServer")
-def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_group_get_group_from_server(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、群组、from、服务端；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -123,17 +133,22 @@ def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, use
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    expected_device = _expected_device(primary)
     group_name = new_group_name("server")
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[user_b],
         )
-        resp = device_a.call(
+        resp = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -146,10 +161,11 @@ def test_group_get_group_from_server(device_a, device_b, assert_api, user_a, use
             group_name=group_name,
             owner=user_a,
             member_count_value=2,
+            device=expected_device,
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id, device_b=device_b)
+            destroy_group(primary, assert_api, group_id, device_b=remote)
 
 
 @pytest.mark.real_e2e
