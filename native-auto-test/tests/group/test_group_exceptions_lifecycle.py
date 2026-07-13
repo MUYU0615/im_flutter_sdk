@@ -207,7 +207,9 @@ def test_group_create_group_optional_fields_empty(
 
 
 @pytest.mark.real_e2e
-def test_group_create_group_max_count_less_than_invite_members(device_a, assert_api, user_b, user_c):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_create_group_max_count_less_than_invite_members(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、max、count、less、than、invite；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -218,7 +220,11 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    resp = device_a.call(
+    primary = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
+    user_c = topology.primary_client(1).user_id
+    expected_device = _expected_device(primary)
+    resp = primary.call(
         "GroupManager",
         Cmd.createGroup.value,
         info={
@@ -238,13 +244,13 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
     if isinstance(result, dict):
         gid = result.get("groupId")
         if isinstance(gid, str) and gid:
-            resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+            resp_destroy = primary.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
             assert_api.assert_response_matches(
                 resp_destroy,
                 expected={
                     "manager": "GroupManager",
                     "cmd": Cmd.destroyGroup.value,
-                    "device": "deviceA",
+                    "device": expected_device,
                     "result": True,
                 },
                 ignore_keys={"sequence"},
