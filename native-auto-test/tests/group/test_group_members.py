@@ -20,8 +20,14 @@ from tests.group.group_helpers import (
 pytestmark = [pytest.mark.client, pytest.mark.group, pytest.mark.agorachat1_4_0]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_add_remove_members(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、添加、移除、成员；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupSpecificationFromServer、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -32,18 +38,23 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.addMembers、GroupManager.getGroupSpecificationFromServer、GroupManager.removeMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     group_name = new_group_name("member")
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
             invite_members=[],
         )
 
-        resp_add = device_a.call(
+        resp_add = primary.call(
             "GroupManager",
             Cmd.addMembers.value,
             info={"groupId": group_id, "members": [user_b], "welcome": "welcome"},
@@ -53,7 +64,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.addMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -70,7 +81,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             "onAutoAcceptInvitationFromGroup",
         }
         add_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types=expected_add_events,
             group_id=group_id,
             allow_missing_group_id=True,
@@ -88,7 +99,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             expected_member=user_b,
         )
 
-        resp_get_after_add = device_a.call(
+        resp_get_after_add = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -101,11 +112,12 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             group_name=group_name,
             owner=user_a,
             member_count_value=2,
+            device=primary_device,
         )
         assert member_count(resp_get_after_add) == 2, f"addMembers 后 memberCount 预期 2: {resp_get_after_add}"
         assert_group_members_exact(resp_get_after_add, [user_b], err_prefix="addMembers 后")
 
-        resp_remove = device_a.call(
+        resp_remove = primary.call(
             "GroupManager",
             Cmd.removeMembers.value,
             info={"groupId": group_id, "members": [user_b]},
@@ -115,7 +127,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.removeMembers.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -128,7 +140,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
         }
         required_remove_events = {"onUserRemovedFromGroup"}
         remove_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types=expected_remove_events,
             group_id=group_id,
             allow_missing_group_id=True,
@@ -145,7 +157,7 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             expected_member=user_b,
         )
 
-        resp_get_after_remove = device_a.call(
+        resp_get_after_remove = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -158,16 +170,19 @@ def test_group_add_remove_members(device_a, device_b, assert_api, user_a, user_b
             group_name=group_name,
             owner=user_a,
             member_count_value=1,
+            device=primary_device,
         )
         assert member_count(resp_get_after_remove) == 1, f"removeMembers 后 memberCount 预期 1: {resp_get_after_remove}"
         assert_group_members_exact(resp_get_after_remove, [], err_prefix="removeMembers 后")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_join_and_leave_public_group(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、加入、and、离开、public、群组；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.joinPublicGroup、GroupManager.getGroupSpecificationFromServer、GroupManager.leaveGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -178,11 +193,17 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.joinPublicGroup、GroupManager.getGroupSpecificationFromServer、GroupManager.leaveGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_name = new_group_name("public")
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=group_name,
@@ -190,13 +211,13 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             style=3,
         )
 
-        resp_join = device_b.call("GroupManager", Cmd.joinPublicGroup.value, info={"groupId": group_id})
+        resp_join = remote.call("GroupManager", Cmd.joinPublicGroup.value, info={"groupId": group_id})
         assert_api.assert_response_matches(
             resp_join,
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.joinPublicGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
@@ -207,7 +228,7 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             "onMemberJoinedFromGroup",
         }
         join_events = collect_group_events(
-            device_a,
+            primary,
             expected_event_types=expected_join_events,
             group_id=group_id,
             required_all_event_types={"onMemberJoinedFromGroup"},
@@ -222,7 +243,7 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             expected_member=user_b,
         )
 
-        resp_after_join = device_a.call(
+        resp_after_join = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -235,17 +256,18 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             group_name=group_name,
             owner=user_a,
             member_count_value=2,
+            device=primary_device,
         )
         assert member_count(resp_after_join) == 2, f"joinPublicGroup 后 memberCount 预期 2: {resp_after_join}"
         assert_group_members_exact(resp_after_join, [user_b], err_prefix="joinPublicGroup 后")
 
-        resp_leave = device_b.call("GroupManager", Cmd.leaveGroup.value, info={"groupId": group_id})
+        resp_leave = remote.call("GroupManager", Cmd.leaveGroup.value, info={"groupId": group_id})
         assert_api.assert_response_matches(
             resp_leave,
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.leaveGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -256,7 +278,7 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             "onMemberExitedFromGroup",
         }
         leave_events = collect_group_events(
-            device_a,
+            primary,
             expected_event_types=expected_leave_events,
             group_id=group_id,
             required_all_event_types={"onMemberExitedFromGroup"},
@@ -271,7 +293,7 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             expected_member=user_b,
         )
 
-        resp_after_leave = device_a.call(
+        resp_after_leave = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -284,12 +306,13 @@ def test_group_join_and_leave_public_group(device_a, device_b, assert_api, user_
             group_name=group_name,
             owner=user_a,
             member_count_value=1,
+            device=primary_device,
         )
         assert member_count(resp_after_leave) == 1, f"leaveGroup 后 memberCount 预期 1: {resp_after_leave}"
         assert_group_members_exact(resp_after_leave, [], err_prefix="leaveGroup 后")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e

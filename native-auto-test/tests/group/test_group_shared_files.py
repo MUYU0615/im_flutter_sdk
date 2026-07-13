@@ -36,13 +36,20 @@ def _run_adb(*args: str, text: bool = True) -> subprocess.CompletedProcess:
         pytest.skip("adb is not installed or not on PATH for Android shared-file staging")
 
 
-def _android_serial_for_device_a() -> str:
-    configured = os.getenv("NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA") or os.getenv("ANDROID_SERIAL_DEVICEA")
+def _android_serial_for_client(client_name: str) -> str:
+    suffix = client_name.upper().replace("-", "_")
+    configured = (
+        os.getenv(f"NATIVE_AUTO_TEST_ANDROID_SERIAL_{suffix}")
+        or os.getenv(f"ANDROID_SERIAL_{suffix}")
+        or os.getenv("NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA")
+        or os.getenv("ANDROID_SERIAL_DEVICEA")
+    )
     if configured:
         return configured
     pytest.skip(
-        "Android shared-file positive flow requires an explicit deviceA serial "
-        "(NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA or ANDROID_SERIAL_DEVICEA)"
+        f"Android shared-file positive flow requires an explicit {client_name} serial "
+        f"(NATIVE_AUTO_TEST_ANDROID_SERIAL_{suffix}, ANDROID_SERIAL_{suffix}, "
+        "NATIVE_AUTO_TEST_ANDROID_SERIAL_DEVICEA or ANDROID_SERIAL_DEVICEA)"
     )
 
 
@@ -143,15 +150,16 @@ def _find_shared_file(files: list[dict], *, file_name: str, before_ids: set[str 
 
 @pytest.mark.android
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("group.shared_file.upload_list_download_remove.success")
 @pytest.mark.api("GroupManager.uploadGroupSharedFile")
 @pytest.mark.api("GroupManager.getGroupFileListFromServer")
 @pytest.mark.api("GroupManager.downloadGroupSharedFile")
 @pytest.mark.api("GroupManager.removeGroupSharedFile")
 def test_group_shared_file_upload_list_download_remove_positive_flow(
-    device_a,
+    topology,
     assert_api,
-    user_a,
     target_platform,
     tmp_path,
 ):
@@ -168,31 +176,34 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
     if target_platform != "android":
         pytest.skip("Android shared-file positive flow requires Android file staging")
 
+    primary = topology.primary_client(0)
+    user_a = primary.user_id
+    primary_device = getattr(primary, "name", "deviceA")
     group_id = ""
     file_name = f"group-shared-{uuid.uuid4().hex}.txt"
     local_file = tmp_path / file_name
     content = f"group-shared-file-content-{uuid.uuid4().hex}\n"
     local_file.write_text(content, encoding="utf-8")
-    android_serial = _android_serial_for_device_a()
+    android_serial = _android_serial_for_client(primary_device)
     remote_file_path = _push_android_shared_file(android_serial, local_file, file_name)
     download_path = f"{_ANDROID_APP_INTERNAL_E2E_DIR}/downloaded-{file_name}"
 
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("shared_file_flow"),
             invite_members=[],
         )
 
-        before_files = _group_file_list(device_a, assert_api, group_id)
+        before_files = _group_file_list(primary, assert_api, group_id)
         before_ids = {
             item.get("fileId") or item.get("id")
             for item in before_files
         }
 
-        resp_upload = device_a.call(
+        resp_upload = primary.call(
             "GroupManager",
             Cmd.uploadGroupSharedFile.value,
             info={"groupId": group_id, "filePath": remote_file_path},
@@ -202,7 +213,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.uploadGroupSharedFile.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -210,7 +221,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
 
         shared_file = None
         for _ in range(6):
-            files_after_upload = _group_file_list(device_a, assert_api, group_id)
+            files_after_upload = _group_file_list(primary, assert_api, group_id)
             shared_file = _find_shared_file(files_after_upload, file_name=file_name, before_ids=before_ids)
             if shared_file is not None:
                 break
@@ -227,7 +238,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
         file_size = shared_file.get("fileSize")
         assert isinstance(file_size, int) and file_size > 0, f"共享文件 fileSize 非正整数: {shared_file}"
 
-        resp_download = device_a.call(
+        resp_download = primary.call(
             "GroupManager",
             Cmd.downloadGroupSharedFile.value,
             info={"groupId": group_id, "fileId": file_id, "savePath": download_path},
@@ -237,7 +248,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.downloadGroupSharedFile.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -247,7 +258,7 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             f"下载文件内容不匹配: savePath={download_path}, expected={content!r}, actual={downloaded_content!r}"
         )
 
-        resp_remove = device_a.call(
+        resp_remove = primary.call(
             "GroupManager",
             Cmd.removeGroupSharedFile.value,
             info={"groupId": group_id, "fileId": file_id},
@@ -257,20 +268,20 @@ def test_group_shared_file_upload_list_download_remove_positive_flow(
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.removeGroupSharedFile.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": True,
             },
             ignore_keys={"sequence"},
         )
 
-        files_after_remove = _group_file_list(device_a, assert_api, group_id)
+        files_after_remove = _group_file_list(primary, assert_api, group_id)
         assert not any(
             (item.get("fileId") == file_id or item.get("id") == file_id)
             for item in files_after_remove
         ), f"删除后共享文件仍存在: file_id={file_id}, files={files_after_remove!r}"
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e

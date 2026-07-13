@@ -23,8 +23,14 @@ _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 _NONEXISTENT_USER = "nonexistent_user_999999"
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_request_to_join_and_accept_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、request、to、加入、and、accept、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup、GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -35,10 +41,16 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup、GroupManager.acceptJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("public_need_approval"),
@@ -46,7 +58,7 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
             style=2,
         )
 
-        resp_request = device_b.call(
+        resp_request = remote.call(
             "GroupManager",
             Cmd.requestToJoinPublicGroup.value,
             info={"groupId": group_id, "reason": "auto-apply-accept"},
@@ -56,7 +68,7 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.requestToJoinPublicGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -66,7 +78,7 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
             assert request_result.get("groupId") == group_id, f"requestToJoinPublicGroup groupId 不匹配: {resp_request}"
 
         owner_request_events = collect_group_events(
-            device_a,
+            primary,
             expected_event_types={
                 GroupChangeEvent.ON_REQUEST_TO_JOIN_RECEIVED.value,
                 "onGroupRequestToJoinReceived",
@@ -89,7 +101,7 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
             expected_member=user_b,
         )
 
-        resp_accept = device_a.call(
+        resp_accept = primary.call(
             "GroupManager",
             Cmd.acceptJoinApplication.value,
             info={"groupId": group_id, "userId": user_b},
@@ -99,14 +111,14 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.acceptJoinApplication.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
         )
 
         applicant_accept_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_REQUEST_TO_JOIN_ACCEPTED.value,
                 GroupChangeEvent.ON_MEMBER_JOINED.value,
@@ -136,11 +148,13 @@ def test_group_request_to_join_and_accept_success(device_a, device_b, assert_api
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_request_to_join_and_decline_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_request_to_join_and_decline_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组事件回调场景所需的测试数据，场景为群组、request、to、加入、and、decline、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup、GroupManager.declineJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -151,10 +165,16 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.requestToJoinPublicGroup、GroupManager.declineJoinApplication，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_id = ""
     try:
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("public_need_decline"),
@@ -162,7 +182,7 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
             style=2,
         )
 
-        resp_request = device_b.call(
+        resp_request = remote.call(
             "GroupManager",
             Cmd.requestToJoinPublicGroup.value,
             info={"groupId": group_id, "reason": "auto-apply-decline"},
@@ -172,7 +192,7 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.requestToJoinPublicGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -182,7 +202,7 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
             assert request_result.get("groupId") == group_id, f"requestToJoinPublicGroup groupId 不匹配: {resp_request}"
 
         owner_request_events = collect_group_events(
-            device_a,
+            primary,
             expected_event_types={
                 GroupChangeEvent.ON_REQUEST_TO_JOIN_RECEIVED.value,
                 "onGroupRequestToJoinReceived",
@@ -205,7 +225,7 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
             expected_member=user_b,
         )
 
-        resp_decline = device_a.call(
+        resp_decline = primary.call(
             "GroupManager",
             Cmd.declineJoinApplication.value,
             info={"groupId": group_id, "userId": user_b, "reason": "auto-reject"},
@@ -215,14 +235,14 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.declineJoinApplication.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
         )
 
         applicant_decline_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_REQUEST_TO_JOIN_DECLINED.value,
                 "onGroupRequestToJoinDeclined",
@@ -248,11 +268,13 @@ def test_group_request_to_join_and_decline_success(device_a, device_b, assert_ap
         )
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_accept_invitation_from_group_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_accept_invitation_from_group_success(topology, assert_api):
     """
     1. 关闭 Android-B 自动接受群邀请，并由 Android-A 创建需要被邀请人确认的群；
     2. Android-A 调用 GroupManager.inviterUser 邀请 Android-B 对应账号入群，Android-B 校验收到群邀请事件；
@@ -265,9 +287,15 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
         '3. Android-B 调用 GroupManager.acceptInvitationFromGroup 接受邀请，Android-A 校验收到邀请已接受事件；\n'
         '4. Android-A 从服务端拉取群详情，校验 Android-B 对应账号已经成为群成员。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_id = ""
     try:
-        resp_auto_off = device_b.call(
+        resp_auto_off = remote.call(
             "Client",
             Cmd.updateAutoAcceptGroupInvitationSetting.value,
             info={"autoAcceptGroupInvitation": False},
@@ -277,14 +305,14 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             expected={
                 "manager": "Client",
                 "cmd": Cmd.updateAutoAcceptGroupInvitationSetting.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
         )
 
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("accept_invite"),
@@ -292,7 +320,7 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             invite_need_confirm=True,
         )
 
-        resp_invite = device_a.call(
+        resp_invite = primary.call(
             "GroupManager",
             Cmd.inviterUser.value,
             info={"groupId": group_id, "members": [user_b], "reason": "auto-invite-accept"},
@@ -302,13 +330,13 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.inviterUser.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
         invite_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_INVITATION_RECEIVED.value,
                 "onGroupInvitationReceived",
@@ -329,7 +357,7 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             expected_inviter=user_a,
         )
 
-        resp_accept = device_b.call(
+        resp_accept = remote.call(
             "GroupManager",
             Cmd.acceptInvitationFromGroup.value,
             info={"groupId": group_id, "inviter": user_a},
@@ -339,7 +367,7 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.acceptInvitationFromGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -348,7 +376,7 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
         assert accept_result.get("groupId") == group_id, f"acceptInvitationFromGroup groupId 不匹配: {resp_accept}"
 
         accepted_events = collect_group_events(
-            device_a,
+            primary,
             expected_event_types={
                 GroupChangeEvent.ON_INVITATION_ACCEPTED.value,
                 "onGroupInvitationAccepted",
@@ -369,7 +397,7 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
             expected_member=user_b,
         )
 
-        resp_group = device_a.call(
+        resp_group = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -379,11 +407,13 @@ def test_group_accept_invitation_from_group_success(device_a, device_b, assert_a
         assert_group_members_exact(resp_group, [user_b], err_prefix="接受群邀请后")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
-def test_group_decline_invitation_from_group_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_group_decline_invitation_from_group_success(topology, assert_api):
     """
     1. 关闭 Android-B 自动接受群邀请，并由 Android-A 创建需要被邀请人确认的群；
     2. Android-A 调用 GroupManager.inviterUser 邀请 Android-B 对应账号入群，Android-B 校验收到群邀请事件；
@@ -396,9 +426,15 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
         '3. Android-B 调用 GroupManager.declineInvitationFromGroup 拒绝邀请，Android-A 校验收到邀请已拒绝事件；\n'
         '4. Android-A 从服务端拉取群详情，校验 Android-B 对应账号没有成为群成员。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     group_id = ""
     try:
-        resp_auto_off = device_b.call(
+        resp_auto_off = remote.call(
             "Client",
             Cmd.updateAutoAcceptGroupInvitationSetting.value,
             info={"autoAcceptGroupInvitation": False},
@@ -408,14 +444,14 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
             expected={
                 "manager": "Client",
                 "cmd": Cmd.updateAutoAcceptGroupInvitationSetting.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
         )
 
         group_id, _ = create_group(
-            device_a,
+            primary,
             assert_api,
             owner=user_a,
             group_name=new_group_name("decline_invite"),
@@ -423,7 +459,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
             invite_need_confirm=True,
         )
 
-        resp_invite = device_a.call(
+        resp_invite = primary.call(
             "GroupManager",
             Cmd.inviterUser.value,
             info={"groupId": group_id, "members": [user_b], "reason": "auto-invite-decline"},
@@ -433,13 +469,13 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.inviterUser.value,
-                "device": "deviceA",
+                "device": primary_device,
             },
             ignore_keys={"sequence", "result"},
         )
 
         invite_events = collect_group_events(
-            device_b,
+            remote,
             expected_event_types={
                 GroupChangeEvent.ON_INVITATION_RECEIVED.value,
                 "onGroupInvitationReceived",
@@ -460,7 +496,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
             expected_inviter=user_a,
         )
 
-        resp_decline = device_b.call(
+        resp_decline = remote.call(
             "GroupManager",
             Cmd.declineInvitationFromGroup.value,
             info={"groupId": group_id, "inviter": user_a, "reason": "auto-invite-reject"},
@@ -470,7 +506,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.declineInvitationFromGroup.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": None,
             },
             ignore_keys={"sequence"},
@@ -478,7 +514,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
 
         try:
             declined_events = collect_group_events(
-                device_a,
+                primary,
                 expected_event_types={
                     GroupChangeEvent.ON_INVITATION_DECLINED.value,
                     "onGroupInvitationDeclined",
@@ -501,7 +537,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
                 expected_member=user_b,
             )
 
-        resp_group = device_a.call(
+        resp_group = primary.call(
             "GroupManager",
             Cmd.getGroupSpecificationFromServer.value,
             info={"groupId": group_id, "fetchMembers": True},
@@ -511,7 +547,7 @@ def test_group_decline_invitation_from_group_success(device_a, device_b, assert_
         assert_group_members_exact(resp_group, [], err_prefix="拒绝群邀请后")
     finally:
         if group_id:
-            destroy_group(device_a, assert_api, group_id)
+            destroy_group(primary, assert_api, group_id)
 
 
 @pytest.mark.real_e2e
