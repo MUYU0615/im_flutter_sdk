@@ -1071,9 +1071,9 @@ def test_contact_add_user_to_block_list_nonexistent(topology_primary_or_device_a
 @pytest.mark.api("ContactManager.getAllContactsFromServer")
 @pytest.mark.clients("owner", "peer")
 @pytest.mark.roles_mode("ordered")
-def test_contact_block_list_flow_then_unblock_restores_friend(
-    device_a, device_b, assert_api, user_a, user_b
-):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_contact_block_list_flow_then_unblock_restores_friend(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、封禁、列表、flow、then、unblock、restores、friend；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1084,9 +1084,15 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList、ContactManager.getAllContactsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     flow = ContactTestFlow(assert_api)
-    flow.establish_friends(device_a, device_b, user_a, user_b, reason="blocklist_flow")
-    resp_add_block = device_a.call(
+    flow.establish_friends(primary, remote, user_a, user_b, reason="blocklist_flow")
+    resp_add_block = primary.call(
         "ContactManager",
         Cmd.addUserToBlockList.value,
         info={"userId": user_b},
@@ -1097,54 +1103,54 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.addUserToBlockList.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": user_b,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_block = flow.get_block_list(device_a)
+    resp_block = flow.get_block_list(primary)
     assert_api.assert_success(resp_block)
     assert_api.assert_response_matches(
         resp_block,
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getBlockListFromServer.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": [user_b],
         },
         ignore_keys={"sequence"},
     )
 
-    resp_friends_a_blocked = flow.get_all_contacts_from_server(device_a)
+    resp_friends_a_blocked = flow.get_all_contacts_from_server(primary)
     assert_api.assert_success(resp_friends_a_blocked)
     assert_api.assert_response_matches(
         resp_friends_a_blocked,
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
+            "device": primary_device,
         },
         ignore_keys={"sequence", "result"},
     )
     friends_a_blocked = resp_friends_a_blocked.get("result") or []
     assert user_b in friends_a_blocked, f"A 拉黑后服务端好友列表未包含 B: {friends_a_blocked}"
 
-    resp_friends_b = flow.get_all_contacts_from_server(device_b)
+    resp_friends_b = flow.get_all_contacts_from_server(remote)
     assert_api.assert_success(resp_friends_b)
     assert_api.assert_response_matches(
         resp_friends_b,
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceB",
+            "device": remote_device,
         },
         ignore_keys={"sequence", "result"},
     )
     friends_b = resp_friends_b.get("result") or []
     assert user_a in friends_b, f"B 好友列表未包含 A: {friends_b}"
 
-    resp_remove_block = device_a.call(
+    resp_remove_block = primary.call(
         "ContactManager",
         Cmd.removeUserFromBlockList.value,
         info={"userId": user_b},
@@ -1155,27 +1161,27 @@ def test_contact_block_list_flow_then_unblock_restores_friend(
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.removeUserFromBlockList.value,
-            "device": "deviceA",
+            "device": primary_device,
             "result": user_b,
         },
         ignore_keys={"sequence"},
     )
 
-    resp_friends_a_after = flow.get_all_contacts_from_server(device_a)
+    resp_friends_a_after = flow.get_all_contacts_from_server(primary)
     assert_api.assert_success(resp_friends_a_after)
     assert_api.assert_response_matches(
         resp_friends_a_after,
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getAllContactsFromServer.value,
-            "device": "deviceA",
+            "device": primary_device,
         },
         ignore_keys={"sequence", "result"},
     )
     friends_a_after = resp_friends_a_after.get("result") or []
     assert user_b in friends_a_after, f"A 解除拉黑后好友列表未包含 B: {friends_a_after}"
 
-    flow.delete_friend(device_a, user_b, wait_event=False)
+    flow.delete_friend(primary, user_b, wait_event=False)
 
 
 def test_contact_remove_from_block_list_when_not_blocked(
