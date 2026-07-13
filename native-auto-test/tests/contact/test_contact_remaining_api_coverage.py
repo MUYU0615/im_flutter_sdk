@@ -20,6 +20,10 @@ from src.test_flow import ContactTestFlow
 pytestmark = [pytest.mark.client, pytest.mark.contact]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
 @pytest.mark.case_id("contact.get_all_contacts_from_db.after_server_sync.success")
 @pytest.mark.api("ContactManager.getAllContactsFromDB")
@@ -244,7 +248,9 @@ def test_contact_save_black_list_then_fetch_from_server(
 @pytest.mark.api("ContactManager.getSelfIdsOnOtherPlatform")
 @pytest.mark.clients("owner")
 @pytest.mark.roles_mode("ordered")
-def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_contact_get_self_ids_on_other_platform_returns_list(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、self、ids、on、other、platform、returns；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.getSelfIdsOnOtherPlatform，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -255,7 +261,8 @@ def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getSelfIdsOnOtherPlatform，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.getSelfIdsOnOtherPlatform.value,
         info={},
@@ -265,7 +272,7 @@ def test_contact_get_self_ids_on_other_platform_returns_list(device_a, assert_ap
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getSelfIdsOnOtherPlatform.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
         },
         ignore_keys={"sequence", "result"},
     )
