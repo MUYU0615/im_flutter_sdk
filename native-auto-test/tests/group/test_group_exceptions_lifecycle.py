@@ -15,8 +15,14 @@ pytestmark = [pytest.mark.client, pytest.mark.group]
 _NONEXISTENT_GROUP_ID = "nonexistent_group_999999"
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 @pytest.mark.real_e2e
-def test_group_create_group_empty_name(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
+def test_group_create_group_empty_name(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、空值参数、name；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -27,7 +33,8 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "GroupManager",
         Cmd.createGroup.value,
         info={
@@ -48,7 +55,7 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "owner": user_a,
                 "ext": "auto-ext",
@@ -76,13 +83,13 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
     gid = ((resp.get("result") or {}).get("groupId")) if isinstance(resp.get("result"), dict) else None
     assert isinstance(gid, str) and gid, f"createGroup 空群名返回应包含可销毁的 groupId: {resp}"
     # 清理由该异常场景产生的群，避免污染环境
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = client.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -90,6 +97,8 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("case_name", "overrides"),
     [
@@ -115,7 +124,9 @@ def test_group_create_group_empty_name(device_a, assert_api, user_a):
         ),
     ],
 )
-def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, case_name, overrides):
+def test_group_create_group_optional_fields_empty(
+    topology_primary_or_device_a, assert_api, user_a, case_name, overrides
+):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、创建、群组、optional、fields、空值参数；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.createGroup、GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -141,7 +152,8 @@ def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, 
     for key, value in overrides.items():
         base_info[key] = value
 
-    resp = device_a.call("GroupManager", Cmd.createGroup.value, info=base_info)
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.createGroup.value, info=base_info)
     result = resp.get("result") if isinstance(resp.get("result"), dict) else {}
     expected_desc = base_info["desc"]
     expected_ext = base_info["options"]["ext"]
@@ -153,7 +165,7 @@ def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, 
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "owner": user_a,
                 "ext": expected_ext,
@@ -181,13 +193,13 @@ def test_group_create_group_optional_fields_empty(device_a, assert_api, user_a, 
 
     gid = result.get("groupId")
     assert isinstance(gid, str) and gid, f"{case_name}: createGroup 返回中未获取到 groupId: {resp}"
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = client.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -250,6 +262,8 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("case_name", "overrides", "expect_error"),
     [
@@ -275,7 +289,7 @@ def test_group_create_group_max_count_less_than_invite_members(device_a, assert_
     ],
 )
 def test_group_create_group_name_and_avatar_abnormal_inputs(
-    device_a, assert_api, user_a, case_name, overrides, expect_error
+    topology_primary_or_device_a, assert_api, user_a, case_name, overrides, expect_error
 ):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、name、and、avatar、abnormal、inputs；
@@ -302,7 +316,8 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
     for key, value in overrides.items():
         base_info[key] = value
 
-    resp = device_a.call("GroupManager", Cmd.createGroup.value, info=base_info)
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.createGroup.value, info=base_info)
     if expect_error is not None:
         assert_api.assert_error(resp, code=expect_error["code"], description=expect_error["description"])
         return
@@ -316,7 +331,7 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "owner": user_a,
                 "ext": "auto-ext",
@@ -344,13 +359,13 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
 
     gid = result.get("groupId")
     assert isinstance(gid, str) and gid, f"{case_name}: createGroup 返回中未获取到 groupId: {resp}"
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = client.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -358,6 +373,8 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("case_name", "overrides", "expect_error"),
     [
@@ -378,7 +395,7 @@ def test_group_create_group_name_and_avatar_abnormal_inputs(
     ],
 )
 def test_group_create_group_desc_reason_options_abnormal_inputs(
-    device_a, assert_api, user_a, case_name, overrides, expect_error
+    topology_primary_or_device_a, assert_api, user_a, case_name, overrides, expect_error
 ):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、desc、reason、options、abnormal、inputs；
@@ -406,7 +423,8 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
     for key, value in overrides.items():
         base_info[key] = value
 
-    resp = device_a.call("GroupManager", Cmd.createGroup.value, info=base_info)
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.createGroup.value, info=base_info)
     result = resp.get("result") if isinstance(resp.get("result"), dict) else {}
     is_error = isinstance(result, dict) and "code" in result and "description" in result
 
@@ -429,7 +447,7 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "owner": user_a,
                 "ext": expected_ext,
@@ -457,13 +475,13 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
 
     gid = result.get("groupId")
     assert isinstance(gid, str) and gid, f"{case_name}: createGroup 返回中未获取到 groupId: {resp}"
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = client.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -471,6 +489,8 @@ def test_group_create_group_desc_reason_options_abnormal_inputs(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("case_name", "invite_members", "expect_error"),
     [
@@ -571,6 +591,8 @@ def test_group_create_group_invite_members_abnormal_inputs(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("state_change")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("case_name", "field", "value", "expect_error"),
     [
@@ -585,7 +607,7 @@ def test_group_create_group_invite_members_abnormal_inputs(
     ],
 )
 def test_group_create_group_text_fields_additional_inputs(
-    device_a, assert_api, user_a, case_name, field, value, expect_error
+    topology_primary_or_device_a, assert_api, user_a, case_name, field, value, expect_error
 ):
     """
     1. 在已登录的 Android 共享 session 中准备群组状态变更场景所需的测试数据，场景为群组、创建、群组、text、fields、additional、inputs；
@@ -611,7 +633,8 @@ def test_group_create_group_text_fields_additional_inputs(
     }
     base_info[field] = value
 
-    resp = device_a.call("GroupManager", Cmd.createGroup.value, info=base_info)
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.createGroup.value, info=base_info)
     if expect_error is not None:
         assert_api.assert_error(resp, code=expect_error["code"], description=expect_error["description"])
         return
@@ -623,7 +646,7 @@ def test_group_create_group_text_fields_additional_inputs(
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.createGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {
                 "owner": user_a,
                 "ext": "auto-ext",
@@ -652,13 +675,13 @@ def test_group_create_group_text_fields_additional_inputs(
     result = resp.get("result") if isinstance(resp.get("result"), dict) else {}
     gid = result.get("groupId")
     assert isinstance(gid, str) and gid, f"{case_name}: createGroup 返回中未获取到 groupId: {resp}"
-    resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
+    resp_destroy = client.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": gid})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": True,
         },
         ignore_keys={"sequence"},
@@ -666,7 +689,9 @@ def test_group_create_group_text_fields_additional_inputs(
 
 
 @pytest.mark.real_e2e
-def test_group_destroy_group_nonexistent(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_destroy_group_nonexistent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、不存在对象；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -677,12 +702,14 @@ def test_group_destroy_group_nonexistent(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
+    resp = topology_primary_or_device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_error(resp, code=600, description="do not find this group")
 
 
 @pytest.mark.real_e2e
-def test_group_destroy_group_empty_group_id(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_destroy_group_empty_group_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、销毁、群组、空值参数、群组、id；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -693,12 +720,14 @@ def test_group_destroy_group_empty_group_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.destroyGroup，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": ""})
+    resp = topology_primary_or_device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": ""})
     assert_api.assert_error(resp, code=600, description="Group ID is invalid")
 
 
 @pytest.mark.real_e2e
-def test_group_get_group_with_id_nonexistent(device_a, assert_api):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_group_get_group_with_id_nonexistent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、with、id、不存在对象；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -709,13 +738,14 @@ def test_group_get_group_with_id_nonexistent(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupWithId，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call("GroupManager", Cmd.getGroupWithId.value, info={"groupId": _NONEXISTENT_GROUP_ID})
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.getGroupWithId.value, info={"groupId": _NONEXISTENT_GROUP_ID})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.getGroupWithId.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -723,7 +753,9 @@ def test_group_get_group_with_id_nonexistent(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_get_group_from_server_nonexistent(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_group_get_group_from_server_nonexistent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组异常/边界场景所需的测试数据，场景为群组、获取、群组、from、服务端、不存在对象；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -734,7 +766,7 @@ def test_group_get_group_from_server_nonexistent(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getGroupSpecificationFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "GroupManager",
         Cmd.getGroupSpecificationFromServer.value,
         info={"groupId": _NONEXISTENT_GROUP_ID, "fetchMembers": True},
