@@ -429,6 +429,8 @@ def test_chatroom_member_management_nonexistent_user(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("cmd", "info", "expected"),
     [
@@ -450,7 +452,7 @@ def test_chatroom_member_management_nonexistent_user(
         ),
     ],
 )
-def test_chatroom_member_management_non_member(device_a, assert_api, user_a, user_b, cmd, info, expected):
+def test_chatroom_member_management_non_member(topology, assert_api, cmd, info, expected):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室基础能力场景所需的测试数据，场景为聊天室、成员、management、non、成员；
     2. 通过 WebSocket 控制测试 App 调用 聊天室、成员、management、non、成员，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -461,6 +463,10 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
         '2. 通过 WebSocket 控制测试 App 调用 聊天室、成员、management、non、成员，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    client = topology.primary_client(0)
+    user_a = client.user_id
+    user_b = topology.remote_client(0).user_id
+    expected_device = _expected_device(client)
     room_id, room_name = create_chatroom_or_skip(owner=user_a, name_prefix="non_member", desc_prefix="non_member")
     try:
         payload = {"roomId": room_id}
@@ -469,7 +475,7 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
                 payload[key] = value.replace("{{user_b}}", user_b)
             else:
                 payload[key] = [item.replace("{{user_b}}", user_b) for item in value]
-        resp = device_a.call("ChatRoomManager", cmd, info=payload)
+        resp = client.call("ChatRoomManager", cmd, info=payload)
         if expected == "room":
             _assert_room_result(
                 assert_api,
@@ -478,6 +484,7 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
                 room_id=room_id,
                 owner=user_a,
                 name=room_name,
+                device=expected_device,
             )
             return
         if expected == "owner_changed":
@@ -490,6 +497,7 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
                 name=room_name,
                 permission_type=0,
                 member_list=[user_a],
+                device=expected_device,
             )
             return
         code, description = expected
@@ -499,12 +507,15 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
             cmd=cmd,
             code=code,
             description=description.replace("{{user_b}}", user_b).replace("{{room_id}}", room_id),
+            device=expected_device,
         )
     finally:
         safe_delete_chatroom(room_id)
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.parametrize(
     ("page_num", "page_size"),
     [
@@ -518,7 +529,7 @@ def test_chatroom_member_management_non_member(device_a, assert_api, user_a, use
         (1, -1),
     ],
 )
-def test_chatroom_fetch_members_invalid_paging(device_a, device_b, assert_api, user_a, user_b, page_num, page_size):
+def test_chatroom_fetch_members_invalid_paging(topology, assert_api, page_num, page_size):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室异常/边界场景所需的测试数据，场景为聊天室、拉取、成员、无效参数、paging；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -529,6 +540,10 @@ def test_chatroom_fetch_members_invalid_paging(device_a, device_b, assert_api, u
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.fetchChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a = topology.primary_client(0)
+    device_b = topology.remote_client(0)
+    user_a = device_a.user_id
+    user_b = device_b.user_id
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="members_page_bad", desc_prefix="members_page_bad")
     try:
         _join_chatroom_as_b(device_b, assert_api, room_id)
@@ -542,7 +557,7 @@ def test_chatroom_fetch_members_invalid_paging(device_a, device_b, assert_api, u
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomMembers.value,
-                "device": "deviceA",
+                "device": _expected_device(device_a),
                 "result": {
                     "cursor": "",
                     "list": [user_b],

@@ -205,13 +205,14 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
 
 
 def _join_chatroom_as_b(device_b, assert_api, room_id: str) -> None:
+    device_name = _expected_device(device_b)
     join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
     assert_api.assert_response_matches(
         join_resp,
         expected={
             "manager": "ChatRoomManager",
             "cmd": Cmd.joinChatRoom.value,
-            "device": "deviceB",
+            "device": device_name,
             "result": {
                 "roomId": room_id,
                 "memberCount": ne(None),
