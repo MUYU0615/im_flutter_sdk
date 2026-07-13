@@ -9,6 +9,7 @@ import pytest
 
 from src import Cmd, ge
 from src.tools.event_group_waiter import wait_event_group
+from src.tools.event_waiter import wait_event_matching
 from tests.chat._message_helpers import matches_received_text, send_text_and_wait, wait_for_success_message
 from tests.chat._utils import build_text
 from tests.chat.message_event_matchers import expect_message_error
@@ -86,13 +87,49 @@ def _expected_device(client) -> str:
     return getattr(client, "name", "deviceA")
 
 
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
+
+
+def _wait_pin_changed(device, *, msg_id: str, operation: str) -> dict:
+    return wait_event_matching(
+        device,
+        event_type=Cmd.onMessagePinChanged.value,
+        predicate=lambda evt: (evt.get("data") or {}).get("messageId") == msg_id
+        and (evt.get("data") or {}).get("pinOperation") == operation,
+        timeout=30.0,
+        poll_timeout=10.0,
+        max_events=4,
+        description=f"pin changed msgId={msg_id} operation={operation}",
+    )
+
+
+def _wait_recall_info(device, *, msg_id: str) -> dict:
+    def predicate(evt: dict) -> bool:
+        infos = (evt.get("data") or {}).get("infos") or []
+        return any(isinstance(item, dict) and item.get("recallMsgId") == msg_id for item in infos)
+
+    return wait_event_matching(
+        device,
+        event_type=Cmd.onMessagesRecalledInfo.value,
+        predicate=predicate,
+        timeout=30.0,
+        poll_timeout=10.0,
+        max_events=4,
+        description=f"recall info msgId={msg_id}",
+    )
+
+
 @pytest.mark.case_id("chat.pin_unpin_fetch_pinned_messages.success")
 @pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.pinMessage")
 @pytest.mark.api("ChatManager.fetchPinnedMessages")
 @pytest.mark.api("ChatManager.unpinMessage")
-def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_manager_pin_unpin_and_fetch_pinned_messages(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、manager、置顶、unpin、and、拉取、pinned、消息；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinMessage、ChatManager.fetchPinnedMessages、ChatManager.unpinMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -103,6 +140,7 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinMessage、ChatManager.fetchPinnedMessages、ChatManager.unpinMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     content = f"chat-pin-msg-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
 
@@ -112,12 +150,12 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.pinMessage.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": None,
         },
         ignore_keys={"sequence"},
     )
-    pin_evt = device_b.receive_message(match_event_type=Cmd.onMessagePinChanged.value, timeout=10.0)
+    pin_evt = _wait_pin_changed(device_b, msg_id=msg_id, operation="MessagePinOperation.Pin")
     assert_api.assert_response_matches(
         pin_evt,
         expected={
@@ -140,7 +178,7 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchPinnedMessages.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": pinned_messages,
         },
         ignore_keys={"sequence"},
@@ -175,12 +213,12 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.unpinMessage.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": None,
         },
         ignore_keys={"sequence"},
     )
-    unpin_evt = device_b.receive_message(match_event_type=Cmd.onMessagePinChanged.value, timeout=10.0)
+    unpin_evt = _wait_pin_changed(device_b, msg_id=msg_id, operation="MessagePinOperation.Unpin")
     assert_api.assert_response_matches(
         unpin_evt,
         expected={
@@ -203,7 +241,7 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.fetchPinnedMessages.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": remaining_pinned_messages,
         },
         ignore_keys={"sequence"},
@@ -218,7 +256,8 @@ def test_chat_manager_pin_unpin_and_fetch_pinned_messages(device_a, device_b, as
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.pinMessage")
 @pytest.mark.api("MessageManager.getPinInfo")
-def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_message_manager_get_pin_info_after_pin(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为消息、manager、获取、置顶、信息、after、置顶；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinMessage、MessageManager.getPinInfo，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -229,13 +268,14 @@ def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, 
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.pinMessage、MessageManager.getPinInfo，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     content = f"message-pin-info-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
 
     resp_pin = device_a.call("ChatManager", Cmd.pinMessage.value, info={"msgId": msg_id})
     assert_api.assert_response_matches(
         resp_pin,
-        expected={"manager": "ChatManager", "cmd": Cmd.pinMessage.value, "device": "deviceA", "result": None},
+        expected={"manager": "ChatManager", "cmd": Cmd.pinMessage.value, "device": device_a_name, "result": None},
         ignore_keys={"sequence"},
     )
 
@@ -246,7 +286,7 @@ def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, 
         expected={
             "manager": "MessageManager",
             "cmd": Cmd.getPinInfo.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": {"operatorId": user_a},
         },
         ignore_keys={"sequence", "pinTime"},
@@ -258,7 +298,8 @@ def test_message_manager_get_pin_info_after_pin(device_a, device_b, assert_api, 
 @pytest.mark.real_e2e
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.recallMessage")
-def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_manager_recall_message_receiver_recalled_info_event(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、manager、recall、消息、receiver、recalled、信息、event；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.recallMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -269,6 +310,7 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.recallMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     content = f"chat-recall-event-{uuid.uuid4().hex[:8]}"
     msg_id = _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, content)
 
@@ -278,13 +320,13 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.recallMessage.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": True,
         },
         ignore_keys={"sequence"},
     )
 
-    evt = device_b.receive_message(match_event_type=Cmd.onMessagesRecalledInfo.value, timeout=20.0)
+    evt = _wait_recall_info(device_b, msg_id=msg_id)
     assert_api.assert_response_matches(
         evt,
         expected={
@@ -586,7 +628,7 @@ def test_chat_manager_conversation_marks_and_fetch_options(request, assert_api):
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.e2e_flow("local_state")
 @pytest.mark.topology_ready
-def test_chat_manager_message_count_and_search_options_boundaries(topology_primary_or_device_a, assert_api, user_a):
+def test_chat_manager_message_count_and_search_options_boundaries(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、manager、消息、count、and、search、options、boundaries；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.getMessageCount、ChatManager.searchMsgsByOptions，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -597,7 +639,8 @@ def test_chat_manager_message_count_and_search_options_boundaries(topology_prima
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.getMessageCount、ChatManager.searchMsgsByOptions，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    client = topology_primary_or_device_a
+    client = topology.primary_client(0)
+    user_a = client.user_id
     expected_device = _expected_device(client)
     resp_count = client.call("ChatManager", Cmd.getMessageCount.value, info={})
     assert_api.assert_response_matches(
@@ -635,7 +678,8 @@ def test_chat_manager_message_count_and_search_options_boundaries(topology_prima
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.expects_event
-def test_chat_manager_delete_all_message_and_conversation_local(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_manager_delete_all_message_and_conversation_local(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、manager、删除、all、消息、and、会话、本地；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.deleteAllMessageAndConversation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -646,6 +690,7 @@ def test_chat_manager_delete_all_message_and_conversation_local(device_a, device
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.deleteAllMessageAndConversation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-clear-all-{uuid.uuid4().hex[:8]}")
     resp_delete = device_a.call(
         "ChatManager",
@@ -657,7 +702,7 @@ def test_chat_manager_delete_all_message_and_conversation_local(device_a, device
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.deleteAllMessageAndConversation.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": None,
         },
         ignore_keys={"sequence"},
@@ -673,7 +718,7 @@ def test_chat_manager_delete_all_message_and_conversation_local(device_a, device
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.e2e_flow("local_state")
 @pytest.mark.topology_ready
-def test_chat_manager_message_object_boundary_methods(topology_primary_or_device_a, assert_api, user_a, user_b):
+def test_chat_manager_message_object_boundary_methods(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、manager、消息、object、boundary、methods；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.importMessages、ChatManager.updateChatMessage、ChatManager.resendMessage，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -684,6 +729,10 @@ def test_chat_manager_message_object_boundary_methods(topology_primary_or_device
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.importMessages、ChatManager.updateChatMessage、ChatManager.resendMessage，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    client = topology.primary_client(0)
+    user_a = client.user_id
+    user_b = topology.remote_client(0).user_id
+    expected_device = _expected_device(client)
     msg_id = f"chat-object-{uuid.uuid4().hex[:8]}"
     original_body = {"type": 0, "content": f"chat-object-{uuid.uuid4().hex[:8]}"}
     message = {
@@ -703,8 +752,6 @@ def test_chat_manager_message_object_boundary_methods(topology_primary_or_device
         "body": original_body,
     }
 
-    client = topology_primary_or_device_a
-    expected_device = _expected_device(client)
     resp_import = client.call("ChatManager", Cmd.importMessages.value, info={"messages": [message]})
     assert_api.assert_response_matches(
         resp_import,
@@ -801,7 +848,7 @@ def test_chat_manager_message_object_boundary_methods(topology_primary_or_device
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.e2e_flow("local_state")
 @pytest.mark.topology_ready
-def test_chat_manager_update_participant_current_behavior(topology_primary_or_device_a, assert_api, user_a, user_b):
+def test_chat_manager_update_participant_current_behavior(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天状态变更场景所需的测试数据，场景为chat、manager、更新、participant、current、behavior；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.updateParticipant，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -812,7 +859,9 @@ def test_chat_manager_update_participant_current_behavior(topology_primary_or_de
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.updateParticipant，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    client = topology_primary_or_device_a
+    client = topology.primary_client(0)
+    user_a = client.user_id
+    user_b = topology.remote_client(0).user_id
     expected_device = _expected_device(client)
     resp = client.call(
         "ChatManager",
@@ -840,7 +889,7 @@ def test_chat_manager_update_participant_current_behavior(topology_primary_or_de
 @pytest.mark.roles_mode("ordered")
 @pytest.mark.e2e_flow("error_response")
 @pytest.mark.topology_ready
-def test_chat_manager_update_participant_invalid_required_params(topology_primary_or_device_a, assert_api, user_b):
+def test_chat_manager_update_participant_invalid_required_params(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、manager、更新、participant、无效参数、required、params；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.updateParticipant，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -851,7 +900,8 @@ def test_chat_manager_update_participant_invalid_required_params(topology_primar
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.updateParticipant，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    client = topology_primary_or_device_a
+    client = topology.primary_client(0)
+    user_b = topology.remote_client(0).user_id
     expected_device = _expected_device(client)
     missing_from = client.call(
         "ChatManager",
@@ -891,7 +941,9 @@ def test_chat_manager_update_participant_invalid_required_params(topology_primar
 @pytest.mark.api("ChatManager.asyncFilterConversationsFromDB")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_filter_conversations_from_db_current_behavior(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chat_manager_filter_conversations_from_db_current_behavior(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、manager、filter、conversations、from、db、current、behavior；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.asyncFilterConversationsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -902,6 +954,7 @@ def test_chat_manager_filter_conversations_from_db_current_behavior(device_a, de
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.asyncFilterConversationsFromDB，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     _send_text_and_receive(device_a, device_b, assert_api, user_a, user_b, f"chat-filter-db-{uuid.uuid4().hex[:8]}")
 
     resp = device_a.call(
@@ -915,7 +968,7 @@ def test_chat_manager_filter_conversations_from_db_current_behavior(device_a, de
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.asyncFilterConversationsFromDB.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": result,
         },
         ignore_keys={"sequence"},
@@ -975,7 +1028,9 @@ def test_chat_manager_filter_conversations_from_db_invalid_mark(topology_primary
 @pytest.mark.api("ChatManager.voiceMessageToText")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_voice_message_to_text_local_voice_message(device_a, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_chat_manager_voice_message_to_text_local_voice_message(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天基础能力场景所需的测试数据，场景为chat、manager、voice、消息、to、text、本地、voice；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.voiceMessageToText，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -986,6 +1041,7 @@ def test_chat_manager_voice_message_to_text_local_voice_message(device_a, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.voiceMessageToText，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     voice_path = f"/tmp/im_voice_to_text_{uuid.uuid4().hex[:8]}.aac"
     with open(voice_path, "wb") as fh:
         fh.write(b"fake-aac-data")
@@ -1020,7 +1076,7 @@ def test_chat_manager_voice_message_to_text_local_voice_message(device_a, assert
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.voiceMessageToText.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": result,
             },
             ignore_keys={"sequence"},
@@ -1118,7 +1174,9 @@ def test_chat_manager_group_ack_boundary_methods(topology_primary_or_device_a, a
 @pytest.mark.api("ChatManager.asyncFetchGroupAcks")
 @pytest.mark.clients("sender", "receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("receiver_event")
+@pytest.mark.topology_ready
+def test_chat_manager_fetch_group_acks_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、manager、拉取、群组、acks、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackGroupMessageRead、ChatManager.asyncFetchGroupAcks，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1129,6 +1187,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.ackGroupMessageRead、ChatManager.asyncFetchGroupAcks，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     group_id = ""
     try:
         try:
@@ -1154,7 +1213,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.sendMessage.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "msgId": temp_id,
                     "from": user_a,
@@ -1222,7 +1281,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.ackGroupMessageRead.value,
-                "device": "deviceB",
+                "device": device_b_name,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -1238,7 +1297,7 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.asyncFetchGroupAcks.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "cursor": "",
                     "list": [],
@@ -1256,7 +1315,9 @@ def test_chat_manager_fetch_group_acks_success(device_a, device_b, assert_api, u
 @pytest.mark.api("ChatManager.asyncFetchGroupAcks")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_manager_fetch_group_acks_invalid_required_params(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天异常/边界场景所需的测试数据，场景为chat、manager、拉取、群组、acks、无效参数、required、params；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.asyncFetchGroupAcks，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1267,6 +1328,7 @@ def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.asyncFetchGroupAcks，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     resp_missing_msg = device_a.call(
         "ChatManager",
         Cmd.asyncFetchGroupAcks.value,
@@ -1277,7 +1339,7 @@ def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.asyncFetchGroupAcks.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": {"code": 110, "description": "'msgId' can not be null"},
         },
         ignore_keys={"sequence"},
@@ -1293,7 +1355,7 @@ def test_chat_manager_fetch_group_acks_invalid_required_params(device_a, assert_
         expected={
             "manager": "ChatManager",
             "cmd": Cmd.asyncFetchGroupAcks.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": {"code": 110, "description": "'pageSize' must be greater than 0"},
         },
         ignore_keys={"sequence"},
