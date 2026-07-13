@@ -43,15 +43,21 @@ def _wait_get_contact(device, user_id: str, *, timeout: float = 5.0) -> dict:
     return last_resp or {}
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 # ---------- addContact ----------
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.add_contact.nonexistent_user.error")
 @pytest.mark.api("ContactManager.addContact")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_add_nonexistent_user(device_a, assert_api):
+def test_contact_add_nonexistent_user(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -62,7 +68,7 @@ def test_contact_add_nonexistent_user(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.addContact.value,
         info={"userId": USER_NONEXISTENT, "reason": "hello"},
@@ -71,11 +77,13 @@ def test_contact_add_nonexistent_user(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.add_contact.empty_user_id.error")
 @pytest.mark.api("ContactManager.addContact")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_add_empty_user_id(device_a, assert_api):
+def test_contact_add_empty_user_id(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、空值参数、用户、id；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -86,7 +94,7 @@ def test_contact_add_empty_user_id(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.addContact.value,
         info={"userId": "", "reason": "hello"},
@@ -95,7 +103,9 @@ def test_contact_add_empty_user_id(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_contact_add_self(device_a, assert_api, user_a):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_contact_add_self(topology_primary_or_device_a, assert_api, user_a):
     """
     1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、添加、self；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -106,7 +116,7 @@ def test_contact_add_self(device_a, assert_api, user_a):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.addContact.value,
         info={"userId": user_a, "reason": "self"},
@@ -118,7 +128,9 @@ def test_contact_add_self(device_a, assert_api, user_a):
 
 
 @pytest.mark.real_e2e
-def test_contact_delete_contact_not_friend(device_a, assert_api, user_b):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_contact_delete_contact_not_friend(topology_primary_or_device_a, assert_api, user_b):
     """
     1. 在已登录的 Android 共享 session 中准备联系人状态变更场景所需的测试数据，场景为contact、删除、contact、not、friend；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -129,7 +141,8 @@ def test_contact_delete_contact_not_friend(device_a, assert_api, user_b):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及变更后的本地状态、服务端状态或回调事件符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.deleteContact.value,
         info={"userId": user_b, "keepConversation": True},
@@ -138,13 +151,15 @@ def test_contact_delete_contact_not_friend(device_a, assert_api, user_b):
         resp,
         expected={"manager": "ContactManager", "cmd": Cmd.deleteContact.value, "device": "{{device}}",
                   "result": "{{userId}}"},
-        context={"userId": user_b, "device": "deviceA"},
+        context={"userId": user_b, "device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
 
 
 @pytest.mark.real_e2e
-def test_contact_delete_contact_nonexistent_user(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_contact_delete_contact_nonexistent_user(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、删除、contact、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -155,7 +170,7 @@ def test_contact_delete_contact_nonexistent_user(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.deleteContact，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.deleteContact.value,
         info={"userId": USER_NONEXISTENT, "keepConversation": True},
@@ -390,7 +405,9 @@ def test_friend_add_decline_and_verify_not_friends(device_a, device_b, assert_ap
 
 
 @pytest.mark.real_e2e
-def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_contact_accept_invitation_without_pending(topology_primary_or_device_a, assert_api, user_c):
     """
     1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、accept、invitation、without、pending；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -401,7 +418,8 @@ def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c)
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.acceptInvitation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_b.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.acceptInvitation.value,
         info={"userId": user_c},
@@ -415,7 +433,7 @@ def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c)
             "result": "{{userId}}",
             "sequence": "{{sequence}}",
         },
-        context={"userId": user_c, "device": "deviceB"},
+        context={"userId": user_c, "device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
     # 查询 C 的好友列表（REST）；接口可能直接返回 list，或包在 data 里
@@ -429,7 +447,9 @@ def test_contact_accept_invitation_without_pending(device_b, assert_api, user_c)
 
 
 @pytest.mark.real_e2e
-def test_contact_decline_invitation_without_pending(device_b, assert_api):
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
+def test_contact_decline_invitation_without_pending(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、decline、invitation、without、pending；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -440,7 +460,8 @@ def test_contact_decline_invitation_without_pending(device_b, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.declineInvitation，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_b.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.declineInvitation.value,
         info={"userId": USER_NONEXISTENT},
@@ -453,7 +474,7 @@ def test_contact_decline_invitation_without_pending(device_b, assert_api):
             "device": "{{device}}",
             "result": "{{userId}}",
         },
-        context={"userId": USER_NONEXISTENT, "device": "deviceB"},
+        context={"userId": USER_NONEXISTENT, "device": _expected_device(client)},
         ignore_keys={"sequence"},
     )
 
@@ -653,7 +674,9 @@ def test_contact_remark_not_preserved_after_delete_and_readd(device_a, device_b,
 
 
 @pytest.mark.real_e2e
-def test_contact_set_contact_remark_non_friend(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_contact_set_contact_remark_non_friend(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人基础能力场景所需的测试数据，场景为contact、set、contact、remark、non、friend；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -664,7 +687,7 @@ def test_contact_set_contact_remark_non_friend(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.setContactRemark，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应、关键字段和相关状态符合预期。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.setContactRemark.value,
         info={"userId": USER_NONEXISTENT, "remark": "x"},
@@ -677,11 +700,13 @@ def test_contact_set_contact_remark_non_friend(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.get_block_list_from_server.empty_or_list.success")
 @pytest.mark.api("ContactManager.getBlockListFromServer")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
+def test_contact_get_block_list_from_server_returns_list(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、获取、封禁、列表、from、服务端、returns、列表；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -692,7 +717,8 @@ def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.getBlockListFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.getBlockListFromServer.value,
         info={},
@@ -703,7 +729,7 @@ def test_contact_get_block_list_from_server_returns_list(device_a, assert_api):
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.getBlockListFromServer.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
         },
         ignore_keys={"sequence", "result"},
     )
@@ -888,11 +914,13 @@ def test_contact_fetch_all_fetch_page_fetch_ids_get_local_lists(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.fetch_contacts.page_size_zero.boundary")
 @pytest.mark.api("ContactManager.fetchContacts")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
+def test_contact_fetch_contacts_page_size_zero(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、zero；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -903,7 +931,8 @@ def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.fetchContacts.value,
         info={"cursor": "", "pageSize": 0},
@@ -913,18 +942,20 @@ def test_contact_fetch_contacts_page_size_zero(device_a, assert_api):
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.fetchContacts.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {"list": []},
         },
         ignore_keys={"sequence", "cursor"},
     )
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.fetch_contacts.page_size_exceeds_50.error")
 @pytest.mark.api("ContactManager.fetchContacts")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
+def test_contact_fetch_contacts_page_size_exceeds_50(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人查询/拉取场景所需的测试数据，场景为contact、拉取、contacts、page、size、exceeds、50；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -935,7 +966,7 @@ def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.fetchContacts.value,
         info={"cursor": "", "pageSize": 51},
@@ -948,11 +979,13 @@ def test_contact_fetch_contacts_page_size_exceeds_50(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.fetch_contacts.page_size_negative.boundary")
 @pytest.mark.api("ContactManager.fetchContacts")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
+def test_contact_fetch_contacts_page_size_negative(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、拉取、contacts、page、size、negative；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -963,7 +996,8 @@ def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.fetchContacts，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.fetchContacts.value,
         info={"cursor": "", "pageSize": -1},
@@ -973,7 +1007,7 @@ def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.fetchContacts.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": {"cursor": "", "list": []},
         },
         ignore_keys={"sequence"},
@@ -983,7 +1017,9 @@ def test_contact_fetch_contacts_page_size_negative(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_contact_add_user_to_block_list_nonexistent(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_contact_add_user_to_block_list_nonexistent(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、添加、用户、to、封禁、列表、不存在对象；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -994,7 +1030,7 @@ def test_contact_add_user_to_block_list_nonexistent(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.addUserToBlockList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    resp = topology_primary_or_device_a.call(
         "ContactManager",
         Cmd.addUserToBlockList.value,
         info={"userId": USER_NONEXISTENT},
@@ -1139,11 +1175,13 @@ def test_contact_remove_from_block_list_when_not_blocked(
 
 
 @pytest.mark.real_e2e
+@pytest.mark.e2e_flow("api_response")
+@pytest.mark.topology_ready
 @pytest.mark.case_id("contact.remove_from_block_list.nonexistent_user.idempotent")
 @pytest.mark.api("ContactManager.removeUserFromBlockList")
 @pytest.mark.clients("sender")
 @pytest.mark.roles_mode("ordered")
-def test_contact_remove_from_block_list_nonexistent_user(device_a, assert_api):
+def test_contact_remove_from_block_list_nonexistent_user(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备联系人异常/边界场景所需的测试数据，场景为contact、移除、from、封禁、列表、不存在对象、用户；
     2. 通过 WebSocket 控制测试 App 调用 ContactManager.removeUserFromBlockList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -1154,7 +1192,8 @@ def test_contact_remove_from_block_list_nonexistent_user(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 ContactManager.removeUserFromBlockList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回错误码、错误描述和响应信封符合 Android 当前 SDK 行为。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "ContactManager",
         Cmd.removeUserFromBlockList.value,
         info={"userId": USER_NONEXISTENT},
@@ -1164,7 +1203,7 @@ def test_contact_remove_from_block_list_nonexistent_user(device_a, assert_api):
         expected={
             "manager": "ContactManager",
             "cmd": Cmd.removeUserFromBlockList.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
             "result": USER_NONEXISTENT,
         },
         ignore_keys={"sequence"},
