@@ -2,6 +2,8 @@
 
 日期：2026-07-08
 
+状态：已落地到 `src/tools/event_waiter.py`、消息 helper 和相关真实 E2E case。当前执行命令、报告查看和脚本入口以 `../testing_runbook.md` 为准。
+
 ## 背景
 
 `native-auto-test/` 通过 WebSocket 控制 `im_flutter_test/` 调用真实 Flutter SDK，并接收 SDK 回调事件。当前 Android 全量 E2E 中出现多类疑似串事件失败，例如：
@@ -298,11 +300,11 @@ tests/contact/**/*.py
 
 范围：
 
-- `test_chat_s3_non_message_ops.py`
+- `test_chat_non_message_operations.py`
 - `test_chat_manager_remaining_api_coverage.py`
-- `test_chat_s423_message_callback_and_combine.py`
-- `test_chat_s4_load_messages_by_ids.py`
-- `test_chat_s4_local_keyword_search.py`
+- `test_chat_message_callbacks_and_combine.py`
+- `test_chat_load_messages_by_ids.py`
+- `test_chat_local_keyword_search.py`
 
 重点修复：
 
@@ -356,7 +358,7 @@ tests/contact/**/*.py
 
 ```bash
 cd native-auto-test
-make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id android-full-e2e-YYYYMMDD-NNNNNN --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560 --run-id android-full-e2e-YYYYMMDD-NNNNNN --install-mode clean -- --target-platform android"
 ```
 
 要求：

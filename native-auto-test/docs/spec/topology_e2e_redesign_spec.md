@@ -1,5 +1,7 @@
 # Native Auto Test Topology E2E Redesign Spec
 
+Status: 已落地。当前运行命令、报告查看和脚本入口以 `../testing_runbook.md` 为准。
+
 ## 1. Background
 
 `native-auto-test` currently relies on a two-client mental model such as `deviceA/deviceB` and `user_a/user_b`. That model is no longer expressive enough for complete SDK E2E verification.
@@ -124,7 +126,7 @@ make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote
 Optional device override:
 
 ```bash
---device primary_a=emulator-5554 --device primary_b=emulator-5558 --device remote_c=emulator-5560
+--device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560
 ```
 
 ## 5. Run Context
@@ -475,4 +477,3 @@ The first complete milestone is accepted when:
 - Allure reports show Chinese numbered steps for migrated cases.
 - The Android full report separates selected, skipped by topology, unsupported, not migrated, environment blocked, and executed failed cases.
 - Message cases do not pass or fail based on unrelated third-party events or old queued events.
-

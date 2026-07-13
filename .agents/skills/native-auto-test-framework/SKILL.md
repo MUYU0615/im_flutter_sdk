@@ -19,14 +19,14 @@ wrapper mapping、fixture、mock、local adapter、unit 只能作为辅助验证
 
 ## 执行入口
 
-正式发版测试使用统一入口：
+正式发版测试使用统一入口。Android 当前官方路径是三客户端 topology：
 
 ```bash
 cd native-auto-test
-make e2e-full-run ARGS="--client android:a@4.23.0 --client android:b@4.23.0 --run-id <run_id> --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"
+make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560 --run-id <run_id> --install-mode clean -- --target-platform android"
 ```
 
-`android-android` 矩阵已接入真实 Android runner：会启动 relay、执行 `adb reverse`、卸载旧 App、启动两个 `im_flutter_test` 客户端、下发 `Client.init`、执行 pytest，并生成 HTML、Allure、case-results 和 API gap backlog。其他矩阵仍处在通用 prepare/run/coverage 阶段，不要把它描述成已经完成真实设备编排。
+该 topology 会启动 relay、处理模拟器/真机网络映射、按 `primary_a`、`primary_b`、`remote_c` 启动三个 `im_flutter_test` 客户端、下发 `Client.init`、登录、执行 pytest，并生成 HTML、Allure、case-results 和 API gap backlog。其他平台 runner 未完成真实设备编排前，不要把它描述成真实发版入口。
 
 阶段调试才拆开执行：
 
@@ -40,7 +40,7 @@ Android 已有一个固定代表性基线入口：
 
 ```bash
 cd native-auto-test
-make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id>"
+make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5556 --run-id <run_id>"
 ```
 
 它会读取 `config/android_sanity_cases.txt`，执行一组已验证过的正式 Android `real_e2e` case，用于快速确认 runner、登录/startCallback、联系人前置和基础消息链是否正常。需要回归更大范围前，优先先跑这组 sanity。
@@ -105,4 +105,5 @@ case 负责：
 
 - 项目规则：`native-auto-test/AGENTS.md`
 - 命令总览：`cd native-auto-test && make help`
+- 测试运行手册：`native-auto-test/docs/testing_runbook.md`
 - Android 原生 API 覆盖专项：使用 `android-api-coverage` skill。

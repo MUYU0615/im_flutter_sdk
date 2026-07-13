@@ -10,4 +10,10 @@ SDK E2E、跨平台互测、新 API/新平台适配、版本回归、覆盖统�
 docs/case_authoring_guide.md
 ```
 
+完整测试运行手册见：
+
+```text
+docs/testing_runbook.md
+```
+
 不要在 `docs/` 下放生成报告、历史 case 台账或 agent 台账。生成产物统一输出到 `native-auto-test/out/`。

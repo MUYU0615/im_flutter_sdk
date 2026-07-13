@@ -122,6 +122,6 @@
   - 单例发现：`CASES_DISCOVER=1 WS_DEBUG=1 pytest -q tests/<domain>/test_<topic>.py::test_<name> -s`
   - 模块严格：`pytest -q tests/<domain>/test_<topic>.py -s`
   - 全量：`pytest -q tests -s`
-  - Android sanity：`make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id>"`
-  - Android 正式发版：`make e2e-full-run ARGS="--client android:a@<version> --client android:b@<version> --run-id <run_id> --platform-matrix android-android --install-mode clean --matrix-mode pair --account-mode fresh"`
-  - Android 单点调试：`make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5558 --run-id <run_id> -- tests/<path>::<case> --target-platform android -m real_e2e -q"`
+  - Android sanity：`make android-real-sanity ARGS="--device-ids emulator-5554 emulator-5556 --run-id <run_id>"`
+  - Android 正式发版：`make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560 --run-id <run_id> --install-mode clean -- --target-platform android"`
+  - Android 单点调试：`make android-real-e2e ARGS="--device-ids emulator-5554 emulator-5556 --run-id <run_id> -- tests/<path>::<case> --target-platform android -m real_e2e -q"`
