@@ -88,7 +88,7 @@ class _FakeItem:
         self.added_markers.append(marker)
 
 
-def test_run_context_does_not_skip_legacy_case_without_e2e_flow(tmp_path):
+def test_run_context_skips_real_e2e_case_until_topology_ready(tmp_path):
     context_path = tmp_path / "context.yaml"
     context_path.write_text(
         """
@@ -101,7 +101,28 @@ capabilities:
 """.lstrip(),
         encoding="utf-8",
     )
-    item = _FakeItem()
+    item = _FakeItem(markers={"real_e2e": pytest.mark.real_e2e})
+
+    pytest_collection_modifyitems(_FakeConfig(str(context_path)), [item])
+
+    assert item.added_markers
+    assert "topology_ready" in str(item.added_markers[0].kwargs["reason"])
+
+
+def test_run_context_allows_topology_ready_case_without_flow_skip(tmp_path):
+    context_path = tmp_path / "context.yaml"
+    context_path.write_text(
+        """
+accounts:
+  primary:
+    clients:
+      - primary_a
+capabilities:
+  server_api: false
+""".lstrip(),
+        encoding="utf-8",
+    )
+    item = _FakeItem(markers={"real_e2e": pytest.mark.real_e2e, "topology_ready": pytest.mark.topology_ready})
 
     pytest_collection_modifyitems(_FakeConfig(str(context_path)), [item])
 

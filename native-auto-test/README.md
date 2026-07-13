@@ -71,6 +71,8 @@ RUN_ID=android-full-$(date +%Y%m%d-%H%M%S)
 make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560 --run-id ${RUN_ID} --install-mode clean -- --target-platform android"
 ```
 
+正式 topology run 只执行已标记 `topology_ready` 的真实 E2E case。旧 `device_a/device_b` 语义 case 会先作为待迁移资产跳过。
+
 Android sanity：
 
 ```bash
@@ -104,6 +106,7 @@ make android-api-coverage
 - 默认全量必须是真实 SDK E2E，不是 wrapper mapping、fixture、local adapter 或 unit。
 - 平台必须显式写真实名称，不要用 `mobile` 替代 Android/iOS/Web/HMOS/Windows。
 - 每个真实 E2E case 必须有中文编号步骤，便于手动复现。
+- 进入正式 topology run 的真实 E2E case 必须标记 `topology_ready`。
 - 普通 case 不应调用 logout，避免破坏共享 session。
 - 断言使用最强稳定证据：同步响应、发送端 callback、同账号同步、对端事件、服务端状态或本地状态。
 - 事件等待必须用业务字段过滤，不能只按 `eventType` 消费第一条事件。

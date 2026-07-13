@@ -119,6 +119,7 @@ def test_contact_remove_from_block_list_when_not_blocked(...):
 | `clients(...)` | 声明参与客户端语义。 |
 | `roles_mode("ordered")` | 声明 fixture/client 顺序有意义。 |
 | `expects_event` | 声明需要 SDK callback/event 证据。 |
+| `topology_ready` | 已迁移到 topology client/account 语义，可进入正式 topology E2E。 |
 | `no_global_login` | 仅用于工具/特殊测试，真实 E2E 默认不应使用。 |
 
 新增 marker 前先检查 `pytest.ini`，不要临时发明未注册 marker。
@@ -233,7 +234,7 @@ def test_chat_send_message_text_success(topology, assert_api):
     )
 ```
 
-如果旧 case 还在使用 `device_a`、`device_b`、`user_a`、`user_b`，维护时可以保留，但新增用例优先用 topology fixture 和角色命名。
+旧 case 如果还在使用 `device_a`、`device_b`、`user_a`、`user_b`，可以暂时保留在代码里作为待迁移资产，但不能进入正式 topology run。case 完成 topology 迁移后必须添加 `@pytest.mark.topology_ready`。
 
 ## 断言规范
 
@@ -341,6 +342,8 @@ cd native-auto-test
 make e2e-full-run ARGS="--topology config/topologies/android-primary-dual-remote.yaml --device primary_a=emulator-5554 --device primary_b=emulator-5556 --device remote_c=emulator-5560 --run-id <run_id> --install-mode clean -- --target-platform android"
 ```
 
+带 `--run-context` 的正式 topology run 只执行已标记 `topology_ready` 的真实 E2E case。未迁移的旧 fixture case 会被跳过，并在报告中显示“仍需从 device_a/device_b 旧语义迁移”的中文原因。
+
 Android sanity：
 
 ```bash
@@ -414,3 +417,4 @@ http://127.0.0.1:8035/
 - 错误 code/description 按实际稳定返回冻结。
 - 运行命令能生成 HTML、Allure results、case-results。
 - 正式 Android 全量使用 `e2e-full-run --topology`。
+- 进入正式 topology run 的 case 已标记 `topology_ready`。

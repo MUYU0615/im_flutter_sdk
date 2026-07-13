@@ -888,6 +888,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "init_case: 本用例自行执行 Client.init")
     config.addinivalue_line("markers", "e2e_flow(name): topology interaction flow required by this case")
     config.addinivalue_line("markers", "e2e_optional(*names): optional topology capabilities asserted when present")
+    config.addinivalue_line("markers", "topology_ready: case has been migrated to topology client/account semantics")
     config.addinivalue_line("markers", "disruptive_session: case changes login/session state and must be isolated")
     config.addinivalue_line("markers", "requires_server_api: case requires REST/server API support")
     config.addinivalue_line("markers", "requires_capability(name): case requires platform or SDK capability")
@@ -915,6 +916,18 @@ def pytest_collection_modifyitems(config, items):
         ):
             item.add_marker(pytest.mark.wrapper_mapping)
         if context:
+            if (
+                item.get_closest_marker("real_e2e")
+                and not item.get_closest_marker("topology_ready")
+                and not item.get_closest_marker("no_global_login")
+            ):
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason="当前正式 topology run 只执行已迁移 topology_ready 的真实 E2E case；"
+                        "该 case 仍需从 device_a/device_b 旧语义迁移。"
+                    )
+                )
+                continue
             flow_marker = item.get_closest_marker("e2e_flow")
             flow = flow_marker.args[0] if flow_marker and flow_marker.args else None
             requires_server_api = item.get_closest_marker("requires_server_api") is not None

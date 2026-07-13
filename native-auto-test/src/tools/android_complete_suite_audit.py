@@ -112,13 +112,18 @@ def classify_case(
     source: str,
 ) -> SuiteAuditRow:
     has_real = "real_e2e" in markers
+    topology_ready = "topology_ready" in markers
     has_device = bool(fixtures & DEVICE_FIXTURES) or uses_dynamic_device_fixture(source)
     sdk_candidate = is_sdk_e2e_candidate(source)
 
-    if has_real and has_device:
-        status = "included_real_e2e"
+    if has_real and topology_ready:
+        status = "included_topology_ready"
         include = True
-        reason = "已标记 real_e2e，且通过真实 device fixture 调用 SDK。"
+        reason = "已标记 real_e2e 和 topology_ready，可纳入正式 topology E2E。"
+    elif has_real and has_device:
+        status = "legacy_real_e2e_pending_topology"
+        include = True
+        reason = "已标记 real_e2e，但仍依赖旧 device fixture 语义，需要迁移到 topology_ready。"
     elif has_real:
         status = "real_e2e_marker_needs_review"
         include = True

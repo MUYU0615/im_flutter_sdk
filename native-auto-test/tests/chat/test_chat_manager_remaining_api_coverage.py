@@ -321,6 +321,7 @@ def test_chat_manager_recall_message_receiver_recalled_info_event(device_a, devi
 
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("sender_terminal_error")
+@pytest.mark.topology_ready
 def test_chat_manager_send_to_non_friend_message_error_event(request, assert_api):
     """
     1. 准备 primary_a 客户端并确认 remote_c 不是好友；
@@ -465,6 +466,7 @@ def test_chat_manager_send_to_non_friend_message_error_event(request, assert_api
 @pytest.mark.case_id("chat.conversation_marks_and_fetch_options.success")
 @pytest.mark.real_e2e
 @pytest.mark.e2e_flow("account_state_sync")
+@pytest.mark.topology_ready
 @pytest.mark.api("ChatManager.sendMessage")
 @pytest.mark.api("ChatManager.addRemoteAndLocalConversationsMark")
 @pytest.mark.api("ChatManager.fetchConversationsByOptions")

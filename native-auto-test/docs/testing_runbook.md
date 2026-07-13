@@ -109,6 +109,8 @@ topology 语义：
 - `primary_a` 向 `remote_c` 发消息，`primary_a` 应收到发送成功，`primary_b` 应收到同账号同步，`remote_c` 应收到对端消息。
 - 账号内状态变化只应在 `primary_a` / `primary_b` 间同步，不应把账号内状态事件发给 `remote_c`。
 
+正式 topology run 只执行已迁移到 topology 语义的真实 E2E case，也就是带 `@pytest.mark.topology_ready` 的 case。仍依赖 `device_a/device_b/user_a/user_b` 旧语义的 case 会被跳过，并在报告中显示中文原因。迁移一批 case 后，再给这些 case 增加 `topology_ready`，正式覆盖范围会随之扩大。
+
 ## 4. 快速验证和单 case 调试
 
 Android sanity 用于先确认 runner、登录、`startCallback`、联系人前置和基础消息链正常：
@@ -211,6 +213,7 @@ native-auto-test/docs/case_authoring_guide.md
 核心要求：
 
 - 真实 E2E case 必须有 `@pytest.mark.real_e2e`。
+- 正式 topology E2E case 必须有 `@pytest.mark.topology_ready`。
 - 每个真实 E2E case 必须有中文编号步骤，便于手动复现。
 - 文件名使用业务语义，不使用 `s1`、`s23`、`s423` 这类历史阶段编号。
 - 普通 case 不应调用 logout，避免破坏共享 session。

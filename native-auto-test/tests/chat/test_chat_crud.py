@@ -917,21 +917,34 @@ def test_chat_ack_conversation_read_invalid_id_response(device_b, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_chat_add_reaction_invalid_id_response(device_a, assert_api):
+@pytest.mark.e2e_flow("error_response")
+@pytest.mark.topology_ready
+def test_chat_add_reaction_invalid_id_response(request, assert_api):
     """
-    1. deviceA 调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；
-    2. 校验响应信封为 ChatManager.addReaction，且响应设备为 deviceA；
+    1. 使用当前发送端调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；
+    2. 校验响应信封为 ChatManager.addReaction，且响应设备为当前发送端；
     3. 校验 SDK 返回错误体 code=303，description 包含 Unknown server error。
     """
     describe_case_steps(
-        "1. deviceA 调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；\n"
-        "2. 校验响应信封为 ChatManager.addReaction，且响应设备为 deviceA；\n"
+        "1. 使用当前发送端调用 ChatManager.addReaction，传入不存在的 msgId=__invalid_msg_id__ 和 reaction=👍；\n"
+        "2. 校验响应信封为 ChatManager.addReaction，且响应设备为当前发送端；\n"
         "3. 校验 SDK 返回错误体 code=303，description 包含 Unknown server error。"
     )
-    resp = device_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
+    client_a = (
+        request.getfixturevalue("topology").primary_client(0)
+        if request.config.getoption("--run-context")
+        else request.getfixturevalue("device_a")
+    )
+    expected_device = getattr(client_a, "name", "deviceA")
+    resp = client_a.call("ChatManager", Cmd.addReaction.value, info={"reaction": "👍", "msgId": "__invalid_msg_id__"})
     assert_api.assert_response_matches(
         resp,
-        expected={"manager": "ChatManager", "cmd": Cmd.addReaction.value, "device": "deviceA", "result": {"code": 303, "description": "Unknown server error"}},
+        expected={
+            "manager": "ChatManager",
+            "cmd": Cmd.addReaction.value,
+            "device": expected_device,
+            "result": {"code": 303, "description": "Unknown server error"},
+        },
         ignore_keys={"sequence"},
     )
 

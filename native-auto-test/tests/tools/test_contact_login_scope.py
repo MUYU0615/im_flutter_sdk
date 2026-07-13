@@ -125,7 +125,7 @@ def test_chat_add_reaction_invalid_id_response_has_chinese_steps():
             and node.name == "test_chat_add_reaction_invalid_id_response"
         )
         doc = ast.get_docstring(target) or ""
-        assert "1. deviceA 调用 ChatManager.addReaction" in doc
+        assert "1. " in doc and "ChatManager.addReaction" in doc
         assert "2. 校验响应信封" in doc
         assert "3. 校验 SDK 返回错误体" in doc
         assert "Unknown server error" in doc

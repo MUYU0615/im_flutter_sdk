@@ -31,14 +31,28 @@ def test_classify_case_marks_included_real_e2e():
     row = classify_case(
         nodeid="tests/chat/test_chat.py::test_send",
         path="tests/chat/test_chat.py",
+        markers={"real_e2e", "topology_ready", "chat"},
+        fixtures={"device_a", "assert_api"},
+        source='device_a.call("ChatManager", "sendMessage", info={})',
+    )
+
+    assert row.status == "included_topology_ready"
+    assert row.should_include_android_complete is True
+    assert row.reason_zh == "已标记 real_e2e 和 topology_ready，可纳入正式 topology E2E。"
+
+
+def test_classify_case_marks_legacy_real_e2e_pending_topology():
+    row = classify_case(
+        nodeid="tests/chat/test_chat.py::test_send",
+        path="tests/chat/test_chat.py",
         markers={"real_e2e", "chat"},
         fixtures={"device_a", "assert_api"},
         source='device_a.call("ChatManager", "sendMessage", info={})',
     )
 
-    assert row.status == "included_real_e2e"
+    assert row.status == "legacy_real_e2e_pending_topology"
     assert row.should_include_android_complete is True
-    assert row.reason_zh == "已标记 real_e2e，且通过真实 device fixture 调用 SDK。"
+    assert "topology_ready" in row.reason_zh
 
 
 def test_classify_case_treats_target_pair_devices_as_real_e2e_devices():
@@ -50,7 +64,7 @@ def test_classify_case_treats_target_pair_devices_as_real_e2e_devices():
         source='primary_device.call("ContactManager", "saveBlackList", info={})',
     )
 
-    assert row.status == "included_real_e2e"
+    assert row.status == "legacy_real_e2e_pending_topology"
     assert row.should_include_android_complete is True
 
 
@@ -68,7 +82,7 @@ def test_dynamic_device(request, assert_api):
 ''',
     )
 
-    assert row.status == "included_real_e2e"
+    assert row.status == "legacy_real_e2e_pending_topology"
     assert row.should_include_android_complete is True
 
 
