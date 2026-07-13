@@ -7,11 +7,22 @@ import uuid
 import pytest
 
 from src import Cmd, ne
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 from tests.chat._utils import build_text
 from tests.group.group_helpers import create_group, destroy_group, new_group_name
 
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.group, pytest.mark.multi_device, pytest.mark.agorachat1_4_0]
+
+
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
 
 
 def _find_msg_with_id(messages: list, msg_id: str) -> dict | None:
@@ -22,7 +33,8 @@ def _find_msg_with_id(messages: list, msg_id: str) -> dict | None:
 
 
 @pytest.mark.real_e2e
-def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_thread_user_removed_event_type_not_null(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、用户、removed、event、type、not、null；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.removeMemberFromChatThread，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -33,6 +45,7 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.removeMemberFromChatThread，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     group_id = ""
     thread_id = ""
     parent_msg_id = ""
@@ -59,16 +72,22 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
             info=build_text(user_b, group_id, content, chat_type=1),
         )
         send_temp_id = ((resp_parent.get("result") or {}).get("msgId"))
-        evt_success_b = device_b.receive_message(match_event_type=Cmd.onMessageSuccess.value, timeout=20.0)
-        parent_msg_id = ((evt_success_b.get("data") or {}).get("msg") or {}).get("msgId")
-        assert isinstance(parent_msg_id, str) and parent_msg_id, f"未拿到群父消息 msgId: {evt_success_b}"
+        success_msg = wait_for_success_message(
+            device_b,
+            from_user=user_b,
+            to_user=group_id,
+            content=content,
+            chat_type=1,
+        )
+        parent_msg_id = success_msg.get("msgId")
+        assert isinstance(parent_msg_id, str) and parent_msg_id, f"未拿到群父消息 msgId: {success_msg}"
 
         assert_api.assert_response_matches(
             resp_parent,
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.sendMessage.value,
-                "device": "deviceB",
+                "device": device_b_name,
                 "result": {
                     "msgId": "{{tempId}}",
                     "from": "{{userB}}",
@@ -105,27 +124,15 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
             },
         )
 
-        evt_group_recv = device_a.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-        assert_api.assert_response_matches(
-            evt_group_recv,
-            expected={"type": "event", "eventType": Cmd.onMessagesReceived.value},
-            ignore_keys={"timestamp", "sequence", "data"},
+        matched = wait_for_matching_event_message(
+            device_a,
+            event_type=Cmd.onMessagesReceived.value,
+            from_user=user_b,
+            to_user=group_id,
+            content=content,
+            chat_type=1,
         )
-        messages = ((evt_group_recv.get("data") or {}).get("messages") or [])
-        matched = _find_msg_with_id(messages, parent_msg_id)
-        if matched is None:
-            matched = next(
-                (
-                    item
-                    for item in messages
-                    if isinstance(item, dict)
-                    and item.get("from") == user_b
-                    and item.get("to") == group_id
-                    and ((item.get("body") or {}).get("content")) == content
-                ),
-                None,
-            )
-        assert matched is not None, f"A 端未收到父消息: targetMsgId={parent_msg_id}, content={content}, evt={evt_group_recv}"
+        assert matched, f"A 端未收到父消息: targetMsgId={parent_msg_id}, content={content}"
         parent_msg_id = str(matched.get("msgId") or parent_msg_id)
 
         thread_name = f"thr-{uuid.uuid4().hex[:8]}"
@@ -146,7 +153,7 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.createChatThread.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "threadId": "{{threadId}}",
                     "threadName": "{{threadName}}",
@@ -188,7 +195,7 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.joinChatThread.value,
-                "device": "deviceB",
+                "device": device_b_name,
                 "result": {
                     "threadId": "{{threadId}}",
                     "threadName": "{{threadName}}",
@@ -230,7 +237,7 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.removeMemberFromChatThread.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -329,7 +336,7 @@ def test_chat_thread_user_removed_event_type_not_null(device_a, device_b, assert
                     expected={
                         "manager": "ChatThreadManager",
                         "cmd": Cmd.destroyChatThread.value,
-                        "device": "deviceA",
+                        "device": device_a_name,
                     },
                     ignore_keys={"sequence", "result", "error"},
                 )

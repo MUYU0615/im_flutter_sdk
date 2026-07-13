@@ -13,12 +13,22 @@ import time
 import pytest
 
 from src import Cmd, ne
-from tests.chat._message_helpers import wait_for_success_message
+from tests.chat._message_helpers import wait_for_matching_event_message, wait_for_success_message
 from tests.chat._utils import build_text
 from tests.group.group_helpers import create_group, new_group_name
 
 
 pytestmark = [pytest.mark.client, pytest.mark.chat, pytest.mark.group, pytest.mark.multi_device]
+
+
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
+def _topology_pair(topology):
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    return primary, remote, primary.user_id, remote.user_id, _expected_device(primary), _expected_device(remote)
 
 
 def _find_msg_with_id(messages: list, msg_id: str) -> dict | None:
@@ -93,7 +103,7 @@ def _cleanup_joined_threads(device, user_id: str):
         cursor = next_cursor
 
 
-def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: str):
+def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: str, device_a_name: str, device_b_name: str):
     group_id = ""
     thread_id = ""
     try:
@@ -144,7 +154,7 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.sendMessage.value,
-                "device": "deviceB",
+                "device": device_b_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -158,11 +168,15 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
         parent_msg_id = success_msg.get("msgId")
         assert isinstance(parent_msg_id, str) and parent_msg_id, f"未拿到群父消息 msgId: {success_msg}"
 
-        evt_group_recv = device_a.receive_message(match_event_type=Cmd.onMessagesReceived.value, timeout=20.0)
-        messages = ((evt_group_recv or {}).get("data") or {}).get("messages") or []
-        assert _find_group_text_message(messages, from_user=user_b, group_id=group_id, content=content) is not None, (
-            f"A 端未收到父消息: targetMsgId={parent_msg_id}, evt={evt_group_recv}"
+        matched_parent = wait_for_matching_event_message(
+            device_a,
+            event_type=Cmd.onMessagesReceived.value,
+            from_user=user_b,
+            to_user=group_id,
+            content=content,
+            chat_type=1,
         )
+        assert matched_parent, f"A 端未收到父消息: targetMsgId={parent_msg_id}, content={content}"
 
         resp_create = device_a.call(
             "ChatThreadManager",
@@ -183,7 +197,7 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
         expected={
             "manager": "ChatThreadManager",
             "cmd": Cmd.createChatThread.value,
-            "device": "deviceA",
+            "device": device_a_name,
             "result": {
                 "threadId": "{{threadId}}",
                 "threadName": "{{threadName}}",
@@ -232,7 +246,7 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
         expected={
             "manager": "ChatThreadManager",
             "cmd": Cmd.joinChatThread.value,
-            "device": "deviceB",
+            "device": device_b_name,
             "result": {
                 "threadId": "{{threadId}}",
                 "threadName": "{{threadName}}",
@@ -261,7 +275,7 @@ def _create_thread_context(device_a, device_b, assert_api, user_a: str, user_b: 
     }
 
 
-def _cleanup_thread_context(device_a, device_b, assert_api, context: dict):
+def _cleanup_thread_context(device_a, device_b, assert_api, context: dict, device_a_name: str):
     thread_id = context.get("thread_id")
     group_id = context.get("group_id")
     if thread_id:
@@ -275,7 +289,7 @@ def _cleanup_thread_context(device_a, device_b, assert_api, context: dict):
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.destroyChatThread.value,
-                "device": "deviceA",
+                "device": device_a_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -286,7 +300,7 @@ def _cleanup_thread_context(device_a, device_b, assert_api, context: dict):
             expected={
                 "manager": "GroupManager",
                 "cmd": Cmd.destroyGroup.value,
-                "device": "deviceA",
+                "device": device_a_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -316,7 +330,8 @@ def _assert_cursor_contains_thread(resp: dict, *, thread_id: str, cmd: str):
 @pytest.mark.api("ChatThreadManager.fetchJoinedChatThreadsWithParentId")
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
-def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_thread_fetch_detail_and_lists(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、detail、and、lists；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getThreadConversation、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -327,9 +342,10 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatManager.getThreadConversation、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     context: dict = {}
     try:
-        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
+        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b, device_a_name, device_b_name)
         thread_id = context["thread_id"]
         group_id = context["group_id"]
 
@@ -343,7 +359,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchChatThreadDetail.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "threadId": "{{threadId}}",
                     "threadName": "{{threadName}}",
@@ -373,7 +389,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             expected={
                 "manager": "ChatManager",
                 "cmd": Cmd.getThreadConversation.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "convId": thread_id,
                     "type": 1,
@@ -401,7 +417,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchJoinedChatThreads.value,
-                "device": "deviceB",
+                "device": device_b_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -421,7 +437,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchChatThreadsWithParentId.value,
-                "device": "deviceA",
+                "device": device_a_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -441,7 +457,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchJoinedChatThreadsWithParentId.value,
-                "device": "deviceB",
+                "device": device_b_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -451,7 +467,7 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
             cmd=Cmd.fetchJoinedChatThreadsWithParentId.value,
         )
     finally:
-        _cleanup_thread_context(device_a, device_b, assert_api, context)
+        _cleanup_thread_context(device_a, device_b, assert_api, context, device_a_name)
 
 
 @pytest.mark.real_e2e
@@ -463,7 +479,8 @@ def test_chat_thread_fetch_detail_and_lists(device_a, device_b, assert_api, user
 @pytest.mark.api("ChatThreadManager.fetchLastMessageWithChatThreads")
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
-def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_thread_fetch_members_and_latest_message(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天查询/拉取场景所需的测试数据，场景为chat、thread、拉取、成员、and、latest、消息；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.fetchChatThreadMember，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -474,9 +491,10 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.fetchChatThreadMember，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     context: dict = {}
     try:
-        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
+        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b, device_a_name, device_b_name)
         thread_id = context["thread_id"]
 
         members_resp = device_a.call(
@@ -489,7 +507,7 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchChatThreadMember.value,
-                "device": "deviceA",
+                "device": device_a_name,
             },
             ignore_keys={"sequence", "result"},
         )
@@ -508,14 +526,14 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchLastMessageWithChatThreads.value,
-                "device": "deviceA",
+                "device": device_a_name,
             },
             ignore_keys={"sequence", "result"},
         )
         latest = latest_resp.get("result") or {}
         assert latest == {}, f"新建子区未发送线程内消息时最新消息映射应为空: {latest_resp}"
     finally:
-        _cleanup_thread_context(device_a, device_b, assert_api, context)
+        _cleanup_thread_context(device_a, device_b, assert_api, context, device_a_name)
 
 
 @pytest.mark.real_e2e
@@ -528,7 +546,8 @@ def test_chat_thread_fetch_members_and_latest_message(device_a, device_b, assert
 @pytest.mark.api("ChatThreadManager.fetchJoinedChatThreadsWithParentId")
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
-def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_thread_update_name_and_leave(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、更新、name、and、离开；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.updateChatThreadSubject，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -539,9 +558,10 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.updateChatThreadSubject，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     context: dict = {}
     try:
-        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
+        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b, device_a_name, device_b_name)
         thread_id = context["thread_id"]
         group_id = context["group_id"]
         new_name = f"thr-new-{uuid.uuid4().hex[:6]}"
@@ -556,7 +576,7 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.updateChatThreadSubject.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -592,7 +612,7 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchChatThreadDetail.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": {
                     "threadId": thread_id,
                     "threadName": new_name,
@@ -612,7 +632,7 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.leaveChatThread.value,
-                "device": "deviceB",
+                "device": device_b_name,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -628,14 +648,14 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.fetchJoinedChatThreadsWithParentId.value,
-                "device": "deviceB",
+                "device": device_b_name,
             },
             ignore_keys={"sequence", "result"},
         )
         items = (joined_parent_resp.get("result") or {}).get("list") or []
         assert not any(isinstance(item, dict) and item.get("threadId") == thread_id for item in items)
     finally:
-        _cleanup_thread_context(device_a, device_b, assert_api, context)
+        _cleanup_thread_context(device_a, device_b, assert_api, context, device_a_name)
 
 
 @pytest.mark.real_e2e
@@ -646,7 +666,8 @@ def test_chat_thread_update_name_and_leave(device_a, device_b, assert_api, user_
 @pytest.mark.api("ChatThreadManager.destroyChatThread")
 @pytest.mark.clients("owner", "member")
 @pytest.mark.roles_mode("ordered")
-def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.topology_ready
+def test_chat_thread_destroy_event_received_by_group_member(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天事件回调场景所需的测试数据，场景为chat、thread、销毁、event、received、by、群组、成员；
     2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.destroyChatThread，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -657,9 +678,10 @@ def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, 
         '2. 通过 WebSocket 控制测试 App 调用 ChatManager.sendMessage、ChatThreadManager.createChatThread、ChatThreadManager.joinChatThread、ChatThreadManager.destroyChatThread，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验 API 响应以及发送端或接收端的 SDK 回调事件符合预期。'
     )
+    device_a, device_b, user_a, user_b, device_a_name, device_b_name = _topology_pair(topology)
     context: dict = {}
     try:
-        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b)
+        context = _create_thread_context(device_a, device_b, assert_api, user_a, user_b, device_a_name, device_b_name)
         thread_id = context["thread_id"]
 
         destroy_resp = device_a.call(
@@ -672,7 +694,7 @@ def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, 
             expected={
                 "manager": "ChatThreadManager",
                 "cmd": Cmd.destroyChatThread.value,
-                "device": "deviceA",
+                "device": device_a_name,
                 "result": True,
             },
             ignore_keys={"sequence"},
@@ -699,4 +721,4 @@ def test_chat_thread_destroy_event_received_by_group_member(device_a, device_b, 
         )
         context["thread_id"] = ""
     finally:
-        _cleanup_thread_context(device_a, device_b, assert_api, context)
+        _cleanup_thread_context(device_a, device_b, assert_api, context, device_a_name)
