@@ -10,6 +10,10 @@ from src import Cmd
 pytestmark = [pytest.mark.client, pytest.mark.group]
 
 
+def _expected_device(client) -> str:
+    return getattr(client, "name", "deviceA")
+
+
 def _assert_public_groups_result(result: object, *, resp: dict) -> None:
     assert isinstance(result, dict), f"getPublicGroupsFromServer result 应为 dict: {resp}"
     assert "cursor" in result, f"getPublicGroupsFromServer result 缺少 cursor: {resp}"
@@ -29,7 +33,9 @@ def _assert_public_groups_result(result: object, *, resp: dict) -> None:
 
 
 @pytest.mark.real_e2e
-def test_group_fetch_joined_group_count_success(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_fetch_joined_group_count_success(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、拉取、joined、群组、count、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchJoinedGroupCount，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -40,13 +46,14 @@ def test_group_fetch_joined_group_count_success(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.fetchJoinedGroupCount，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call("GroupManager", Cmd.fetchJoinedGroupCount.value, info={})
+    client = topology_primary_or_device_a
+    resp = client.call("GroupManager", Cmd.fetchJoinedGroupCount.value, info={})
     assert_api.assert_response_matches(
         resp,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.fetchJoinedGroupCount.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
         },
         ignore_keys={"sequence", "result"},
     )
@@ -56,7 +63,9 @@ def test_group_fetch_joined_group_count_success(device_a, assert_api):
 
 
 @pytest.mark.real_e2e
-def test_group_get_public_groups_from_server_success(device_a, assert_api):
+@pytest.mark.e2e_flow("local_state")
+@pytest.mark.topology_ready
+def test_group_get_public_groups_from_server_success(topology_primary_or_device_a, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备群组查询/拉取场景所需的测试数据，场景为群组、获取、public、groups、from、服务端、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 GroupManager.getPublicGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -67,7 +76,8 @@ def test_group_get_public_groups_from_server_success(device_a, assert_api):
         '2. 通过 WebSocket 控制测试 App 调用 GroupManager.getPublicGroupsFromServer，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
-    resp = device_a.call(
+    client = topology_primary_or_device_a
+    resp = client.call(
         "GroupManager",
         Cmd.getPublicGroupsFromServer.value,
         info={"pageNum": 1, "pageSize": 20},
@@ -77,7 +87,7 @@ def test_group_get_public_groups_from_server_success(device_a, assert_api):
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.getPublicGroupsFromServer.value,
-            "device": "deviceA",
+            "device": _expected_device(client),
         },
         ignore_keys={"sequence", "result"},
     )

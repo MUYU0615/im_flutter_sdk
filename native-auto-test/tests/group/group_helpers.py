@@ -824,13 +824,14 @@ def wait_group_visible_from_server(device_a, group_id: str, timeout: float = 10.
 
 
 def destroy_group(device_a, assert_api, group_id: str, *, device_b=None):
+    expected_device = getattr(device_a, "name", "deviceA")
     resp_destroy = device_a.call("GroupManager", Cmd.destroyGroup.value, info={"groupId": group_id})
     assert_api.assert_response_matches(
         resp_destroy,
         expected={
             "manager": "GroupManager",
             "cmd": Cmd.destroyGroup.value,
-            "device": "deviceA",
+            "device": expected_device,
             "result": True,
         },
         ignore_keys={"sequence"},
