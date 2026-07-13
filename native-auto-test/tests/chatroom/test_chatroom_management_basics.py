@@ -91,7 +91,9 @@ def test_chatroom_update_and_fetch_announcement_success(topology_primary_or_devi
 @pytest.mark.api("ChatRoomManager.removeMembersFromChatRoomWhiteList")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_add_fetch_remove_white_list_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、添加、拉取、移除、白名单、列表、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.fetchChatRoomWhiteListFromServer、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -102,15 +104,21 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.addMembersToChatRoomWhiteList、ChatRoomManager.fetchChatRoomWhiteListFromServer、ChatRoomManager.removeMembersFromChatRoomWhiteList，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
+    remote_device = _expected_device(remote)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="whitelist", desc_prefix="whitelist")
     try:
-        join_resp = device_b.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
+        join_resp = remote.call("ChatRoomManager", Cmd.joinChatRoom.value, info={"roomId": room_id})
         assert_api.assert_response_matches(
             join_resp,
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.joinChatRoom.value,
-                "device": "deviceB",
+                "device": remote_device,
                 "result": {
                     "roomId": room_id,
                     "memberCount": ne(None),
@@ -135,7 +143,7 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
             },
         )
 
-        add_resp = device_a.call(
+        add_resp = primary.call(
             "ChatRoomManager",
             Cmd.addMembersToChatRoomWhiteList.value,
             info={"roomId": room_id, "members": [user_b]},
@@ -144,10 +152,10 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
             assert_api,
             add_resp,
             cmd=Cmd.addMembersToChatRoomWhiteList.value,
-            device="deviceA",
+            device=primary_device,
         )
 
-        fetch_after_add = device_a.call(
+        fetch_after_add = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
@@ -157,7 +165,7 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomWhiteListFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": ne(None),
             },
             ignore_keys={"sequence"},
@@ -166,7 +174,7 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
         assert isinstance(white_list, list), f"fetchChatRoomWhiteListFromServer result 应为 list: {fetch_after_add}"
         assert user_b in white_list, f"白名单缺少已添加成员: user_b={user_b}, white_list={white_list}"
 
-        remove_resp = device_a.call(
+        remove_resp = primary.call(
             "ChatRoomManager",
             Cmd.removeMembersFromChatRoomWhiteList.value,
             info={"roomId": room_id, "members": [user_b]},
@@ -175,10 +183,10 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
             assert_api,
             remove_resp,
             cmd=Cmd.removeMembersFromChatRoomWhiteList.value,
-            device="deviceA",
+            device=primary_device,
         )
 
-        fetch_after_remove = device_a.call(
+        fetch_after_remove = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomWhiteListFromServer.value,
             info={"roomId": room_id},
@@ -188,7 +196,7 @@ def test_chatroom_add_fetch_remove_white_list_success(device_a, device_b, assert
             expected={
                 "manager": "ChatRoomManager",
                 "cmd": Cmd.fetchChatRoomWhiteListFromServer.value,
-                "device": "deviceA",
+                "device": primary_device,
                 "result": ne(None),
             },
             ignore_keys={"sequence"},
@@ -262,7 +270,9 @@ def _assert_list_response(assert_api, resp: dict, *, cmd: str, device: str) -> l
 @pytest.mark.api("ChatRoomManager.unMuteChatRoomMembers")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_mute_fetch_unmute_member_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、禁言、拉取、unmute、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.fetchChatRoomMuteList、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -273,18 +283,23 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.muteChatRoomMembers、ChatRoomManager.fetchChatRoomMuteList、ChatRoomManager.unMuteChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="mute", desc_prefix="mute")
     try:
-        _join_chatroom_as_b(device_b, assert_api, room_id)
+        _join_chatroom_as_b(remote, assert_api, room_id)
 
-        mute_resp = device_a.call(
+        mute_resp = primary.call(
             "ChatRoomManager",
             Cmd.muteChatRoomMembers.value,
             info={"roomId": room_id, "muteMembers": [user_b], "duration": 60000},
         )
-        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, mute_resp, cmd=Cmd.muteChatRoomMembers.value, device=primary_device)
 
-        mute_list_resp = device_a.call(
+        mute_list_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMuteList.value,
             info={"roomId": room_id, "pageNum": 1, "pageSize": 20},
@@ -293,18 +308,18 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
             assert_api,
             mute_list_resp,
             cmd=Cmd.fetchChatRoomMuteList.value,
-            device="deviceA",
+            device=primary_device,
         )
         assert user_b in mute_list, f"禁言列表缺少被禁言成员: user_b={user_b}, mute_list={mute_list}"
 
-        unmute_resp = device_a.call(
+        unmute_resp = primary.call(
             "ChatRoomManager",
             Cmd.unMuteChatRoomMembers.value,
             info={"roomId": room_id, "unMuteMembers": [user_b]},
         )
-        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, unmute_resp, cmd=Cmd.unMuteChatRoomMembers.value, device=primary_device)
 
-        mute_list_after_resp = device_a.call(
+        mute_list_after_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomMuteList.value,
             info={"roomId": room_id, "pageNum": 1, "pageSize": 20},
@@ -313,7 +328,7 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
             assert_api,
             mute_list_after_resp,
             cmd=Cmd.fetchChatRoomMuteList.value,
-            device="deviceA",
+            device=primary_device,
         )
         assert user_b not in mute_list_after, f"解除禁言后列表仍包含成员: user_b={user_b}, mute_list={mute_list_after}"
     finally:
@@ -328,7 +343,9 @@ def test_chatroom_mute_fetch_unmute_member_success(device_a, device_b, assert_ap
 @pytest.mark.api("ChatRoomManager.unBlockChatRoomMembers")
 @pytest.mark.clients("sender,receiver")
 @pytest.mark.roles_mode("ordered")
-def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_api, user_a, user_b):
+@pytest.mark.e2e_flow("server_state")
+@pytest.mark.topology_ready
+def test_chatroom_block_fetch_unblock_member_success(topology, assert_api):
     """
     1. 在已登录的 Android 共享 session 中准备聊天室查询/拉取场景所需的测试数据，场景为聊天室、封禁、拉取、unblock、成员、成功路径；
     2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.blockChatRoomMembers、ChatRoomManager.fetchChatRoomBlockList、ChatRoomManager.unBlockChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；
@@ -339,18 +356,23 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
         '2. 通过 WebSocket 控制测试 App 调用 ChatRoomManager.joinChatRoom、ChatRoomManager.blockChatRoomMembers、ChatRoomManager.fetchChatRoomBlockList、ChatRoomManager.unBlockChatRoomMembers，使用当前 case 定义的参数执行真实 SDK 请求；\n'
         '3. 校验返回列表、对象字段、本地状态或服务端状态符合预期。'
     )
+    primary = topology.primary_client(0)
+    remote = topology.remote_client(0)
+    user_a = primary.user_id
+    user_b = remote.user_id
+    primary_device = _expected_device(primary)
     room_id, _ = create_chatroom_or_skip(owner=user_a, name_prefix="block", desc_prefix="block")
     try:
-        _join_chatroom_as_b(device_b, assert_api, room_id)
+        _join_chatroom_as_b(remote, assert_api, room_id)
 
-        block_resp = device_a.call(
+        block_resp = primary.call(
             "ChatRoomManager",
             Cmd.blockChatRoomMembers.value,
             info={"roomId": room_id, "members": [user_b]},
         )
-        _assert_success_envelope(assert_api, block_resp, cmd=Cmd.blockChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, block_resp, cmd=Cmd.blockChatRoomMembers.value, device=primary_device)
 
-        block_list_resp = device_a.call(
+        block_list_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomBlockList.value,
             info={"roomId": room_id, "pageNum": 1, "pageSize": 20},
@@ -359,18 +381,18 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
             assert_api,
             block_list_resp,
             cmd=Cmd.fetchChatRoomBlockList.value,
-            device="deviceA",
+            device=primary_device,
         )
         assert user_b in block_list, f"黑名单缺少被加入成员: user_b={user_b}, block_list={block_list}"
 
-        unblock_resp = device_a.call(
+        unblock_resp = primary.call(
             "ChatRoomManager",
             Cmd.unBlockChatRoomMembers.value,
             info={"roomId": room_id, "members": [user_b]},
         )
-        _assert_success_envelope(assert_api, unblock_resp, cmd=Cmd.unBlockChatRoomMembers.value, device="deviceA")
+        _assert_success_envelope(assert_api, unblock_resp, cmd=Cmd.unBlockChatRoomMembers.value, device=primary_device)
 
-        block_list_after_resp = device_a.call(
+        block_list_after_resp = primary.call(
             "ChatRoomManager",
             Cmd.fetchChatRoomBlockList.value,
             info={"roomId": room_id, "pageNum": 1, "pageSize": 20},
@@ -379,7 +401,7 @@ def test_chatroom_block_fetch_unblock_member_success(device_a, device_b, assert_
             assert_api,
             block_list_after_resp,
             cmd=Cmd.fetchChatRoomBlockList.value,
-            device="deviceA",
+            device=primary_device,
         )
         assert user_b not in block_list_after, f"解除黑名单后列表仍包含成员: user_b={user_b}, block_list={block_list_after}"
     finally:
