@@ -1,4 +1,6 @@
 @TestOn('browser')
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:im_flutter_sdk_web/im_flutter_sdk_web.dart';
 import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart';
