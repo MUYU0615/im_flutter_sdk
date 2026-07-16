@@ -210,6 +210,25 @@ web-real-full-baseline:
 	  --flutter-timeout 300 \
 	  -- tests/web_real --target-platform web -q
 
+web-real-ordinary-baseline:
+	$(PY) -m src.tools.web_e2e_runner \
+	  --run-id web-real-ordinary-baseline \
+	  --web-sdk-mode real_sdk \
+	  --headless-startup-wait 150 \
+	  --startup-timeout 240 \
+	  --flutter-timeout 300 \
+	  -- tests/web_real --target-platform web -q -m "not no_global_login and not disruptive_session"
+
+web-real-login-probe:
+	$(PY) -m src.tools.web_e2e_runner \
+	  --run-id web-real-login-probe \
+	  --web-sdk-mode real_sdk \
+	  --headless-startup-wait 150 \
+	  --startup-timeout 240 \
+	  --flutter-timeout 300 \
+	  --skip-runner-web-client-init \
+	  -- tests/web_real/test_real_web_login_probe.py --target-platform web -q
+
 # --- Chat test presets ---
 test-chat-strict:
 	@echo "[Strict] chat suite (CASES_DISCOVER=0)"

@@ -131,6 +131,9 @@ class _MethodKeys {
   static const String fetchOwnInfo = 'fetchOwnInfo';
   static const String fetchUserInfoById = 'fetchUserInfoById';
   static const String fetchUserInfoByIdWithType = 'fetchUserInfoByIdWithType';
+  static const String subscribeUsersInfo = 'subscribeUsersInfo';
+  static const String unsubscribeUsersInfo = 'unsubscribeUsersInfo';
+  static const String fetchSubscribedUsers = 'fetchSubscribedUsers';
   static const String getUnreadMsgCount = 'getUnreadMsgCount';
   static const String markAllMessagesAsRead = 'markAllMessagesAsRead';
   static const String markMessageAsRead = 'markMessageAsRead';

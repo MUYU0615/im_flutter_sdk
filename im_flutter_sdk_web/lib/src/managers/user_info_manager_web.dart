@@ -14,19 +14,30 @@ class UserInfoManagerWeb extends UserInfoManager {
   Future<dynamic> callNativeMethod(String method, [dynamic params]) async {
     final map = _asMap(params);
     final client = Client.instance;
-    final realSdk =
-        client is ClientWeb && client._sdkMode == 'real_sdk'
-            ? client._realSdk
-            : null;
+    final realSdk = client is ClientWeb && client._sdkMode == 'real_sdk'
+        ? client._realSdk
+        : null;
     switch (method) {
       case _MethodKeys.updateOwnUserInfo:
         if (realSdk != null) {
-          return {method: await realSdk.updateOwnUserInfo(map)};
+          final result = await realSdk.updateOwnUserInfo(map);
+          realSdk.recordExternalDebugEvent('user_info_emit_own_event', {
+            'hasHandler': _handler != null,
+            'result': result,
+          });
+          await emitUserInfoEvent('onOwnInfoUpdated', result);
+          return {method: result};
         }
         return {method: _updateOwnUserInfo(map)};
       case _MethodKeys.updateOwnUserInfoWithType:
         if (realSdk != null) {
-          return {method: await realSdk.updateOwnUserInfoWithType(map)};
+          final result = await realSdk.updateOwnUserInfoWithType(map);
+          realSdk.recordExternalDebugEvent('user_info_emit_own_event', {
+            'hasHandler': _handler != null,
+            'result': result,
+          });
+          await emitUserInfoEvent('onOwnInfoUpdated', result);
+          return {method: result};
         }
         return {method: _updateOwnUserInfoWithType(map)};
       case _MethodKeys.fetchOwnInfo:
@@ -65,6 +76,23 @@ class UserInfoManagerWeb extends UserInfoManager {
             _asIntList(map['userInfoTypes']),
           ),
         };
+      case _MethodKeys.subscribeUsersInfo:
+        if (realSdk != null) {
+          await realSdk.subscribeUsersInfo(_asStringList(map['userIds']));
+          return {method: true};
+        }
+        return {method: true};
+      case _MethodKeys.unsubscribeUsersInfo:
+        if (realSdk != null) {
+          await realSdk.unsubscribeUsersInfo(_asStringList(map['userIds']));
+          return {method: true};
+        }
+        return {method: true};
+      case _MethodKeys.fetchSubscribedUsers:
+        if (realSdk != null) {
+          return {method: await realSdk.fetchSubscribedUsers()};
+        }
+        return {method: <String, dynamic>{}};
       default:
         return _unsupported('UserInfoManager', method);
     }
@@ -72,6 +100,17 @@ class UserInfoManagerWeb extends UserInfoManager {
 
   Future<void> emitUserInfoEvent(String method, [dynamic arguments]) async {
     await _handler?.call(MethodCall(method, arguments));
+  }
+
+  void emitUserInfoEventSoon(String method, [dynamic arguments]) {
+    final client = Client.instance;
+    if (client is ClientWeb && arguments is Map<String, dynamic>) {
+      client.emitUserInfoEventSoon(method, arguments);
+      return;
+    }
+    Future<void>.delayed(const Duration(milliseconds: 50), () async {
+      await emitUserInfoEvent(method, arguments);
+    });
   }
 
   void reset({String? keepUserId}) {

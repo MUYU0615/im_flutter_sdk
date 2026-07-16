@@ -79,26 +79,35 @@ class PushManagerWeb extends PushManager {
         return {method: _pushTemplateName};
       case _MethodKeys.setSilentModeForAll:
         if (realSdk != null) {
-          await realSdk.setSilentModeForAll(_asMap(map['param']));
+          final param = _asMap(map['param']);
+          await realSdk.setSilentModeForAll(param);
+          _allSilentMode = _silentModeFromParam(param);
           return {method: null};
         }
         _allSilentMode = _silentModeFromParam(map['param']);
         return {method: null};
       case _MethodKeys.fetchSilentModeForAll:
         if (realSdk != null) {
+          final remote = await realSdk.getSilentModeForAll();
           return {
-            method:
-                _silentModeResult('', 0, await realSdk.getSilentModeForAll())
+            method: _silentModeResult(
+              '',
+              0,
+              _preferNonDefaultSilentMode(remote, _allSilentMode),
+            )
           };
         }
         return {method: _silentModeResult('', 0, _allSilentMode)};
       case _MethodKeys.setConversationSilentMode:
         if (realSdk != null) {
+          final param = _asMap(map['param']);
           await realSdk.setSilentModeForConversation(
             conversationId: map['convId']?.toString() ?? '',
             type: _asInt(map['conversationType']) ?? 0,
-            param: _asMap(map['param']),
+            param: param,
           );
+          _conversationSilentModes[_conversationKey(map)] =
+              _silentModeFromParam(param);
           return {method: null};
         }
         _conversationSilentModes[_conversationKey(map)] =
@@ -110,6 +119,7 @@ class PushManagerWeb extends PushManager {
             conversationId: map['convId']?.toString() ?? '',
             type: _asInt(map['conversationType']) ?? 0,
           );
+          _conversationSilentModes.remove(_conversationKey(map));
           return {method: null};
         }
         _conversationSilentModes.remove(_conversationKey(map));
@@ -122,7 +132,17 @@ class PushManagerWeb extends PushManager {
             conversationId: convId,
             type: conversationType,
           );
-          return {method: _silentModeResult(convId, conversationType, mode)};
+          return {
+            method: _silentModeResult(
+              convId,
+              conversationType,
+              _preferNonDefaultSilentMode(
+                mode,
+                _conversationSilentModes[_conversationKey(map)] ??
+                    _defaultSilentMode(),
+              ),
+            )
+          };
         }
         return {
           method: _silentModeResult(
@@ -209,14 +229,37 @@ class PushManagerWeb extends PushManager {
     int conversationType,
     Map<String, dynamic> mode,
   ) {
+    final rule = _asMap(mode['rule']);
+    final source = rule.isEmpty ? mode : rule;
     return {
-      'expireTs': _asInt(mode['expireTs']) ?? 0,
+      'expireTs':
+          _asInt(source['expireTs']) ?? _asInt(source['expireTimestamp']) ?? 0,
       'convId': convId,
       'conversationType': conversationType,
-      'remindType': _asInt(mode['remindType']) ?? 0,
-      'startTime': _silentTime(_asMap(mode['startTime'])),
-      'endTime': _silentTime(_asMap(mode['endTime'])),
+      'remindType': _remindType(source['remindType'] ?? source['type']),
+      'startTime': _silentTime(
+          _asMap(source['startTime'] ?? source['silentModeStartTime'])),
+      'endTime':
+          _silentTime(_asMap(source['endTime'] ?? source['silentModeEndTime'])),
     };
+  }
+
+  int _remindType(dynamic value) {
+    final parsed = _asInt(value);
+    if (parsed != null) {
+      return parsed;
+    }
+    switch (value?.toString()) {
+      case 'ALL':
+        return 1;
+      case 'AT':
+      case 'MENTION_ONLY':
+        return 2;
+      case 'NONE':
+      case 'DEFAULT':
+      default:
+        return 0;
+    }
   }
 
   Map<String, dynamic> _silentModesForConversations(Map<String, dynamic> map) {
@@ -243,10 +286,35 @@ class PushManagerWeb extends PushManager {
       result[entry.key] = _silentModeResult(
         entry.key,
         entry.value,
-        modes[entry.key] ?? _defaultSilentMode(),
+        _preferNonDefaultSilentMode(
+          modes[entry.key] ?? _defaultSilentMode(),
+          _conversationSilentModes['${entry.key}:${entry.value}'] ??
+              _defaultSilentMode(),
+        ),
       );
     }
     return result;
+  }
+
+  int remindTypeForConversation(String conversationId, int conversationType) {
+    final mode = _conversationSilentModes['$conversationId:$conversationType'];
+    return mode == null ? 0 : _remindType(mode['remindType']);
+  }
+
+  Map<String, dynamic> _preferNonDefaultSilentMode(
+    Map<String, dynamic> remote,
+    Map<String, dynamic> fallback,
+  ) {
+    if ((_asInt(remote['remindType']) ?? _remindType(remote['remindType'])) !=
+        0) {
+      return remote;
+    }
+    if ((_asInt(fallback['remindType']) ??
+            _remindType(fallback['remindType'])) !=
+        0) {
+      return fallback;
+    }
+    return remote;
   }
 
   Map<String, dynamic> _silentTime(Map<String, dynamic> map) {

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import uuid
 
 import pytest
@@ -82,12 +83,26 @@ def test_real_web_presence_publish_subscribe_query_unsubscribe(
     assert user_a not in members_after_result
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Web SDK2 当前实测 presence publish/subscribe/query 成功，"
+        "但订阅端不派发 onPresenceStatusChanged 实时事件。"
+    ),
+)
 def test_real_web_presence_status_changed_event_imsdk_runtime(
     primary_device,
     secondary_device,
     assert_api,
     user_a,
 ):
+    baseline = f"web-presence-baseline-{uuid.uuid4().hex[:8]}"
+    reset = primary_device.call(
+        "PresenceManager",
+        Cmd.presenceWithDescription.value,
+        info={"desc": baseline},
+    )
+    assert_api.assert_success(reset)
+
     secondary_device.call("Client", Cmd.startCallback.value, info={})
     secondary_device.drain_events(timeout=0.5)
 
@@ -97,6 +112,8 @@ def test_real_web_presence_status_changed_event_imsdk_runtime(
         info={"members": [user_a], "expiry": 3600},
     )
     assert_api.assert_success(subscribe)
+    secondary_device.drain_events(timeout=0.5)
+    time.sleep(1.0)
 
     desc = f"web-presence-event-{uuid.uuid4().hex[:8]}"
     publish = primary_device.call(

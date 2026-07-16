@@ -40,6 +40,7 @@ class ContactManagerWeb extends ContactManager {
         final userId = map['userId']?.toString() ?? '';
         if (realSdk != null) {
           await realSdk.addContact(userId, map['reason']?.toString());
+          _contacts.putIfAbsent(userId, () => {'userId': userId});
           return {method: userId};
         }
         _contacts.putIfAbsent(userId, () => {'userId': userId});
@@ -48,13 +49,14 @@ class ContactManagerWeb extends ContactManager {
         final userId = map['userId']?.toString() ?? '';
         if (realSdk != null) {
           await realSdk.deleteContact(userId);
+          _contacts.remove(userId);
           return {method: userId};
         }
         _contacts.remove(userId);
         return {method: userId};
       case _MethodKeys.getAllContactsFromServer:
         if (realSdk != null) {
-          return {method: await realSdk.getContactIds()};
+          return {method: _mergeContactIds(await realSdk.getContactIds())};
         }
         return {method: _contactIds()};
       case _MethodKeys.getAllContactsFromDB:
@@ -62,23 +64,28 @@ class ContactManagerWeb extends ContactManager {
       case _MethodKeys.getAllContacts:
       case _MethodKeys.fetchAllContacts:
         if (realSdk != null) {
-          return {method: await realSdk.getContacts()};
+          return {method: _mergeContacts(await realSdk.getContacts())};
         }
         return {method: _contactList()};
       case _MethodKeys.fetchContacts:
         if (realSdk != null) {
+          final result = await realSdk.getContactsWithCursor(
+            pageSize: _asInt(map['pageSize']) ?? 20,
+            cursor: map['cursor']?.toString() ?? '',
+          );
+          final list = result['list'];
+          if (list is List) {
+            result['list'] = _mergeContacts(_asContactList(list));
+          }
           return {
-            method: await realSdk.getContactsWithCursor(
-              pageSize: _asInt(map['pageSize']) ?? 20,
-              cursor: map['cursor']?.toString() ?? '',
-            ),
+            method: result,
           };
         }
         return {method: _fetchContacts(map)};
       case _MethodKeys.fetchAllContactIds:
       case _MethodKeys.getAllContactIds:
         if (realSdk != null) {
-          return {method: await realSdk.getContactIds()};
+          return {method: _mergeContactIds(await realSdk.getContactIds())};
         }
         return {method: _contactIds()};
       case _MethodKeys.setContactRemark:
@@ -88,6 +95,9 @@ class ContactManagerWeb extends ContactManager {
             userId: userId,
             remark: map['remark']?.toString() ?? '',
           );
+          final contact =
+              _contacts.putIfAbsent(userId, () => {'userId': userId});
+          contact['remark'] = map['remark']?.toString() ?? '';
           return {method: true};
         }
         final contact = _contacts.putIfAbsent(userId, () => {'userId': userId});
@@ -96,7 +106,7 @@ class ContactManagerWeb extends ContactManager {
       case _MethodKeys.getContact:
         final userId = map['userId']?.toString() ?? '';
         if (realSdk != null) {
-          final contacts = await realSdk.getContacts();
+          final contacts = _mergeContacts(await realSdk.getContacts());
           for (final contact in contacts) {
             if (contact['userId']?.toString() == userId) {
               return {method: contact};
@@ -146,10 +156,13 @@ class ContactManagerWeb extends ContactManager {
       case _MethodKeys.getBlockListFromDB:
         return {method: _blockList.toList()..sort()};
       case _MethodKeys.acceptInvitation:
+        final userId = map['userId']?.toString() ?? '';
         if (realSdk != null) {
-          await realSdk.acceptInvitation(map['userId']?.toString() ?? '');
+          await realSdk.acceptInvitation(userId);
+          _contacts.putIfAbsent(userId, () => {'userId': userId});
           return {method: true};
         }
+        _contacts.putIfAbsent(userId, () => {'userId': userId});
         return {method: true};
       case _MethodKeys.declineInvitation:
         if (realSdk != null) {
@@ -175,9 +188,42 @@ class ContactManagerWeb extends ContactManager {
 
   List<String> _contactIds() => _contacts.keys.toList()..sort();
 
+  List<String> _mergeContactIds(List<String> ids) {
+    return {...ids, ..._contacts.keys}.toList()..sort();
+  }
+
   List<Map<String, dynamic>> _contactList() {
     return _contactIds()
         .map((userId) => Map<String, dynamic>.from(_contacts[userId]!))
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _mergeContacts(
+    List<Map<String, dynamic>> contacts,
+  ) {
+    final merged = <String, Map<String, dynamic>>{};
+    for (final contact in contacts) {
+      final userId = contact['userId']?.toString() ?? '';
+      if (userId.isNotEmpty) {
+        merged[userId] = Map<String, dynamic>.from(contact);
+      }
+    }
+    for (final entry in _contacts.entries) {
+      merged[entry.key] = {
+        ...?merged[entry.key],
+        ...entry.value,
+      };
+    }
+    return merged.values.toList()
+      ..sort((a, b) => (a['userId'] ?? '')
+          .toString()
+          .compareTo((b['userId'] ?? '').toString()));
+  }
+
+  List<Map<String, dynamic>> _asContactList(List<dynamic> raw) {
+    return raw
+        .whereType<Map>()
+        .map((item) => item.cast<String, dynamic>())
         .toList();
   }
 

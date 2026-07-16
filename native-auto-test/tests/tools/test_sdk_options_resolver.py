@@ -89,3 +89,35 @@ def test_resolve_sdk_init_options_rejects_unknown_keys():
 
     with pytest.raises(KeyError, match="web_sdk_mode"):
         resolve_sdk_init_options("web", config=config)
+
+
+def test_resolve_sdk_init_options_uses_rest_api_base_url_for_web():
+    config = {
+        "sdk_options": {
+            "app_key": "easemob#dutest",
+            "enable_dns_config": True,
+        },
+        "rest_api": {
+            "base_url": " http://a1.easemob.com ",
+        },
+    }
+
+    resolved = resolve_sdk_init_options("web", config=config)
+
+    assert resolved["restServer"] == "http://a1.easemob.com"
+
+
+def test_resolve_sdk_init_options_keeps_explicit_rest_server_for_web():
+    config = {
+        "sdk_options": {
+            "app_key": "easemob#dutest",
+            "rest_server": "https://override.example.com",
+        },
+        "rest_api": {
+            "base_url": "http://a1.easemob.com",
+        },
+    }
+
+    resolved = resolve_sdk_init_options("web", config=config)
+
+    assert resolved["restServer"] == "https://override.example.com"

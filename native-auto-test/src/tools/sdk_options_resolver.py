@@ -136,4 +136,11 @@ def resolve_sdk_init_options(
         if source_key == "app_key":
             value = value.strip()
         resolved[target_key] = value
+
+    if platform == "web" and not resolved.get("restServer"):
+        rest_api = cfg.get("rest_api") or {}
+        if isinstance(rest_api, dict):
+            rest_base_url = rest_api.get("base_url")
+            if isinstance(rest_base_url, str) and rest_base_url.strip():
+                resolved["restServer"] = rest_base_url.strip()
     return resolved

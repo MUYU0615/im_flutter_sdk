@@ -122,10 +122,9 @@ class ChatManagerWeb extends ChatManager {
   Future<dynamic> callNativeMethod(String method, [dynamic params]) async {
     final map = _asMap(params);
     final client = Client.instance;
-    final realSdk =
-        client is ClientWeb && client._sdkMode == 'real_sdk'
-            ? client._realSdk
-            : null;
+    final realSdk = client is ClientWeb && client._sdkMode == 'real_sdk'
+        ? client._realSdk
+        : null;
     switch (method) {
       case _MethodKeys.sendMessage:
         final message = _normalizeMessageInput(map);
@@ -172,9 +171,8 @@ class ChatManagerWeb extends ChatManager {
         if (realSdk != null) {
           await realSdk.ackGroupMessageRead(
             msgId: map['msgId']?.toString() ?? '',
-            groupId: map['group_id']?.toString() ??
-                map['groupId']?.toString() ??
-                '',
+            groupId:
+                map['group_id']?.toString() ?? map['groupId']?.toString() ?? '',
             content: map['content']?.toString(),
           );
           return {method: 1};
@@ -191,8 +189,7 @@ class ChatManagerWeb extends ChatManager {
         return {method: 1};
       case _MethodKeys.ackConversationRead:
         if (realSdk != null) {
-          final conversationId =
-              map['convId']?.toString() ??
+          final conversationId = map['convId']?.toString() ??
               map['conversationId']?.toString() ??
               '';
           final type =
@@ -241,7 +238,8 @@ class ChatManagerWeb extends ChatManager {
               }
             }
           }
-          final conversations = await realSdk.getServerConversations(pageSize: 100);
+          final conversations =
+              await realSdk.getServerConversations(pageSize: 100);
           for (final conversation in conversations) {
             final conversationId = conversation['convId']?.toString() ?? '';
             final conversationType = _asInt(conversation['type']) ?? 0;
@@ -265,7 +263,8 @@ class ChatManagerWeb extends ChatManager {
         return {method: _messageById(map['msgId'])};
       case _MethodKeys.updateChatMessage:
         if (realSdk != null) {
-          final message = _asMap(map['message']).isEmpty ? map : _asMap(map['message']);
+          final message =
+              _asMap(map['message']).isEmpty ? map : _asMap(map['message']);
           return {
             method: await realSdk.modifyMessage(
               msgId: message['msgId']?.toString() ?? '',
@@ -388,7 +387,8 @@ class ChatManagerWeb extends ChatManager {
         return {method: _conversationList()};
       case _MethodKeys.getConversationsByType:
         if (realSdk != null) {
-          final type = _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
+          final type =
+              _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
           final all = await realSdk.getServerConversations();
           return {
             method: _asMapList(all)
@@ -398,7 +398,8 @@ class ChatManagerWeb extends ChatManager {
         }
         return {
           method: _conversationList().where((item) {
-            return (_asInt(item['type']) ?? 0) == (_asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0);
+            return (_asInt(item['type']) ?? 0) ==
+                (_asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0);
           }).toList(),
         };
       case _MethodKeys.cleanConversationsMemoryCache:
@@ -499,9 +500,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             deleteRoam: map['deleteMessages'] == true,
           );
           return {method: true};
@@ -513,9 +512,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             deleteRoam: map['isDeleteRemoteMessage'] == true ||
                 map['deleteMessages'] == true,
           );
@@ -532,9 +529,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             msgIds: _asStringList(map['msgIds']),
           );
           return {method: null};
@@ -547,9 +542,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             msgIds: _asStringList(map['msgIds']),
           );
           return {method: null};
@@ -562,9 +555,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             timestamp: _asInt(map['timestamp']) ?? 0,
           );
           return {method: null};
@@ -575,9 +566,7 @@ class ChatManagerWeb extends ChatManager {
             convId: map['convId']?.toString() ??
                 map['conversationId']?.toString() ??
                 '',
-            type: _asInt(map['type']) ??
-                _asInt(map['conversationType']) ??
-                0,
+            type: _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0,
             timestamp: _asInt(map['timestamp']) ?? 0,
           );
           return {method: null};
@@ -675,16 +664,16 @@ class ChatManagerWeb extends ChatManager {
       case _MethodKeys.searchMsgsByOptions:
       case _MethodKeys.conversationSearchMsgsByOptions:
         if (realSdk != null) {
-          final keywords = map['keywords']?.toString() ??
-              map['keyword']?.toString() ??
-              '';
+          final keywords =
+              map['keywords']?.toString() ?? map['keyword']?.toString() ?? '';
           final convId = map['convId']?.toString() ??
               map['conversationId']?.toString() ??
               '';
           final type =
               _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
           final matched = <Map<String, dynamic>>[];
-          Future<void> collectFromConversation(String id, int conversationType) async {
+          Future<void> collectFromConversation(
+              String id, int conversationType) async {
             final history = await realSdk.fetchHistoryMessages(
               convId: id,
               type: conversationType,
@@ -699,10 +688,12 @@ class ChatManagerWeb extends ChatManager {
               }),
             );
           }
+
           if (convId.isNotEmpty) {
             await collectFromConversation(convId, type);
           } else {
-            final conversations = await realSdk.getServerConversations(pageSize: 100);
+            final conversations =
+                await realSdk.getServerConversations(pageSize: 100);
             for (final conversation in conversations) {
               final id = conversation['convId']?.toString() ?? '';
               final conversationType = _asInt(conversation['type']) ?? 0;
@@ -831,14 +822,23 @@ class ChatManagerWeb extends ChatManager {
         return {method: _fetchPinnedMessages(map)};
       case _MethodKeys.conversationRemindType:
         if (realSdk != null) {
+          final convId = map['convId']?.toString() ??
+              map['conversationId']?.toString() ??
+              '';
+          final type =
+              _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
+          final client = Client.instance;
+          if (client is ClientWeb) {
+            final cached =
+                client._pushManager.remindTypeForConversation(convId, type);
+            if (cached != 0) {
+              return {method: cached};
+            }
+          }
           return {
             method: await realSdk.getConversationRemindType(
-              conversationId: map['convId']?.toString() ??
-                  map['conversationId']?.toString() ??
-                  '',
-              type: _asInt(map['type']) ??
-                  _asInt(map['conversationType']) ??
-                  0,
+              conversationId: convId,
+              type: type,
             ),
           };
         }
@@ -871,9 +871,8 @@ class ChatManagerWeb extends ChatManager {
               '';
           final type =
               _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
-          final keywords = map['keywords']?.toString() ??
-              map['keyword']?.toString() ??
-              '';
+          final keywords =
+              map['keywords']?.toString() ?? map['keyword']?.toString() ?? '';
           if (convId.isEmpty) {
             return {method: <Map<String, dynamic>>[]};
           }
@@ -911,7 +910,8 @@ class ChatManagerWeb extends ChatManager {
               _asInt(map['type']) ?? _asInt(map['conversationType']) ?? 0;
           final matched = <Map<String, dynamic>>[];
           final seen = <String>{};
-          Future<void> collectFromConversation(String id, int conversationType) async {
+          Future<void> collectFromConversation(
+              String id, int conversationType) async {
             final history = await realSdk.fetchHistoryMessages(
               convId: id,
               type: conversationType,
@@ -925,10 +925,12 @@ class ChatManagerWeb extends ChatManager {
               }
             }
           }
+
           if (convId.isNotEmpty) {
             await collectFromConversation(convId, type);
           } else {
-            final conversations = await realSdk.getServerConversations(pageSize: 100);
+            final conversations =
+                await realSdk.getServerConversations(pageSize: 100);
             for (final conversation in conversations) {
               final id = conversation['convId']?.toString() ?? '';
               final conversationType = _asInt(conversation['type']) ?? 0;
@@ -946,7 +948,8 @@ class ChatManagerWeb extends ChatManager {
         return {method: _messagesWithIds(map['msgIds'])};
       case _MethodKeys.getMessageCount:
         if (realSdk != null) {
-          final conversations = await realSdk.getServerConversations(pageSize: 100);
+          final conversations =
+              await realSdk.getServerConversations(pageSize: 100);
           var total = 0;
           for (final conversation in conversations) {
             final convId = conversation['convId']?.toString() ?? '';
@@ -968,7 +971,9 @@ class ChatManagerWeb extends ChatManager {
       case _MethodKeys.downloadAndParseCombineMessage:
         if (realSdk != null) {
           final message = _downloadMessage(map);
-          return {method: await realSdk.downloadAndParseCombineMessage(message)};
+          return {
+            method: await realSdk.downloadAndParseCombineMessage(message)
+          };
         }
         return {method: _downloadAndParseCombineMessage(map)};
       default:
@@ -1019,7 +1024,8 @@ class ChatManagerWeb extends ChatManager {
           'title': payload['title']?.toString() ?? '',
           'summary': payload['summary']?.toString() ?? '',
           'compatibleText': payload['compatibleText']?.toString() ?? '',
-          'messageList': _asStringList(payload['msgIds'] ?? payload['messageList']),
+          'messageList':
+              _asStringList(payload['msgIds'] ?? payload['messageList']),
         },
       };
     }

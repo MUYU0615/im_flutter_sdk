@@ -435,10 +435,9 @@ class IMWebSocketBridge {
         if (item is! Map) continue;
         final entry = Map<String, dynamic>.from(item);
         final method = entry['method']?.toString();
-        final event =
-            entry['event'] is Map
-                ? Map<String, dynamic>.from(entry['event'])
-                : <String, dynamic>{};
+        final event = entry['event'] is Map
+            ? Map<String, dynamic>.from(entry['event'])
+            : <String, dynamic>{};
         if (method == null || method.isEmpty || event.isEmpty) continue;
         final dedupeKey = jsonEncode(<String, dynamic>{
           'method': method,
@@ -460,7 +459,8 @@ class IMWebSocketBridge {
     }
   }
 
-  Future<void> _handleBridgeRealWebTextMessage(Map<String, dynamic> data) async {
+  Future<void> _handleBridgeRealWebTextMessage(
+      Map<String, dynamic> data) async {
     _realWebTextMessageCalls += 1;
     _lastBridgeMessageId = data['msgId']?.toString();
     _logV('received realWebTextMessage: ${jsonEncode(data)}');
@@ -710,7 +710,9 @@ class IMWebSocketBridge {
       }
 
       final dynamic result;
-      if (managerName == 'ChatManager' && method == 'sendMessageWithType') {
+      if (_webSdkMode != 'real_sdk' &&
+          managerName == 'ChatManager' &&
+          method == 'sendMessageWithType') {
         final typeStr = args['type']?.toString();
         final payloadRaw = args['payload'];
         if (typeStr == null || payloadRaw is! Map) {
@@ -1461,6 +1463,17 @@ class IMWebSocketBridge {
       }
       _logV('cmd response: ${jsonEncode(response)}');
       _send(ws, response);
+      if (_webSdkMode == 'real_sdk' &&
+          managerName == 'UserInfoManager' &&
+          (method == 'updateOwnUserInfo' ||
+              method == 'updateOwnUserInfoWithType')) {
+        final data = response['result'];
+        if (data is Map) {
+          Future<void>.delayed(const Duration(milliseconds: 50), () async {
+            sendEvent('onOwnInfoUpdated', Map<String, dynamic>.from(data));
+          });
+        }
+      }
     } catch (e, st) {
       _logE('callNativeMethod error: $e\n$st');
       if (managerName == 'ChatManager' &&

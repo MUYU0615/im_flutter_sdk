@@ -56,10 +56,11 @@ def matches_received_text(message: object, *, from_user: str, to_user: str, cont
     if not isinstance(message, dict):
         return False
     body = message_body(message)
+    expected_conv_id = from_user if chat_type == 0 else to_user
     return (
         message.get("from") == from_user
         and message.get("to") == to_user
-        and message.get("convId") == from_user
+        and message.get("convId") == expected_conv_id
         and message.get("chatType") == chat_type
         and body.get("type") == 0
         and body.get("content") == content

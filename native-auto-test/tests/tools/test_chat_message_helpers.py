@@ -58,6 +58,23 @@ def test_matches_received_text_does_not_require_sender_temp_msg_id():
     )
 
 
+def test_matches_received_text_uses_group_conversation_id_for_group_chat():
+    assert matches_received_text(
+        {
+            "msgId": "group-message-id",
+            "from": "user_b",
+            "to": "group_id",
+            "convId": "group_id",
+            "chatType": 1,
+            "body": {"type": 0, "content": "group hello"},
+        },
+        from_user="user_b",
+        to_user="group_id",
+        content="group hello",
+        chat_type=1,
+    )
+
+
 def test_received_message_match_can_return_receiver_side_msg_id():
     event = {
         "type": "event",

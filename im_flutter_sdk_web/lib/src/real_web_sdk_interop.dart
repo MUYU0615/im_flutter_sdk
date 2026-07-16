@@ -16,7 +16,7 @@ external JSArray<JSAny?> _jsGetOwnPropertyNames(JSAny? object);
 @JS('Object.getPrototypeOf')
 external JSAny? _jsGetPrototypeOf(JSAny? object);
 
-  Map<String, dynamic> realWebSdkStatus() {
+Map<String, dynamic> realWebSdkStatus() {
   for (final name in _realSdkGlobalNames) {
     final sdk = globalContext.getProperty<JSAny?>(name.toJS);
     if (sdk != null && !sdk.isUndefinedOrNull) {
@@ -146,6 +146,7 @@ class RealWebSdkClient {
   String? _configuredSyncWsFallbackUrl;
   final List<Map<String, dynamic>> _debugEvents = [];
   final Map<String, Map<String, dynamic>> _messageIndex = {};
+  final Map<String, Map<String, dynamic>> _userInfoCache = {};
   final Map<String, List<Map<String, dynamic>>> _uploadedGroupSharedFiles = {};
   bool _webSocketProbeInstalled = false;
 
@@ -202,8 +203,7 @@ class RealWebSdkClient {
     }
     _webSocketProbeInstalled = true;
     try {
-      final original =
-          js_util.getProperty<Object?>(globalContext, 'WebSocket');
+      final original = js_util.getProperty<Object?>(globalContext, 'WebSocket');
       if (original == null) {
         _recordDebug('websocket_probe_install_skipped', {
           'reason': 'missing_global',
@@ -266,7 +266,8 @@ class RealWebSdkClient {
                     'code': js_util.getProperty<Object?>(target, 'code'),
                     'reason': js_util.getProperty<Object?>(target, 'reason'),
                     'wasClean':
-                        js_util.getProperty<Object?>(target, 'wasClean') == true,
+                        js_util.getProperty<Object?>(target, 'wasClean') ==
+                            true,
                   });
                 }).toJS,
               ],
@@ -294,7 +295,8 @@ class RealWebSdkClient {
         [null, probeFactory.toJS],
       );
       if (wrappedCtor != null) {
-        final originalPrototype = js_util.getProperty<Object?>(original, 'prototype');
+        final originalPrototype =
+            js_util.getProperty<Object?>(original, 'prototype');
         if (originalPrototype != null) {
           js_util.setProperty(wrappedCtor, 'prototype', originalPrototype);
         }
@@ -450,7 +452,8 @@ class RealWebSdkClient {
     }
     try {
       js_util.setProperty(client, 'contactSyncWsUrls', [fallbackUrl]);
-      js_util.setProperty(client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
+      js_util.setProperty(
+          client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
       js_util.setProperty(client, 'contactSyncDnsResolved', true);
       _recordDebug('imsdk_sync_ws_fallback_injected', {
         'fallbackUrl': fallbackUrl,
@@ -480,7 +483,8 @@ class RealWebSdkClient {
     final currentSessionSyncWsUrls = _toStringList(
       js_util.getProperty<Object?>(client, 'syncConversationListConfigWsUrls'),
     );
-    if (currentContactSyncWsUrls.isNotEmpty || currentSessionSyncWsUrls.isNotEmpty) {
+    if (currentContactSyncWsUrls.isNotEmpty ||
+        currentSessionSyncWsUrls.isNotEmpty) {
       _recordDebug('imsdk_sync_ws_fallback_reapply_skipped', {
         'reason': 'runtime_urls_already_present',
         'contactSyncWsUrls': currentContactSyncWsUrls,
@@ -490,7 +494,8 @@ class RealWebSdkClient {
     }
     try {
       js_util.setProperty(client, 'contactSyncWsUrls', [fallbackUrl]);
-      js_util.setProperty(client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
+      js_util.setProperty(
+          client, 'syncConversationListConfigWsUrls', [fallbackUrl]);
       js_util.setProperty(client, 'contactSyncDnsResolved', true);
       _recordDebug('imsdk_sync_ws_fallback_reapplied_after_login', {
         'fallbackUrl': fallbackUrl,
@@ -522,7 +527,8 @@ class RealWebSdkClient {
     if (host.startsWith('ws://') || host.startsWith('wss://')) {
       return host;
     }
-    final port = rawPort is int ? rawPort : int.tryParse(rawPort?.toString() ?? '');
+    final port =
+        rawPort is int ? rawPort : int.tryParse(rawPort?.toString() ?? '');
     final scheme = port == 443 ? 'wss' : 'ws';
     if (port != null && port > 0) {
       return '$scheme://$host:$port';
@@ -920,24 +926,33 @@ class RealWebSdkClient {
           messageList.add(_toImSdkMessage(message));
         }
       }
-      final created = js_util.callMethod<Object?>(
-        chatManager,
-        'createCombineMessage',
-        [
-          js_util.jsify({
-            'conversationId': to,
-            'conversationType': chatType,
-            'title': body['title']?.toString() ?? '',
-            'summary': body['summary']?.toString() ?? '',
-            'compatibleText': body['compatibleText']?.toString() ?? '',
-            'messageList': messageList,
-          }),
-        ],
-      );
-      if (created == null) {
-        throw StateError('Real Web SDK createCombineMessage returned null.');
-      }
       try {
+        final createParams = {
+          'conversationId': to,
+          'conversationType': chatType,
+          'title': body['title']?.toString() ?? '',
+          'summary': body['summary']?.toString() ?? '',
+          'compatibleText': body['compatibleText']?.toString() ?? '',
+          'messageList': messageList,
+        };
+        _recordDebug('send_combine_create_params', {
+          'runtime': 'imsdk',
+          'params': createParams,
+        });
+        final created = js_util.callMethod<Object?>(
+          chatManager,
+          'createCombineMessage',
+          [
+            js_util.jsify(createParams),
+          ],
+        );
+        if (created == null) {
+          throw StateError('Real Web SDK createCombineMessage returned null.');
+        }
+        _recordDebug('send_combine_created', {
+          'runtime': 'imsdk',
+          'created': js_util.dartify(created),
+        });
         final sentRaw = await js_util.promiseToFuture<Object?>(
           js_util.callMethod<Object?>(
             chatManager,
@@ -945,6 +960,10 @@ class RealWebSdkClient {
             [created],
           ) as Object,
         );
+        _recordDebug('send_combine_sent_raw', {
+          'runtime': 'imsdk',
+          'raw': js_util.dartify(sentRaw),
+        });
         final sent = _normalizeRealCombineMessage(js_util.dartify(sentRaw),
             fallback: map);
         _rememberMessage(sent);
@@ -1016,36 +1035,11 @@ class RealWebSdkClient {
   Map<String, dynamic> _toImSdkMessage(Map<String, dynamic> message) {
     final body = _asMap(message['body']);
     final typeCode = _asInt(body['type']) ?? 0;
-    final rawConversationType = message['conversationType']?.toString();
-    final chatType = rawConversationType == null || rawConversationType.isEmpty
-        ? _webChatType(message['chatType'])
-        : rawConversationType;
-    final conversationId =
-        message['convId']?.toString() ?? message['to']?.toString() ?? '';
-    final direct = message['direct']?.toString() ??
-        (((message['from']?.toString() ?? '') == _currentUser)
-            ? 'SEND'
-            : 'RECEIVE');
+    final envelope = _toImSdkMessageEnvelope(message);
     switch (typeCode) {
       case 0:
         return {
-          'id': message['msgId']?.toString() ?? '',
-          'msgId': message['msgId']?.toString() ?? '',
-          'msgServerId': message['msgServerId']?.toString() ??
-              message['msgId']?.toString() ??
-              '',
-          'from': message['from']?.toString() ?? '',
-          'to': message['to']?.toString() ?? '',
-          'sender': {
-            'userId': message['from']?.toString() ?? '',
-          },
-          'conversationId': conversationId,
-          'conversationType': chatType,
-          'chatType': chatType,
-          'direct': direct,
-          'timestamp': _asInt(message['serverTime']) ??
-              _asInt(message['localTime']) ??
-              DateTime.now().millisecondsSinceEpoch,
+          ...envelope,
           'type': 'text',
           'body': {
             'content': body['content']?.toString() ?? '',
@@ -1056,6 +1050,45 @@ class RealWebSdkClient {
           'Real Web SDK combine mapping does not yet support body.type=$typeCode.',
         );
     }
+  }
+
+  Map<String, dynamic> _toImSdkMessageEnvelope(Map<String, dynamic> message) {
+    final rawConversationType = message['conversationType']?.toString();
+    final chatType = rawConversationType == null || rawConversationType.isEmpty
+        ? _webChatType(message['chatType'])
+        : rawConversationType;
+    final conversationId =
+        message['convId']?.toString() ?? message['to']?.toString() ?? '';
+    final msgId = message['msgId']?.toString() ?? '';
+    final msgServerId =
+        message['msgServerId']?.toString() ?? (msgId.isEmpty ? '' : msgId);
+    final from = message['from']?.toString() ?? '';
+    final direct = message['direct']?.toString() ??
+        ((from == _currentUser) ? 'SEND' : 'RECEIVE');
+    final timestamp = _asInt(message['serverTime']) ??
+        _asInt(message['localTime']) ??
+        _asInt(message['timestamp']) ??
+        DateTime.now().millisecondsSinceEpoch;
+    return {
+      'id': msgId,
+      'msgId': msgId,
+      'msgServerId': msgServerId,
+      'msgLocalId': message['msgLocalId']?.toString() ?? msgId,
+      'from': from,
+      'to': message['to']?.toString() ?? '',
+      'sender': {
+        'userId': from,
+      },
+      'conversationId': conversationId,
+      'conversationType': chatType,
+      'chatType': chatType,
+      'direct': direct,
+      'status': message['status']?.toString() ?? 'sent',
+      'ext': _asMap(message['attributes']).isNotEmpty
+          ? _asMap(message['attributes'])
+          : _asMap(message['ext']),
+      'timestamp': timestamp,
+    };
   }
 
   Future<List<Map<String, dynamic>>> downloadAndParseCombineMessage(
@@ -1114,6 +1147,59 @@ class RealWebSdkClient {
     required String msgId,
     required String to,
   }) async {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final chatManager =
+          js_util.getProperty<Object?>(highLevelClient, 'chatManager');
+      if (chatManager == null) {
+        throw StateError('Real Web SDK chatManager is not available.');
+      }
+      final currentUser = _currentUser ?? '';
+      final message = {
+        'msgServerId': msgId,
+        'msgLocalId': msgId,
+        'from': to,
+        'to': currentUser,
+        'sender': {'userId': to},
+        'conversationId': to,
+        'conversationType': 'singleChat',
+        'type': 'text',
+        'status': 'sent',
+        'ext': {},
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'body': {'content': ''},
+        'direct': 'RECEIVE',
+      };
+      try {
+        final value = await js_util.promiseToFuture<Object?>(
+          js_util.callMethod<Object?>(
+            chatManager,
+            'markMessageRead',
+            [
+              js_util.jsify({
+                'messages': [
+                  {'message': message}
+                ],
+              }),
+            ],
+          ) as Object,
+        );
+        _recordDebug('ackMessageRead_success', {
+          'runtime': 'imsdk',
+          'result': js_util.dartify(value),
+          'msgId': msgId,
+          'to': to,
+        });
+        return;
+      } catch (e) {
+        _recordDebug('ackMessageRead_error', {
+          'runtime': 'imsdk',
+          'error': _jsErrorDescription(e),
+        });
+        throw StateError(
+            'Real Web SDK ackMessageRead failed: ${_jsErrorDescription(e)}');
+      }
+    }
     final conn = _requireConnection();
     final webIm = _webImObject();
     final messageApi =
@@ -1471,7 +1557,6 @@ class RealWebSdkClient {
     bool bigImageOnly = false,
   }) {
     final body = _asMap(message['body']);
-    final chatType = _webChatType(_asInt(message['chatType']) ?? 0);
     final type = switch (_asInt(body['type']) ?? -1) {
       1 => 'image',
       2 => 'video',
@@ -1479,42 +1564,27 @@ class RealWebSdkClient {
       4 => 'file',
       _ => 'unknown',
     };
+    final remoteUrl = body['remotePath']?.toString() ??
+        body['url']?.toString() ??
+        body['originalImageUrl']?.toString() ??
+        '';
+    final thumbnailUrl = body['thumbnailRemotePath']?.toString() ??
+        body['thumbnailUrl']?.toString() ??
+        '';
+    final imageUrl = thumbnailOnly
+        ? thumbnailUrl
+        : (bigImageOnly
+            ? body['bigImageUrl']?.toString() ?? remoteUrl
+            : remoteUrl);
     return {
-      'msgServerId': message['msgServerId']?.toString() ??
-          message['msgId']?.toString() ??
-          '',
-      'msgLocalId': message['msgLocalId']?.toString() ??
-          message['msgId']?.toString() ??
-          '',
-      'from': message['from']?.toString() ?? '',
-      'to': message['to']?.toString() ?? '',
-      'conversationId':
-          message['convId']?.toString() ?? message['to']?.toString() ?? '',
-      'conversationType': chatType,
-      'chatType': chatType,
+      ..._toImSdkMessageEnvelope(message),
       'type': type,
       'body': {
-        'url': thumbnailOnly
-            ? ''
-            : body['remotePath']?.toString() ?? body['url']?.toString() ?? '',
+        'url': imageUrl,
         if (type == 'image') 'isOriginalImage': body['isOriginalImage'] == true,
-        if (type == 'image')
-          'originalImageUrl': thumbnailOnly
-              ? ''
-              : body['remotePath']?.toString() ??
-                  body['url']?.toString() ??
-                  body['bigImageUrl']?.toString() ??
-                  '',
-        if (type == 'image')
-          'bigImageUrl': thumbnailOnly
-              ? ''
-              : body['bigImageUrl']?.toString() ??
-                  body['remotePath']?.toString() ??
-                  body['url']?.toString() ??
-                  '',
-        'thumbnailUrl': body['thumbnailRemotePath']?.toString() ??
-            body['thumbnailUrl']?.toString() ??
-            '',
+        if (type == 'image') 'originalImageUrl': imageUrl,
+        if (type == 'image') 'bigImageUrl': bigImageOnly ? imageUrl : remoteUrl,
+        'thumbnailUrl': thumbnailUrl,
         'secret': body['secret']?.toString() ?? body['secretKey']?.toString(),
         'fileLength': _asInt(body['fileSize']) ?? _asInt(body['fileLength']),
         'fileSize': _asInt(body['fileSize']) ?? _asInt(body['fileLength']),
@@ -3251,19 +3321,19 @@ class RealWebSdkClient {
             }),
           ],
         );
-      final raw = js_util.dartify(
-        await js_util.promiseToFuture<Object?>(promise as Object),
-      );
-      _recordDebug('getChatThreadLastMessageList_raw', {
-        'runtime': 'imsdk',
-        'threadIds': normalizedIds,
-        'raw': raw,
-      });
-      return _normalizeThreadLastMessageResult(raw);
-    } catch (e) {
-      _recordDebug('getChatThreadLastMessageList_error', {
-        'runtime': 'imsdk',
-        'threadIds': normalizedIds,
+        final raw = js_util.dartify(
+          await js_util.promiseToFuture<Object?>(promise as Object),
+        );
+        _recordDebug('getChatThreadLastMessageList_raw', {
+          'runtime': 'imsdk',
+          'threadIds': normalizedIds,
+          'raw': raw,
+        });
+        return _normalizeThreadLastMessageResult(raw);
+      } catch (e) {
+        _recordDebug('getChatThreadLastMessageList_error', {
+          'runtime': 'imsdk',
+          'threadIds': normalizedIds,
           'error': _jsErrorDescription(e),
         });
       }
@@ -3479,18 +3549,20 @@ class RealWebSdkClient {
         'allowinvites': false,
         'membersonly': false,
       };
-      final response = await web.window.fetch(
-        uri.toString().toJS,
-        web.RequestInit(
-          method: 'POST',
-          headers: js_util.jsify({
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          }),
-          body: jsonEncode(body).toJS,
-        ),
-      ).toDart;
+      final response = await web.window
+          .fetch(
+            uri.toString().toJS,
+            web.RequestInit(
+              method: 'POST',
+              headers: js_util.jsify({
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              }),
+              body: jsonEncode(body).toJS,
+            ),
+          )
+          .toDart;
       final statusCode = response.status;
       final responseText = (await response.text().toDart).toString();
       Map<String, dynamic> data = const {};
@@ -3593,16 +3665,18 @@ class RealWebSdkClient {
           'version': 'v3',
         },
       );
-      final response = await web.window.fetch(
-        uri.toString().toJS,
-        web.RequestInit(
-          method: 'DELETE',
-          headers: js_util.jsify({
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          }),
-        ),
-      ).toDart;
+      final response = await web.window
+          .fetch(
+            uri.toString().toJS,
+            web.RequestInit(
+              method: 'DELETE',
+              headers: js_util.jsify({
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $token',
+              }),
+            ),
+          )
+          .toDart;
       final statusCode = response.status;
       final body = (await response.text().toDart).toString();
       if (statusCode < 200 || statusCode >= 300) {
@@ -3757,20 +3831,22 @@ class RealWebSdkClient {
           'resource': clientResource,
         },
       );
-      final response = await web.window.fetch(
-        uri.toString().toJS,
-        web.RequestInit(
-          method: 'PUT',
-          headers: js_util.jsify({
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          }),
-          body: jsonEncode(<String, dynamic>{
-            'newowner': newOwner,
-          }).toJS,
-        ),
-      ).toDart;
+      final response = await web.window
+          .fetch(
+            uri.toString().toJS,
+            web.RequestInit(
+              method: 'PUT',
+              headers: js_util.jsify({
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              }),
+              body: jsonEncode(<String, dynamic>{
+                'newowner': newOwner,
+              }).toJS,
+            ),
+          )
+          .toDart;
       final statusCode = response.status;
       final body = (await response.text().toDart).toString();
       if (statusCode < 200 || statusCode >= 300) {
@@ -4259,7 +4335,10 @@ class RealWebSdkClient {
     final appKey = contextMap['appKey']?.toString() ?? '';
     final userId = contextMap['userId']?.toString() ?? '';
     final token = contextMap['token']?.toString() ?? '';
-    if (restBaseUrl.isEmpty || appKey.isEmpty || userId.isEmpty || token.isEmpty) {
+    if (restBaseUrl.isEmpty ||
+        appKey.isEmpty ||
+        userId.isEmpty ||
+        token.isEmpty) {
       throw StateError(
         'Real Web SDK joined chat room list requires restBaseUrl/appKey/userId/token.',
       );
@@ -4280,15 +4359,17 @@ class RealWebSdkClient {
         'detail': 'true',
       },
     );
-    final response = await web.window.fetch(
-      uri.toString().toJS,
-      web.RequestInit(
-        headers: js_util.jsify({
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        }),
-      ),
-    ).toDart;
+    final response = await web.window
+        .fetch(
+          uri.toString().toJS,
+          web.RequestInit(
+            headers: js_util.jsify({
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $token',
+            }),
+          ),
+        )
+        .toDart;
     final statusCode = response.status;
     final body = (await response.text().toDart).toString();
     if (statusCode < 200 || statusCode >= 300) {
@@ -4343,13 +4424,13 @@ class RealWebSdkClient {
               ? dataMap['data']
               : dataMap['items'] is List
                   ? dataMap['items']
-              : dataMap['list'] is List
-                  ? dataMap['list']
-                  : rawMap['items'] is List
-                      ? rawMap['items']
-                      : rawMap['entities'] is List
-                          ? rawMap['entities']
-                          : const [];
+                  : dataMap['list'] is List
+                      ? dataMap['list']
+                      : rawMap['items'] is List
+                          ? rawMap['items']
+                          : rawMap['entities'] is List
+                              ? rawMap['entities']
+                              : const [];
       final rooms = _asMapList(source).map(_normalizeChatRoom).toList();
       return {
         'pageNum': pageNum,
@@ -4402,6 +4483,60 @@ class RealWebSdkClient {
       throw StateError(
           'Real Web SDK modifyMessage requires a known sent message: $msgId.');
     }
+    final to =
+        existing['to']?.toString() ?? existing['convId']?.toString() ?? '';
+    final chatType = _asInt(existing['chatType']) ??
+        _asInt(existing['type']) ??
+        _asInt(existing['conversationType']) ??
+        0;
+    final content = body['content']?.toString() ?? '';
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient != null) {
+      final chatManager =
+          js_util.getProperty<Object?>(highLevelClient, 'chatManager');
+      if (chatManager == null) {
+        throw StateError('Real Web SDK chatManager is not available.');
+      }
+      try {
+        final value = await js_util.promiseToFuture<Object?>(
+          js_util.callMethod<Object?>(
+            chatManager,
+            'modifyMessage',
+            [
+              js_util.jsify({
+                'conversationId': to,
+                'conversationType': _webChatType(chatType),
+                'messageId': msgId,
+                'message': {
+                  'type': 'text',
+                  'body': {'content': content},
+                  'ext': _asMap(existing['attributes']).isNotEmpty
+                      ? _asMap(existing['attributes'])
+                      : _asMap(existing['ext']),
+                },
+              }),
+            ],
+          ) as Object,
+        );
+        final modified = _normalizeRealTextMessage(value, fallback: existing);
+        modified['msgId'] = msgId;
+        modified['body'] = {'type': 0, 'content': content};
+        modified['isContentReplaced'] = true;
+        _rememberMessage(modified);
+        _recordDebug('modifyMessage_success', {
+          'runtime': 'imsdk',
+          'result': modified,
+        });
+        return modified;
+      } catch (e) {
+        _recordDebug('modifyMessage_error', {
+          'runtime': 'imsdk',
+          'error': _jsErrorDescription(e),
+        });
+        throw StateError(
+            'Real Web SDK modifyMessage failed: ${_jsErrorDescription(e)}');
+      }
+    }
     final conn = _requireConnection();
     final webIm = _webImObject();
     final messageApi =
@@ -4409,10 +4544,6 @@ class RealWebSdkClient {
     if (messageApi == null) {
       throw StateError('Real Web SDK global WebIM.message is missing.');
     }
-    final to =
-        existing['to']?.toString() ?? existing['convId']?.toString() ?? '';
-    final chatType = _asInt(existing['chatType']) ?? 0;
-    final content = body['content']?.toString() ?? '';
     final modifiedMessage = js_util.callMethod<Object?>(
       messageApi,
       'create',
@@ -4740,16 +4871,24 @@ class RealWebSdkClient {
   Future<Map<String, dynamic>> updateOwnUserInfo(
     Map<String, dynamic> info,
   ) async {
-    final result = await _callRealSdk('updateOwnUserInfo', [
+    final result = await _callRealSdk('updateOwnInfo', [
       _realUserInfoUpdatePayload(info),
     ]);
     final userId = _currentUser ?? '';
     final data = _realUserInfoFromResponse(result, fallbackUserId: userId);
-    return {
+    final normalized = {
       'userId': userId,
       ...data,
       ..._normalizeUserInfoFields(info, fallbackUserId: userId),
     };
+    if (userId.isNotEmpty) {
+      _userInfoCache[userId] = {
+        ...?_userInfoCache[userId],
+        ...normalized,
+      };
+    }
+    _recordDebug('updateOwnUserInfo_success', {'result': normalized});
+    return normalized;
   }
 
   Future<Map<String, dynamic>> updateOwnUserInfoWithType(
@@ -4759,7 +4898,31 @@ class RealWebSdkClient {
     if (key == null) {
       return updateOwnUserInfo(const {});
     }
-    return updateOwnUserInfo({key: info['userInfoValue']});
+    final attribute = _realUserInfoPropertyForField(key);
+    if (attribute == null) {
+      return updateOwnUserInfo(const {});
+    }
+    final value = info['userInfoValue'];
+    final result = await _callRealSdk('updateOwnInfoByAttribute', [
+      attribute,
+      value,
+    ]);
+    final userId = _currentUser ?? '';
+    final updated = {
+      'userId': userId,
+      ..._realUserInfoFromResponse(result, fallbackUserId: userId),
+      ..._normalizeUserInfoFields({key: value}, fallbackUserId: userId),
+    };
+    if (userId.isEmpty) {
+      return updated;
+    }
+    final normalized = {
+      ...?_userInfoCache[userId],
+      ...updated,
+    };
+    _userInfoCache[userId] = Map<String, dynamic>.from(normalized);
+    _recordDebug('updateOwnUserInfoWithType_success', {'result': normalized});
+    return normalized;
   }
 
   Future<Map<String, dynamic>> fetchUserInfoById(
@@ -4770,11 +4933,83 @@ class RealWebSdkClient {
         .map(_realUserInfoPropertyForType)
         .whereType<String>()
         .toList();
-    final result = await _callRealSdk('fetchUserInfoById', [
-      userIds,
-      if (properties.isNotEmpty) properties,
+    final result = await _callRealSdk('getUserInfoByUserId', [
+      {
+        'userIds': userIds,
+        if (properties.isNotEmpty) 'attributes': properties,
+      },
     ]);
-    return _realUserInfoMapFromResponse(result, userIds);
+    final mapped = _realUserInfoMapFromResponse(result, userIds);
+    if (properties.isEmpty) {
+      await _subscribeUsersInfoBestEffort(userIds);
+    }
+    for (final entry in mapped.entries) {
+      _userInfoCache[entry.key] = {
+        ...?_userInfoCache[entry.key],
+        ...entry.value,
+      };
+    }
+    _recordDebug('fetchUserInfoById_success', {'result': mapped});
+    return mapped;
+  }
+
+  Future<void> subscribeUsersInfo(List<String> userIds) async {
+    if (userIds.isEmpty) {
+      return;
+    }
+    await _callRealSdkVoid('subscribeUsersInfo', [
+      {'userIds': userIds},
+    ]);
+  }
+
+  Future<void> unsubscribeUsersInfo(List<String> userIds) async {
+    if (userIds.isEmpty) {
+      return;
+    }
+    await _callRealSdkVoid('unsubscribeUsersInfo', [
+      {'userIds': userIds},
+    ]);
+  }
+
+  Future<Map<String, dynamic>> fetchSubscribedUsers() async {
+    final result = await _callRealSdk('getSubscribedUsers', const []);
+    final raw = js_util.dartify(result);
+    final data = raw is Map ? raw['data'] : raw;
+    final users = <String, dynamic>{};
+    if (data is List) {
+      for (final item in data) {
+        final info = _normalizeUserInfoFields(_asMap(item));
+        final userId = info['userId']?.toString();
+        if (userId != null && userId.isNotEmpty) {
+          users[userId] = info;
+        }
+      }
+    } else if (data is Map) {
+      for (final entry in data.entries) {
+        final userId = entry.key.toString();
+        users[userId] = _normalizeUserInfoFields(
+          _asMap(entry.value),
+          fallbackUserId: userId,
+        );
+      }
+    }
+    _recordDebug('fetchSubscribedUsers_success', {'result': users});
+    return users;
+  }
+
+  Future<void> _subscribeUsersInfoBestEffort(List<String> userIds) async {
+    if (userIds.isEmpty) {
+      return;
+    }
+    try {
+      await subscribeUsersInfo(userIds);
+      _recordDebug('subscribeUsersInfo_success', {'userIds': userIds});
+    } catch (e) {
+      _recordDebug('subscribeUsersInfo_error', {
+        'userIds': userIds,
+        'error': _jsErrorDescription(e),
+      });
+    }
   }
 
   Future<void> publishPresence(String description) async {
@@ -4916,14 +5151,17 @@ class RealWebSdkClient {
   }
 
   Future<void> setPushPerformLanguage(String language) async {
-    await _callRealSdkVoid('setPushPerformLanguage', [
+    await _callRealSdkVoid('setPushLanguage', [
       {'language': language},
     ]);
+    _recordDebug('setPushPerformLanguage_success', {'result': null});
   }
 
   Future<String?> getPushPerformLanguage() async {
-    final result = await _callRealSdk('getPushPerformLanguage', const []);
-    return _pushLanguageFromResponse(result);
+    final result = await _callRealSdk('getPushLanguage', const []);
+    final language = _pushLanguageFromResponse(result);
+    _recordDebug('getPushPerformLanguage_success', {'result': language});
+    return language;
   }
 
   Future<List<String>> getSupportedLanguages() async {
@@ -4951,8 +5189,8 @@ class RealWebSdkClient {
     }
     final result = await _callRealSdk('translateMessage', [
       {
-        'text': content,
-        'languages': targetLanguages,
+        'message': _webSdkMessageFromFlutter(existing),
+        'targetLanguages': targetLanguages,
       },
     ]);
     final nextBody = Map<String, dynamic>.from(body)
@@ -4961,14 +5199,17 @@ class RealWebSdkClient {
   }
 
   Future<void> setSilentModeForAll(Map<String, dynamic> param) async {
-    await _callRealSdkVoid('setSilentModeForAll', [
-      {'options': _silentModeOptions(param)},
+    await _callRealSdkVoid('setGlobalSilentMode', [
+      {'rule': _silentModeRule(param)},
     ]);
+    _recordDebug('setSilentModeForAll_success', {'result': null});
   }
 
   Future<Map<String, dynamic>> getSilentModeForAll() async {
-    final result = await _callRealSdk('getSilentModeForAll', const []);
-    return _silentModeFromResponse(result);
+    final result = await _callRealSdk('getGlobalSilentMode', const []);
+    final mode = _silentModeFromResponse(result);
+    _recordDebug('getSilentModeForAll_success', {'result': mode});
+    return mode;
   }
 
   Future<void> setSilentModeForConversation({
@@ -4976,38 +5217,42 @@ class RealWebSdkClient {
     required int type,
     required Map<String, dynamic> param,
   }) async {
-    await _callRealSdkVoid('setSilentModeForConversation', [
+    await _callRealSdkVoid('setConversationSilentMode', [
       {
         'conversationId': conversationId,
-        'type': _webConversationType(type),
-        'options': _silentModeOptions(param),
+        'conversationType': _webPushConversationType(type),
+        'rule': _silentModeRule(param),
       },
     ]);
+    _recordDebug('setSilentModeForConversation_success', {'result': null});
   }
 
   Future<void> clearRemindTypeForConversation({
     required String conversationId,
     required int type,
   }) async {
-    await _callRealSdkVoid('clearRemindTypeForConversation', [
+    await _callRealSdkVoid('clearConversationRemindType', [
       {
         'conversationId': conversationId,
-        'type': _webConversationType(type),
+        'conversationType': _webPushConversationType(type),
       },
     ]);
+    _recordDebug('clearRemindTypeForConversation_success', {'result': null});
   }
 
   Future<Map<String, dynamic>> getSilentModeForConversation({
     required String conversationId,
     required int type,
   }) async {
-    final result = await _callRealSdk('getSilentModeForConversation', [
+    final result = await _callRealSdk('getConversationSilentMode', [
       {
         'conversationId': conversationId,
-        'type': _webConversationType(type),
+        'conversationType': _webPushConversationType(type),
       },
     ]);
-    return _silentModeFromResponse(result);
+    final mode = _silentModeFromResponse(result);
+    _recordDebug('getSilentModeForConversation_success', {'result': mode});
+    return mode;
   }
 
   Future<Map<String, Map<String, dynamic>>> getSilentModeForConversations(
@@ -5017,21 +5262,24 @@ class RealWebSdkClient {
         .map(
           (entry) => {
             'id': entry.key,
-            'type': _webConversationType(entry.value),
+            'conversationId': entry.key,
+            'conversationType': _webPushConversationType(entry.value),
           },
         )
         .toList();
-    final result = await _callRealSdk('getSilentModeForConversations', [
+    final result = await _callRealSdk('getConversationSilentModes', [
       {'conversationList': conversationList},
     ]);
-    return _silentModesFromResponse(result, conversations);
+    final modes = _silentModesFromResponse(result, conversations);
+    _recordDebug('getSilentModeForConversations_success', {'result': modes});
+    return modes;
   }
 
   Future<int> getConversationRemindType({
     required String conversationId,
     required int type,
   }) async {
-    final result = await _callRealSdk('getSilentModeRemindTypeConversations', [
+    final result = await _callRealSdk('getConversationListByRemindType', [
       {
         'pageSize': 200,
         'cursor': '',
@@ -5355,9 +5603,9 @@ class RealWebSdkClient {
   }) async {
     await _callRealSdkVoid('deleteConversation', [
       {
-        'channel': convId,
-        'chatType': type == 1 ? 'groupChat' : 'singleChat',
-        'deleteRoam': deleteRoam,
+        'conversationId': convId,
+        'conversationType': type == 1 ? 'groupChat' : 'singleChat',
+        'deleteRoamingMessages': deleteRoam,
       },
     ]);
   }
@@ -5761,7 +6009,7 @@ class RealWebSdkClient {
   }
 
   Future<Object?> _callRealSdk(String method, List<Object?> args) async {
-    final conn = _requireConnection();
+    final conn = _callTargetForRealSdkMethod(method);
     final result = js_util.callMethod<Object?>(conn, method, [
       for (final arg in args) js_util.jsify(arg),
     ]);
@@ -5779,6 +6027,210 @@ class RealWebSdkClient {
 
   Future<void> _callRealSdkVoid(String method, List<Object?> args) async {
     await _callRealSdk(method, args);
+  }
+
+  Object _callTargetForRealSdkMethod(String method) {
+    final highLevelClient = _highLevelClient;
+    if (highLevelClient == null) {
+      return _requireConnection();
+    }
+    final managerProperty = _imsdkManagerPropertyForMethod(method);
+    if (managerProperty == null) {
+      if (js_util.hasProperty(highLevelClient, method)) {
+        final clientMethod =
+            js_util.getProperty<Object?>(highLevelClient, method);
+        if (clientMethod != null) {
+          return highLevelClient;
+        }
+      }
+      throw StateError('Real Web SDK method $method is not available.');
+    }
+    final manager =
+        js_util.getProperty<Object?>(highLevelClient, managerProperty);
+    if (manager == null) {
+      throw StateError(
+        'Real Web SDK $managerProperty is not available for $method.',
+      );
+    }
+    final managerMethod = js_util.getProperty<Object?>(manager, method);
+    if (managerMethod == null) {
+      throw StateError(
+        'Real Web SDK $managerProperty.$method is not available.',
+      );
+    }
+    return manager;
+  }
+
+  String? _imsdkManagerPropertyForMethod(String method) {
+    if (const <String>{
+      'downloadAndParseCombineMessage',
+      'getServerConversations',
+      'getServerPinnedConversations',
+      'pinConversation',
+      'deleteConversation',
+      'removeHistoryMessages',
+      'getHistoryMessages',
+      'addReaction',
+      'deleteReaction',
+      'reportMessage',
+      'pinMessage',
+      'unpinMessage',
+      'getServerPinnedMessages',
+      'getReactionList',
+      'getReactionDetail',
+      'recallMessage',
+      'translateMessage',
+    }.contains(method)) {
+      return 'chatManager';
+    }
+    if (const <String>{
+      'createGroupVNext',
+      'destroyGroup',
+      'getGroup',
+      'getGroupInfo',
+      'getJoinedGroups',
+      'getPublicGroups',
+      'getGroupMembers',
+      'modifyGroup',
+      'leaveGroup',
+      'joinGroup',
+      'inviteUsersToGroup',
+      'acceptGroupInvite',
+      'rejectGroupInvite',
+      'acceptGroupJoinRequest',
+      'rejectGroupJoinRequest',
+      'setGroupMemberAttributes',
+      'getGroupMemberAttributes',
+      'getGroupMembersAttributes',
+      'removeGroupMember',
+      'removeGroupMembers',
+      'changeGroupOwner',
+      'blockGroupMembers',
+      'unblockGroupMember',
+      'unblockGroupMembers',
+      'setGroupAdmin',
+      'removeGroupAdmin',
+      'muteGroupMember',
+      'unmuteGroupMember',
+      'muteAllGroupMembers',
+      'unmuteAllGroupMembers',
+      'getGroupMutelist',
+      'getGroupAdmin',
+      'getGroupBlocklist',
+      'addUsersToGroupWhitelist',
+      'removeGroupWhitelistMember',
+      'getGroupWhitelist',
+      'isInGroupMutelist',
+      'getGroupSharedFilelist',
+      'deleteGroupSharedFile',
+      'updateGroupAnnouncement',
+      'fetchGroupAnnouncement',
+      'getGroupMsgReadUser',
+    }.contains(method)) {
+      return 'groupManager';
+    }
+    if (const <String>{
+      'createChatThread',
+      'getChatThreadDetail',
+      'getChatThreads',
+      'getJoinedChatThreads',
+      'getChatThreadMembers',
+      'getChatThreadLastMessage',
+      'joinChatThread',
+      'leaveChatThread',
+      'removeChatThreadMember',
+      'changeChatThreadName',
+      'destroyChatThread',
+    }.contains(method)) {
+      return 'chatThreadManager';
+    }
+    if (const <String>{
+      'joinChatRoom',
+      'createChatRoom',
+      'destroyChatRoom',
+      'modifyChatRoom',
+      'getChatRoomMembers',
+      'muteChatRoomMember',
+      'unmuteChatRoomMember',
+      'changeChatRoomOwner',
+      'setChatRoomAdmin',
+      'removeChatRoomAdmin',
+      'getChatRoomAdmin',
+      'getChatRoomMutelist',
+      'removeChatRoomMembers',
+      'blockChatRoomMember',
+      'unblockChatRoomMember',
+      'getChatRoomBlocklist',
+      'updateChatRoomAnnouncement',
+      'fetchChatRoomAnnouncement',
+      'addUsersToChatRoomWhitelist',
+      'removeChatRoomAllowlistMember',
+      'getChatRoomWhitelist',
+      'isInChatRoomAllowlist',
+      'disableSendChatRoomMsg',
+      'enableSendChatRoomMsg',
+      'isInChatRoomMutelist',
+      'getChatRoomAttributes',
+      'setChatRoomAttributes',
+      'removeChatRoomAttributes',
+      'leaveChatRoom',
+      'getChatRoomDetails',
+      'getJoinedChatRooms',
+      'getChatRooms',
+    }.contains(method)) {
+      return 'chatRoomManager';
+    }
+    if (const <String>{
+      'addContact',
+      'deleteContact',
+      'acceptInvitation',
+      'declineInvitation',
+      'getContacts',
+      'getAllContacts',
+      'getContactsWithCursor',
+      'setContactRemark',
+      'getBlocklist',
+      'addUsersToBlocklist',
+      'removeUserFromBlocklist',
+    }.contains(method)) {
+      return 'contactManager';
+    }
+    if (const <String>{
+      'updateOwnInfo',
+      'updateOwnInfoByAttribute',
+      'getUserInfoByUserId',
+      'getUserInfoByAttribute',
+      'subscribeUsersInfo',
+      'unsubscribeUsersInfo',
+      'getSubscribedUsers',
+    }.contains(method)) {
+      return 'userInfoManager';
+    }
+    if (const <String>{
+      'publishPresence',
+      'subscribePresence',
+      'unsubscribePresence',
+      'getSubscribedPresenceList',
+      'getPresenceStatus',
+    }.contains(method)) {
+      return 'presenceManager';
+    }
+    if (const <String>{
+      'setPushLanguage',
+      'getPushLanguage',
+      'getSupportedLanguages',
+      'setGlobalSilentMode',
+      'getGlobalSilentMode',
+      'setConversationSilentMode',
+      'clearConversationRemindType',
+      'getConversationSilentMode',
+      'getConversationSilentModes',
+      'getConversationListByRemindType',
+      'uploadPushToken',
+    }.contains(method)) {
+      return 'pushManager';
+    }
+    return null;
   }
 
   Future<Object?> _awaitMaybePromise(Object? result) async {
@@ -6598,6 +7050,33 @@ class RealWebSdkClient {
     };
   }
 
+  Map<String, dynamic> _webSdkMessageFromFlutter(Map<String, dynamic> message) {
+    final body = _asMap(message['body']);
+    final bodyType = _asInt(body['type']) ?? 0;
+    final conversationType = _webChatType(message['chatType']);
+    if (bodyType == 0) {
+      return {
+        ...message,
+        'id': message['msgId']?.toString() ??
+            message['msgServerId']?.toString() ??
+            message['msgLocalId']?.toString(),
+        'type': 'text',
+        'conversationId':
+            message['convId']?.toString() ?? message['to']?.toString() ?? '',
+        'conversationType': conversationType,
+        'body': {
+          'content': body['content']?.toString() ?? '',
+        },
+      };
+    }
+    return {
+      ...message,
+      'conversationId':
+          message['convId']?.toString() ?? message['to']?.toString() ?? '',
+      'conversationType': conversationType,
+    };
+  }
+
   Map<String, dynamic> _normalizeRealIncomingMessage(
     Object? value, {
     Map<String, dynamic>? fallback,
@@ -6716,6 +7195,7 @@ class RealWebSdkClient {
         _currentUser;
     final msgId = raw['id']?.toString() ??
         raw['msgId']?.toString() ??
+        raw['msgServerId']?.toString() ??
         raw['serverMsgId']?.toString() ??
         fallback?['msgId']?.toString() ??
         DateTime.now().millisecondsSinceEpoch.toString();
@@ -7849,19 +8329,19 @@ class RealWebSdkClient {
     };
   }
 
-  Map<String, dynamic> _silentModeOptions(Map<String, dynamic> param) {
+  Map<String, dynamic> _silentModeRule(Map<String, dynamic> param) {
     final paramType = _asInt(param['paramType']) ?? 0;
     switch (paramType) {
       case 1:
         return {
-          'paramType': 1,
+          'mode': 'DURATION',
           'duration': _asInt(param['duration']) ?? 0,
         };
       case 2:
         final start = _asMap(param['startTime']);
         final end = _asMap(param['endTime']);
         return {
-          'paramType': 2,
+          'mode': 'INTERVAL',
           'startTime': {
             'hours': _asInt(start['hour'] ?? start['hours']) ?? 0,
             'minutes': _asInt(start['minute'] ?? start['minutes']) ?? 0,
@@ -7874,7 +8354,7 @@ class RealWebSdkClient {
       case 0:
       default:
         return {
-          'paramType': 0,
+          'mode': 'REMIND_TYPE',
           'remindType': _silentRemindType(_asInt(param['remindType']) ?? 0),
         };
     }
@@ -8087,12 +8567,15 @@ class RealWebSdkClient {
         : raw is Map && raw.containsKey('result')
             ? raw['result']
             : data;
-    final map = _asMap(result);
+    final resultMap = _asMap(result);
+    final map =
+        resultMap['rule'] is Map ? _asMap(resultMap['rule']) : resultMap;
     final ignoreInterval =
         map['ignoreInterval']?.toString() ?? map['ignore_interval']?.toString();
     return {
       'expireTs': _asInt(map['expireTs']) ??
           _asInt(map['expire_ts']) ??
+          _asInt(map['expireTimestamp']) ??
           _asInt(map['expire']) ??
           0,
       'remindType': _remindTypeFromReal(map['type'] ?? map['remindType']),
@@ -8106,10 +8589,10 @@ class RealWebSdkClient {
       case 1:
         return 'ALL';
       case 2:
-        return 'MENTION_ONLY';
+        return 'AT';
       case 0:
       default:
-        return 'DEFAULT';
+        return 'NONE';
     }
   }
 
@@ -8118,6 +8601,7 @@ class RealWebSdkClient {
     switch (text) {
       case 'ALL':
         return 1;
+      case 'AT':
       case 'MENTION_ONLY':
         return 2;
       case 'NONE':
@@ -8352,7 +8836,8 @@ class RealWebSdkClient {
     }
     final result = <String>{};
     try {
-      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+      for (final key
+          in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
         final text = key?.toString();
         if (text != null && text.isNotEmpty) {
           result.add(text);
@@ -8391,7 +8876,8 @@ class RealWebSdkClient {
     }
     final result = <String>{};
     try {
-      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+      for (final key
+          in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
         final text = key?.toString();
         if (text != null && text.isNotEmpty) {
           result.add(text);
@@ -8430,7 +8916,8 @@ class RealWebSdkClient {
     }
     final result = <String>{};
     try {
-      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+      for (final key
+          in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
         final text = key?.toString();
         if (text != null && text.isNotEmpty) {
           result.add(text);
@@ -8469,7 +8956,8 @@ class RealWebSdkClient {
     }
     final result = <String>{};
     try {
-      for (final key in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
+      for (final key
+          in js_util.dartify(_jsObjectKeys(manager as JSAny?)) as List) {
         final text = key?.toString();
         if (text != null && text.isNotEmpty) {
           result.add(text);
@@ -8505,7 +8993,8 @@ class RealWebSdkClient {
         'hasGetRestContext': false,
       };
     }
-    final getRestContext = js_util.getProperty<Object?>(client, 'getRestContext');
+    final getRestContext =
+        js_util.getProperty<Object?>(client, 'getRestContext');
     final result = <String, dynamic>{
       'hasHighLevelClient': true,
       'hasGetRestContext': getRestContext != null,
@@ -8583,7 +9072,10 @@ class RealWebSdkClient {
         const [],
       );
       if (cacheManager == null) {
-        return const <String, dynamic>{'available': true, 'cacheManager': false};
+        return const <String, dynamic>{
+          'available': true,
+          'cacheManager': false
+        };
       }
       final meta = js_util.callMethod<Object?>(
         cacheManager,
@@ -8725,6 +9217,16 @@ String _webHistoryChatType(dynamic chatType) {
 String _webConversationType(dynamic chatType) {
   final value =
       chatType is int ? chatType : int.tryParse(chatType?.toString() ?? '');
+  return value == 1 ? 'groupChat' : 'singleChat';
+}
+
+String _webPushConversationType(dynamic chatType) {
+  final value =
+      chatType is int ? chatType : int.tryParse(chatType?.toString() ?? '');
+  if (value == 2) {
+    throw StateError(
+        'Real Web SDK push silent mode does not support chatRoom.');
+  }
   return value == 1 ? 'groupChat' : 'singleChat';
 }
 

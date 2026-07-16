@@ -23,6 +23,28 @@ def test_real_web_user_info_update_events_imsdk_runtime(
 
     primary_device.call("Client", Cmd.startCallback.value, info={})
     secondary_device.call("Client", Cmd.startCallback.value, info={})
+    subscribe = secondary_device.call(
+        "UserInfoManager",
+        Cmd.subscribeUsersInfo.value,
+        info={"userIds": [user_a]},
+    )
+    subscribe_error = assert_api.get_error(subscribe)
+    if "subscribeUsersInfo failed" in str(subscribe_error.get("description", "")):
+        pytest.skip("当前 Web appkey/服务未开通用户资料订阅能力：subscribeUsersInfo REST business error")
+    assert_api.get_result(subscribe)
+    subscribed = secondary_device.call(
+        "UserInfoManager",
+        Cmd.fetchSubscribedUsers.value,
+        info={},
+    )
+    subscribed_result = assert_api.get_result(subscribed)
+    assert isinstance(subscribed_result, dict)
+    assert user_a in subscribed_result
+    secondary_device.call(
+        "UserInfoManager",
+        Cmd.fetchUserInfoById.value,
+        info={"userIds": [user_a]},
+    )
     primary_device.drain_events(timeout=0.5)
     secondary_device.drain_events(timeout=0.5)
 
@@ -46,6 +68,18 @@ def test_real_web_user_info_update_events_imsdk_runtime(
     assert own_data.get("nickName") == nick_name
     assert own_data.get("sign") == sign
 
+    sign_by_type = f"web-user-event-type-{uuid.uuid4().hex[:8]}"
+    typed_update = primary_device.call(
+        "UserInfoManager",
+        Cmd.updateOwnUserInfoWithType.value,
+        info={"userInfoType": 5, "userInfoValue": sign_by_type},
+    )
+    typed_update_result = assert_api.get_result(typed_update)
+    assert isinstance(typed_update_result, dict)
+    assert typed_update_result.get("userId") == user_a
+    assert typed_update_result.get("nickName") == nick_name
+    assert typed_update_result.get("sign") == sign_by_type
+
     user_event = secondary_device.receive_message(
         match_event_type="onUserInfoUpdated",
         timeout=10.0,
@@ -57,7 +91,7 @@ def test_real_web_user_info_update_events_imsdk_runtime(
         isinstance(item, dict)
         and item.get("userId") == user_a
         and item.get("nickName") == nick_name
-        and item.get("sign") == sign
+        and item.get("sign") == sign_by_type
         for item in user_data
     )
 

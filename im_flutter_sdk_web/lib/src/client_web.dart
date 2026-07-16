@@ -146,7 +146,8 @@ class ClientWeb extends Client {
             'chatManagerHandlerInstallCount': _chatManager.handlerInstallCount,
             'chatManagerHandlerHashCode': _chatManager.handlerHashCode,
             'contactManagerHasHandler': _contactManager.hasNativeHandler,
-            'contactManagerHandlerInstallCount': _contactManager.handlerInstallCount,
+            'contactManagerHandlerInstallCount':
+                _contactManager.handlerInstallCount,
             'contactManagerHandlerHashCode': _contactManager.handlerHashCode,
           },
         };
@@ -320,6 +321,32 @@ class ClientWeb extends Client {
 
   Future<void> emitClientEvent(String method, [dynamic arguments]) async {
     await _handler?.call(MethodCall(method, arguments));
+  }
+
+  void emitClientEventSoon(String method, [dynamic arguments]) {
+    Future<void>.delayed(const Duration(milliseconds: 50), () async {
+      await emitClientEvent(method, arguments);
+    });
+  }
+
+  void emitUserInfoEventSoon(String method, Map<String, dynamic> event) {
+    _realSdk
+        ?.recordExternalDebugEvent('client_emit_user_info_event_scheduled', {
+      'method': method,
+      'event': event,
+      'hasHandler': _handler != null,
+    });
+    Future<void>.delayed(const Duration(milliseconds: 50), () async {
+      _realSdk?.recordExternalDebugEvent('client_emit_user_info_event_begin', {
+        'method': method,
+        'event': event,
+        'hasHandler': _handler != null,
+      });
+      await emitClientEvent(method, event);
+      _realSdk?.recordExternalDebugEvent('client_emit_user_info_event_end', {
+        'method': method,
+      });
+    });
   }
 
   Future<void> _emitRealTextMessage(Map<String, dynamic> message) async {

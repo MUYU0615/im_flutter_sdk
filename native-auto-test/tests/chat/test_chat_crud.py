@@ -238,7 +238,7 @@ def test_chat_send_to_self_event(topology, assert_api):
                     "body": {"type": 0, "content": "{{content}}", "translations": {}},
                     "direction": 0,
                     "chatType": 0,
-                    "status": 0,
+                    "status": 2,
                     "hasRead": True,
                     "hasReadAck": False,
                     "hasDeliverAck": False,
